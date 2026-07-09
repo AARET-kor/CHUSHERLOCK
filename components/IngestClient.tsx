@@ -112,19 +112,19 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
             type="file"
             accept=".pdf,.docx,.txt,.md,.markdown,.jpg,.jpeg,.png,.webp"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-neutral-400 file:mr-3 file:rounded file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-neutral-200"
+            className="block w-full text-sm text-ink/60 file:mr-3 file:rounded file:border-0 file:bg-mist file:px-3 file:py-2 file:text-ink"
           />
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium">
-            또는 텍스트 붙여넣기 {file && <span className="text-neutral-500">(파일이 우선됩니다)</span>}
+            또는 텍스트 붙여넣기 {file && <span className="text-ink/50">(파일이 우선됩니다)</span>}
           </label>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={8}
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 font-mono text-sm"
+            className="field font-mono"
             placeholder="논문 초록, 교과서 챕터, 파라미터 시트, 노하우 메모 등 원문을 그대로 붙여넣으세요."
           />
         </div>
@@ -135,7 +135,7 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
             <input
               value={citation}
               onChange={(e) => setCitation(e.target.value)}
-              className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+              className="field"
               placeholder="예: DeLorenzi C. Complications of injectable fillers. Aesthet Surg J. 2017"
             />
           </div>
@@ -144,7 +144,7 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
             <select
               value={sourceType}
               onChange={(e) => setSourceType(e.target.value as typeof sourceType)}
-              className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+              className="field"
             >
               {SOURCE_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -160,24 +160,24 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
           <input
             value={sourceUrl}
             onChange={(e) => setSourceUrl(e.target.value)}
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm"
+            className="field"
             placeholder="https://..."
           />
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button
           type="submit"
           disabled={isSubmitting || Boolean(inProgress)}
-          className="rounded bg-emerald-700 px-4 py-2 text-sm font-medium hover:bg-emerald-600 disabled:opacity-50"
+          className="btn-primary"
         >
           {isSubmitting ? "업로드 중..." : "AI로 읽고 분류하기"}
         </button>
       </form>
 
       {inProgress && (
-        <div className="rounded-lg border border-neutral-800 p-4">
+        <div className="card p-5">
           <p className="text-sm font-medium">
             {job.status === "pending"
               ? "준비 중..."
@@ -187,13 +187,13 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
           </p>
           {job.totalChunks > 0 && (
             <>
-              <div className="mt-2 h-2 overflow-hidden rounded bg-neutral-800">
+              <div className="mt-2 h-2 overflow-hidden rounded bg-mist">
                 <div
-                  className="h-full bg-emerald-600 transition-all"
+                  className="h-full bg-ink transition-all"
                   style={{ width: `${(job.processedChunks / job.totalChunks) * 100}%` }}
                 />
               </div>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="mt-1 text-xs text-ink/50">
                 {job.processedChunks} / {job.totalChunks} 구간 — 문서 흐름을 따라 읽으며 맥락을
                 유지합니다. 큰 문서는 몇 분 걸릴 수 있습니다.
               </p>
@@ -203,7 +203,7 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
       )}
 
       {job?.status === "failed" && (
-        <div className="rounded-lg border border-red-900 bg-red-950/40 p-4 text-sm text-red-300">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           처리 실패: {job.error}
         </div>
       )}
@@ -211,10 +211,10 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
       {job?.status === "completed" && job.suggestions && (
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-lg font-semibold text-inkdeep">
               정리 제안 {job.suggestions.length}건 — 확인 후 저장하세요
             </h2>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-ink/60">
               각 카드는 수정할 수 있습니다. 저장 시 같은 카테고리의 비슷한 기존 노트와 자동으로
               연결됩니다. 출처는 &quot;{job.sourceCitation}&quot;로 기록됩니다.
             </p>

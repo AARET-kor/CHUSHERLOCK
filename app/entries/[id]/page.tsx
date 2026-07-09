@@ -28,26 +28,26 @@ export default async function EntryDetailPage({
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <TierBadge tier={entry.tier} />
         <CategoryBadge categoryKey={entry.categoryKey} />
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs text-ink/50">
           최근 수정: {new Date(entry.updatedAt).toLocaleString("ko-KR")}
         </span>
       </div>
 
-      <h1 className="mb-4 text-2xl font-semibold">{entry.title}</h1>
+      <h1 className="mb-4 font-serifa text-2xl font-bold tracking-tight text-inkdeep md:text-3xl">{entry.title}</h1>
 
-      <article className="mb-8 whitespace-pre-wrap rounded-lg border border-neutral-800 p-5 text-sm leading-relaxed">
+      <article className="mb-8 whitespace-pre-wrap card p-6 text-sm leading-relaxed">
         {entry.content}
       </article>
 
       {entry.sources.length > 0 && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-medium text-neutral-300">출처 (Sources)</h2>
-          <ul className="list-inside list-disc space-y-1 text-sm text-neutral-400">
+          <h2 className="mb-2 text-sm font-medium text-ink/80">출처 (Sources)</h2>
+          <ul className="list-inside list-disc space-y-1 text-sm text-ink/60">
             {entry.sources.map((source) => (
               <li key={source.id}>
                 {source.citation}
                 {source.url && (
-                  <a href={source.url} className="ml-1 text-emerald-400 hover:underline">
+                  <a href={source.url} className="ml-1 text-emerald-700 hover:underline">
                     link
                   </a>
                 )}
@@ -59,13 +59,13 @@ export default async function EntryDetailPage({
 
       {related.length > 0 && (
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-medium text-neutral-300">관련 노트 (자동 연결됨)</h2>
+          <h2 className="mb-2 text-sm font-medium text-ink/80">관련 노트 (자동 연결됨)</h2>
           <div className="flex flex-wrap gap-2">
             {related.map((r) => (
               <Link
                 key={r.id}
                 href={`/entries/${r.id}`}
-                className="rounded border border-neutral-700 px-2 py-1 text-xs hover:border-neutral-500"
+                className="rounded border border-ink/15 px-2 py-1 text-xs hover:border-ink/30"
               >
                 {r.title}
               </Link>
@@ -77,25 +77,25 @@ export default async function EntryDetailPage({
       <div className="mb-8 flex flex-wrap gap-3">
         <a
           href={`/api/entries/${entry.id}/export`}
-          className="rounded border border-neutral-700 px-3 py-2 text-sm hover:border-neutral-500"
+          className="btn-secondary !px-4 !py-2"
         >
           Obsidian .md export
         </a>
         <form action={deleteEntryAction.bind(null, entry.id)}>
           <button
             type="submit"
-            className="rounded border border-red-800 px-3 py-2 text-sm text-red-300 hover:border-red-600"
+            className="rounded border border-red-200 px-3 py-2 text-sm text-red-600 hover:border-red-400"
           >
             삭제
           </button>
         </form>
       </div>
 
-      <details className="rounded-lg border border-neutral-800 p-4">
-        <summary className="cursor-pointer text-sm font-medium text-neutral-300">
+      <details className="card p-5">
+        <summary className="cursor-pointer text-sm font-medium text-ink/80">
           Markdown 미리보기 ({markdownPreview.relativePath})
         </summary>
-        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-neutral-400">
+        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-ink/60">
           {markdownPreview.content}
         </pre>
       </details>

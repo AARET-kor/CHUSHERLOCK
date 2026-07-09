@@ -71,8 +71,8 @@ export function SuggestionCard({
 
   if (state === "saved") {
     return (
-      <div className="rounded-lg border border-emerald-800 bg-emerald-950/30 p-4">
-        <p className="text-sm text-emerald-300">
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+        <p className="text-sm text-emerald-800">
           저장됨: <span className="font-medium">{draft.title}</span>
           {savedEntryId && (
             <Link href={`/entries/${savedEntryId}`} className="ml-2 underline">
@@ -85,17 +85,17 @@ export function SuggestionCard({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-neutral-800 p-4">
+    <div className="space-y-3 card p-5">
       <div className="flex items-start justify-between gap-2">
         <input
           value={draft.title}
           onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-          className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm font-medium"
+          className="w-full field !px-2 !py-1 font-medium"
         />
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="shrink-0 rounded border border-neutral-800 px-2 py-1 text-xs text-neutral-500 hover:border-neutral-600"
+          className="shrink-0 rounded border border-ink/10 px-2 py-1 text-xs text-ink/50 hover:border-ink/30"
           title="이 제안 버리기"
         >
           버리기
@@ -106,7 +106,7 @@ export function SuggestionCard({
         <select
           value={draft.categoryKey}
           onChange={(e) => setDraft({ ...draft, categoryKey: e.target.value })}
-          className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm"
+          className="field !px-2 !py-1"
         >
           {leafCategories.map((c) => (
             <option key={c.key} value={c.key}>
@@ -117,7 +117,7 @@ export function SuggestionCard({
         <select
           value={draft.tier}
           onChange={(e) => setDraft({ ...draft, tier: e.target.value as SuggestedEntry["tier"] })}
-          className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm"
+          className="field !px-2 !py-1"
         >
           {CONTENT_TIERS.map((t) => (
             <option key={t.id} value={t.id}>
@@ -131,23 +131,23 @@ export function SuggestionCard({
         value={draft.content}
         onChange={(e) => setDraft({ ...draft, content: e.target.value })}
         rows={Math.min(18, Math.max(6, draft.content.split("\n").length + 1))}
-        className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 font-mono text-xs leading-relaxed"
+        className="w-full field font-mono !px-2 !py-1 text-xs leading-relaxed"
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-ink/50">
           위치: {draft.sourceLocation} · 태그: {draft.tags.join(", ") || "없음"}
         </p>
         <button
           type="button"
           onClick={save}
           disabled={state === "saving"}
-          className="rounded bg-emerald-700 px-3 py-1.5 text-sm font-medium hover:bg-emerald-600 disabled:opacity-50"
+          className="btn-primary !px-4 !py-2"
         >
           {state === "saving" ? "저장 중..." : "이대로 저장"}
         </button>
       </div>
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }

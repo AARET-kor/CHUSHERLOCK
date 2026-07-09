@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listEntries } from "../lib/services/entryService";
+import { getLeafCategories } from "../lib/codex/taxonomy";
 import { EntryCard } from "../components/EntryCard";
 
 // Reads live from SQLite on every request — must not be statically
@@ -9,44 +10,76 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const entries = await listEntries();
   const sorted = [...entries].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const categoryCount = new Set(entries.map((e) => e.categoryKey)).size;
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">자료 대시보드</h1>
-          <p className="text-sm text-neutral-400">
-            총 {entries.length}건의 정리된 자료. 새 자료는 카테고리/난이도(tier)별로 정리되고,
-            겹치는 내용은 자동으로 연결됩니다.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <a
-            href="/api/export/all"
-            className="rounded border border-neutral-700 px-3 py-2 text-sm hover:border-neutral-500"
-          >
-            전체 Obsidian export (.zip)
-          </a>
-          <Link
-            href="/entries/new"
-            className="rounded bg-emerald-700 px-3 py-2 text-sm font-medium hover:bg-emerald-600"
-          >
-            + 새 자료 추가
-          </Link>
-        </div>
-      </div>
-
-      {sorted.length === 0 ? (
-        <p className="rounded border border-dashed border-neutral-800 p-8 text-center text-neutral-500">
-          아직 정리된 자료가 없습니다. &quot;새 자료 추가&quot;로 첫 자료를 넣어 보세요.
+      {/* Hero */}
+      <section className="mx-auto max-w-2xl pt-6 text-center md:pt-12">
+        <p
+          className="mb-3 font-mono text-xs tracking-widest text-ink/60 animate-fade-in-up"
+          style={{ animationDelay: "0.1s" }}
+        >
+          AESTHETIC MEDICINE KNOWLEDGE BASE
         </p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {sorted.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} />
-          ))}
+        <h1
+          className="text-[32px] leading-[1.15] tracking-tight text-inkdeep animate-fade-in-up md:text-[44px]"
+          style={{ animationDelay: "0.2s" }}
+        >
+          쌓을수록 <span className="font-serifa font-bold">깊어지고,</span>
+          <br />
+          넣을수록 <span className="font-serifa font-bold">연결된다.</span>
+        </h1>
+        <p
+          className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-ink/70 animate-fade-in-up md:text-base"
+          style={{ animationDelay: "0.3s" }}
+        >
+          논문, 교과서, 파라미터, 노하우를 넣으면 카테고리와 쓰임별로 정리되고, 겹치는 지식은
+          자연스럽게 이어집니다. 정리된 노트는 Obsidian으로 그대로 내보낼 수 있습니다.
+        </p>
+        <div
+          className="mt-6 flex flex-col items-center justify-center gap-3 animate-fade-in-up sm:flex-row"
+          style={{ animationDelay: "0.4s" }}
+        >
+          <Link href="/ingest" className="btn-primary">
+            + 자료 넣기 (AI)
+          </Link>
+          <a href="/api/export/all" className="btn-secondary">
+            Obsidian으로 내보내기
+          </a>
         </div>
-      )}
+        <div
+          className="mt-8 flex items-center justify-center gap-2 text-xs text-ink/50 animate-fade-in-up"
+          style={{ animationDelay: "0.5s" }}
+        >
+          <span className="rounded-full bg-mist px-3 py-1">노트 {entries.length}개</span>
+          <span className="rounded-full bg-mist px-3 py-1">카테고리 {categoryCount}곳 사용 중</span>
+          <span className="rounded-full bg-mist px-3 py-1">
+            분류체계 {getLeafCategories().length}개
+          </span>
+        </div>
+      </section>
+
+      {/* Entries */}
+      <section className="mt-14">
+        {sorted.length === 0 ? (
+          <div className="card mx-auto max-w-lg px-8 py-14 text-center">
+            <p className="font-serifa text-lg font-bold text-ink">아직 정리된 자료가 없습니다</p>
+            <p className="mt-2 text-sm text-ink/60">
+              &quot;자료 넣기&quot;에 논문이나 교과서를 통째로 넣어 첫 노트를 만들어 보세요.
+            </p>
+          </div>
+        ) : (
+          <>
+            <h2 className="mb-4 text-sm font-medium tracking-wide text-ink/50">최근 노트</h2>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {sorted.map((entry) => (
+                <EntryCard key={entry.id} entry={entry} />
+              ))}
+            </div>
+          </>
+        )}
+      </section>
     </div>
   );
 }

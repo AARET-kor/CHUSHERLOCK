@@ -1,8 +1,98 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+@import url("https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  background-color: #0b0c0f;
-  color: #e7e9ea;
+  background-color: #ffffff;
+  color: #051a24;
+  font-family:
+    "Pretendard Variable",
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    system-ui,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Serif accent — used for the brand mark and highlighted words in headings. */
+.font-serifa {
+  font-family: "Gowun Batang", Georgia, "Times New Roman", serif;
+}
+
+/* Pill buttons with the layered-shadow treatment that carries the design. */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-medium text-white transition-transform;
+  box-shadow:
+    0 1px 2px 0 rgba(5, 26, 36, 0.1),
+    0 4px 4px 0 rgba(5, 26, 36, 0.09),
+    0 9px 6px 0 rgba(5, 26, 36, 0.05),
+    0 17px 7px 0 rgba(5, 26, 36, 0.01),
+    inset 0 2px 8px 0 rgba(255, 255, 255, 0.35);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  transform: none;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-ink transition-transform;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.05),
+    0 4px 30px rgba(0, 0, 0, 0.08);
+}
+.btn-secondary:hover {
+  transform: translateY(-1px);
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+  transform: none;
+}
+
+/* Soft card surface used across the app. */
+.card {
+  @apply rounded-[24px] bg-white;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Light form controls. */
+.field {
+  @apply w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm text-ink placeholder:text-ink/35;
+}
+.field:focus {
+  @apply outline-none ring-2 ring-ink/15 border-ink/20;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
+    opacity: 1;
+  }
 }
