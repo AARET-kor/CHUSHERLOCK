@@ -53,6 +53,24 @@ export const entrySources = sqliteTable(
   })
 );
 
+// One row per AI ingest run: a pasted text or uploaded document being read
+// through the classification pipeline. Suggestions are stored as JSON until
+// the user reviews and accepts them into real entries.
+export const ingestJobs = sqliteTable("ingest_jobs", {
+  id: text("id").primaryKey(),
+  sourceLabel: text("source_label").notNull(), // filename or "붙여넣은 텍스트"
+  sourceCitation: text("source_citation").notNull(),
+  sourceType: text("source_type").notNull(), // SourceType
+  sourceUrl: text("source_url"),
+  status: text("status").notNull().default("pending"), // pending | processing | completed | failed
+  totalChunks: integer("total_chunks").notNull().default(0),
+  processedChunks: integer("processed_chunks").notNull().default(0),
+  suggestions: text("suggestions", { mode: "json" }).$type<unknown[]>(),
+  error: text("error"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 // Self-referencing overlap/relation links, so new material that overlaps an
 // existing entry gets linked instead of duplicated (per the "existing vs.
 // new content should overlap naturally, not collide" requirement).

@@ -6,6 +6,14 @@ and it files each piece under a category and a content tier, keeps the
 citation, links it to related existing notes instead of duplicating them, and
 exports everything as an Obsidian-ready vault.
 
+Material can be entered by hand (`/entries/new`) or run through the **AI
+ingest pipeline** (`/ingest`): upload a PDF/DOCX/text file or paste raw text,
+and Claude reads it front-to-back — chunk by chunk, carrying a rolling
+context summary so classification decisions see the document's overall flow
+and 목차, not just local text — then proposes one note per topic with
+category, tier, tags, and source location. You review/edit each suggestion
+before it's saved; nothing enters the knowledge base unreviewed.
+
 This is a **separate project** from `TIKIDOC_platform` (the clinic
 booking/consultation-prep app) — no code or infra is shared.
 
@@ -38,11 +46,47 @@ booking/consultation-prep app) — no code or infra is shared.
 ## Stack
 
 Next.js (App Router) + TypeScript, Drizzle ORM over a local SQLite file,
-Zod for input validation, Tailwind for styling, Vitest for tests. SQLite is
+Zod for input validation, Tailwind for styling, Vitest for tests, and the
+Anthropic SDK (`@anthropic-ai/sdk`) for classification. SQLite is
 a deliberate choice for this personal-use phase — zero infra to run it
 locally. Swapping the Drizzle SQLite dialect for Postgres later (e.g. if this
 becomes multi-clinic/hosted) is a schema-adapter change, not a rewrite —
 keep the same `lib/codex/*` domain layer either way.
+
+## How the AI ingest pipeline works
+
+The design goal is the product brief's hardest requirement: **don't
+over-summarize** — read the document's flow, then reorganize by 목차 and
+쓰임 (usage) while preserving parameters, doses, and step sequences.
+
+1. **Extract** (`lib/ingest/extract.ts`) — PDF (pdf-parse), DOCX (mammoth),
+   or plain text/markdown → one raw text string.
+2. **Chunk** (`lib/ingest/chunk.ts`) — split at natural boundaries
+   (headings first, then paragraphs, then sentences), max ~24k chars,
+   strictly in document order.
+3. **Sequential read** (`lib/ai/classify.ts`) — each chunk goes to Claude
+   (`claude-opus-4-8` by default, adaptive thinking, structured JSON output
+   whose `categoryKey` enum is generated from the live taxonomy so invalid
+   categories are impossible). The model returns the notes found in that
+   chunk **plus an updated rolling summary of the document so far**, which
+   is fed into the next chunk's prompt — that's how a 300-page textbook gets
+   read as one coherent document instead of 40 disconnected fragments.
+   The system prompt is static so prompt caching keeps per-chunk cost down.
+4. **Review** (`/ingest`) — suggestions render as editable cards (title,
+   category, tier, content, tags, source location). Saving goes through the
+   same `entryService.createEntry` as manual entry, so overlap
+   auto-linking and the mandatory-source rule apply unchanged.
+
+Jobs run in the background (`ingest_jobs` table) and the UI polls progress —
+a large document takes minutes and that's expected.
+
+Environment:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...   # or `ant auth login`
+CODEX_AI_MODEL=claude-opus-4-8 # optional override
+CODEX_AI_MODE=fake             # optional: offline deterministic mode (no API calls)
+```
 
 ## Getting started
 
@@ -109,18 +153,16 @@ file — entries only ever file under a leaf (see `getLeafCategories()`).
 
 ## What's intentionally not built yet
 
-This phase is the data model + UI scaffold, by design:
-
-- **AI auto-classification.** `lib/ai/classify.ts` documents the intended
-  interface (paste raw text in, get a category/tier/title/content
-  suggestion out) but throws `not implemented`. The entry form has a
-  disabled "AI 자동 분류 (준비 중)" button as the wiring point.
 - **Live Obsidian sync** (Local REST API plugin). Export is file-based for
   now; a live-push mode can be added later without touching the domain
   layer.
 - **Auth / multi-user.** Single-user local tool for now — "원장들용" (multi-
   clinic) access control is a later phase once the classification flow is
   validated.
+- **Semantic overlap detection.** Overlap linking still uses the
+  title-token heuristic in `lib/codex/overlap.ts`; upgrading it to
+  embedding/model-based similarity is a natural follow-up now that the
+  ingest pipeline exists.
 
 ## Commands
 

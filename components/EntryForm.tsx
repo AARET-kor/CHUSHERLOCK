@@ -111,15 +111,13 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between rounded border border-dashed border-neutral-800 px-3 py-2 text-xs text-neutral-500">
-        <span>원본 자료를 붙여넣으면 AI가 카테고리/tier를 제안하는 기능은 다음 단계에서 연결됩니다.</span>
-        <button
-          type="button"
-          disabled
-          title="lib/ai/classify.ts — 아직 구현되지 않음"
-          className="cursor-not-allowed rounded border border-neutral-700 px-2 py-1 text-neutral-600"
+        <span>원문(논문/교과서/PDF 등)을 통째로 넣으면 AI가 읽고 분류해 줍니다.</span>
+        <a
+          href="/ingest"
+          className="rounded border border-emerald-800 px-2 py-1 text-emerald-400 hover:border-emerald-600"
         >
-          AI 자동 분류 (준비 중)
-        </button>
+          AI 자동 분류로 이동
+        </a>
       </div>
 
       <div>

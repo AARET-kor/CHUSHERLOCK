@@ -18,7 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <div className="flex gap-4 text-sm text-neutral-300">
               <Link href="/">대시보드</Link>
-              <Link href="/entries/new">새 자료 추가</Link>
+              <Link href="/ingest">자료 넣기 (AI)</Link>
+              <Link href="/entries/new">직접 추가</Link>
               <Link href="/categories">분류체계</Link>
             </div>
           </nav>
