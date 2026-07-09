@@ -4,6 +4,7 @@ import { getEntry, listEntries } from "../../../lib/services/entryService";
 import { entryToMarkdown } from "../../../lib/codex/markdown-export";
 import { TierBadge } from "../../../components/TierBadge";
 import { CategoryBadge } from "../../../components/CategoryBadge";
+import { MarkdownContent } from "../../../components/MarkdownContent";
 import { deleteEntryAction } from "../../../lib/actions/entryActions";
 
 export default async function EntryDetailPage({
@@ -35,8 +36,8 @@ export default async function EntryDetailPage({
 
       <h1 className="mb-4 font-serifa text-2xl font-bold tracking-tight text-inkdeep md:text-3xl">{entry.title}</h1>
 
-      <article className="mb-8 whitespace-pre-wrap card p-6 text-sm leading-relaxed">
-        {entry.content}
+      <article className="card mb-8 p-6">
+        <MarkdownContent content={entry.content} />
       </article>
 
       {entry.sources.length > 0 && (

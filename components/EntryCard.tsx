@@ -5,10 +5,7 @@ import { CategoryBadge } from "./CategoryBadge";
 
 export function EntryCard({ entry }: { entry: CodexEntry }) {
   return (
-    <Link
-      href={`/entries/${entry.id}`}
-      className="card block p-6 transition-transform hover:-translate-y-0.5"
-    >
+    <Link href={`/entries/${entry.id}`} className="card card-lift block h-full p-6">
       <div className="mb-3 flex flex-wrap gap-1.5">
         <TierBadge tier={entry.tier} />
         <CategoryBadge categoryKey={entry.categoryKey} />

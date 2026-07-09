@@ -71,7 +71,7 @@ export function SuggestionCard({
 
   if (state === "saved") {
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+      <div className="animate-pop-in rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
         <p className="text-sm text-emerald-800">
           저장됨: <span className="font-medium">{draft.title}</span>
           {savedEntryId && (

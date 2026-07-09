@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { listEntries } from "../lib/services/entryService";
 import { getLeafCategories } from "../lib/codex/taxonomy";
-import { EntryCard } from "../components/EntryCard";
+import { EntryExplorer } from "../components/EntryExplorer";
 
 // Reads live from SQLite on every request — must not be statically
 // prerendered, or newly added entries would stay invisible until a rebuild.
@@ -71,12 +71,8 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <>
-            <h2 className="mb-4 text-sm font-medium tracking-wide text-ink/50">최근 노트</h2>
-            <div className="grid gap-5 sm:grid-cols-2">
-              {sorted.map((entry) => (
-                <EntryCard key={entry.id} entry={entry} />
-              ))}
-            </div>
+            <h2 className="mb-4 text-sm font-medium tracking-wide text-ink/50">노트 탐색</h2>
+            <EntryExplorer entries={sorted} categories={getLeafCategories()} />
           </>
         )}
       </section>

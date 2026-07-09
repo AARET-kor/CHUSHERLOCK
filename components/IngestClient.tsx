@@ -177,25 +177,34 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
       </form>
 
       {inProgress && (
-        <div className="card p-5">
-          <p className="text-sm font-medium">
-            {job.status === "pending"
-              ? "준비 중..."
-              : job.status === "extracting"
-                ? "텍스트 추출 중... (스캔본/사진이면 OCR — 수 분 걸릴 수 있습니다)"
-                : "문서를 순서대로 읽는 중..."}
-          </p>
+        <div className="card animate-pop-in p-5">
+          <div className="flex items-center gap-3">
+            <span className="dot-pulse flex items-center gap-1">
+              <span />
+              <span />
+              <span />
+            </span>
+            <p className="text-sm font-medium">
+              {job.status === "pending"
+                ? "준비 중..."
+                : job.status === "extracting"
+                  ? "텍스트 추출 중... (스캔본/사진이면 OCR — 수 분 걸릴 수 있습니다)"
+                  : `문서를 순서대로 읽는 중... (${job.processedChunks}/${job.totalChunks} 구간)`}
+            </p>
+          </div>
           {job.totalChunks > 0 && (
             <>
-              <div className="mt-2 h-2 overflow-hidden rounded bg-mist">
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-mist">
                 <div
-                  className="h-full bg-ink transition-all"
-                  style={{ width: `${(job.processedChunks / job.totalChunks) * 100}%` }}
+                  className="progress-shimmer h-full rounded-full transition-[width] duration-700 ease-out"
+                  style={{
+                    width: `${Math.max(4, (job.processedChunks / job.totalChunks) * 100)}%`,
+                  }}
                 />
               </div>
-              <p className="mt-1 text-xs text-ink/50">
-                {job.processedChunks} / {job.totalChunks} 구간 — 문서 흐름을 따라 읽으며 맥락을
-                유지합니다. 큰 문서는 몇 분 걸릴 수 있습니다.
+              <p className="mt-2 text-xs text-ink/50">
+                문서 흐름을 따라 읽으며 맥락을 유지합니다. 큰 문서는 몇 분 걸릴 수 있습니다 — 이
+                페이지를 열어두세요.
               </p>
             </>
           )}
@@ -220,16 +229,21 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
             </p>
           </div>
           {job.suggestions.map((suggestion, index) => (
-            <SuggestionCard
+            <div
               key={`${job.id}-${index}`}
-              suggestion={suggestion}
-              leafCategories={leafCategories}
-              source={{
-                citation: job.sourceCitation,
-                type: job.sourceType,
-                url: job.sourceUrl,
-              }}
-            />
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${Math.min(index, 8) * 0.08}s` }}
+            >
+              <SuggestionCard
+                suggestion={suggestion}
+                leafCategories={leafCategories}
+                source={{
+                  citation: job.sourceCitation,
+                  type: job.sourceType,
+                  url: job.sourceUrl,
+                }}
+              />
+            </div>
           ))}
         </div>
       )}
