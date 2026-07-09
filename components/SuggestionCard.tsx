@@ -12,16 +12,26 @@ interface SourceMeta {
   url?: string | null;
 }
 
+export interface FigureMeta {
+  id: string;
+  filename: string;
+  kind: string;
+  caption: string;
+  page: number | null;
+}
+
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 export function SuggestionCard({
   suggestion,
   leafCategories,
   source,
+  figures = [],
 }: {
   suggestion: SuggestedEntry;
   leafCategories: CategoryDef[];
   source: SourceMeta;
+  figures?: FigureMeta[];
 }) {
   const [draft, setDraft] = useState(suggestion);
   const [state, setState] = useState<SaveState>("idle");
@@ -29,18 +39,29 @@ export function SuggestionCard({
   const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
+  const attachedFigures = figures.filter((f) => (draft.figureIds ?? []).includes(f.id));
+
   if (dismissed) return null;
 
   async function save() {
     setState("saving");
     setError(null);
+    // Embed the cropped source figures at the end of the note so they render
+    // in the note view and in Obsidian after export.
+    let content = draft.content;
+    const missing = attachedFigures.filter((f) => !content.includes(`/api/figures/${f.id}`));
+    if (missing.length > 0) {
+      content +=
+        "\n\n---\n\n" +
+        missing.map((f) => `![${f.caption}](/api/figures/${f.id})`).join("\n\n");
+    }
     try {
       const response = await fetch("/api/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: draft.title,
-          content: draft.content,
+          content,
           categoryKey: draft.categoryKey,
           tier: draft.tier,
           tags: draft.tags,
@@ -52,6 +73,7 @@ export function SuggestionCard({
             },
           ],
           relatedEntryIds: [],
+          figureIds: attachedFigures.map((f) => f.id),
           status: "draft",
         }),
       });
@@ -133,6 +155,29 @@ export function SuggestionCard({
         rows={Math.min(18, Math.max(6, draft.content.split("\n").length + 1))}
         className="w-full field font-mono !px-2 !py-1 text-xs leading-relaxed"
       />
+
+      {attachedFigures.length > 0 && (
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-ink/60">
+            원본에서 잘라낸 시각 자료 {attachedFigures.length}개 — 저장 시 노트에 삽입됩니다
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {attachedFigures.map((f) => (
+              <figure key={f.id} className="w-36">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/figures/${f.id}`}
+                  alt={f.caption}
+                  className="h-24 w-36 rounded-lg border border-ink/10 object-cover"
+                />
+                <figcaption className="mt-1 line-clamp-2 text-[10px] leading-tight text-ink/50">
+                  {f.kind}{f.page ? ` · p.${f.page}` : ""} — {f.caption}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-ink/50">

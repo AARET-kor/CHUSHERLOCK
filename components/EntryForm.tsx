@@ -113,7 +113,7 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
       <div className="flex items-center justify-between rounded-xl border border-dashed border-ink/15 bg-mist/50 px-3 py-2 text-xs text-ink/50">
         <span>원문(논문/교과서/PDF 등)을 통째로 넣으면 AI가 읽고 분류해 줍니다.</span>
         <a
-          href="/ingest"
+          href="/"
           className="rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-800 hover:border-emerald-500"
         >
           AI 자동 분류로 이동

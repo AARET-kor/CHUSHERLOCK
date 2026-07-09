@@ -18,6 +18,7 @@ describe("processDocument", () => {
             tags: ["t"],
             content: "내용",
             sourceLocation: `chunk ${input.chunkIndex}`,
+            figureIds: [],
           },
         ],
         contextSummary: `summary-after-${input.chunkIndex}`,

@@ -52,9 +52,20 @@ A single chunk often yields entries in different tiers (e.g. a parameter table �
 
 Describe where in the document this came from, using the document's own structure: chapter/section titles if visible, otherwise a short positional note ("서두의 개요 부분", "Table 2 부근"). The doctor uses this to trace notes back to the reference.
 
+## figureIds
+
+The document's visual material (figures, tables, charts, photos) has been cropped verbatim and is listed in the user message as <figures> with ids, page numbers, and captions. For each entry, include the ids of the visual material that belong with that entry's topic — match by page proximity and caption/topic. The images will be embedded into the saved note, so choose only genuinely relevant ones. If the <figures> list is empty or nothing matches, return an empty array.
+
 ## tags
 
 3-6 lowercase-kebab-case tags per entry, in English, for Obsidian search.`;
+}
+
+export interface PromptFigure {
+  id: string;
+  page: number | null;
+  kind: string;
+  caption: string;
 }
 
 export interface ChunkPromptInput {
@@ -65,15 +76,30 @@ export interface ChunkPromptInput {
   totalChunks: number;
   contextSummary: string;
   chunkText: string;
+  figures?: PromptFigure[];
 }
 
 export function buildChunkPrompt(input: ChunkPromptInput): string {
+  const figureList =
+    input.figures && input.figures.length > 0
+      ? input.figures
+          .map(
+            (f) =>
+              `<figure id="${f.id}" page="${f.page ?? "?"}" kind="${f.kind}">${f.caption}</figure>`
+          )
+          .join("\n")
+      : "(없음)";
+
   return `<document_metadata>
 자료명: ${input.sourceLabel}
 출처: ${input.sourceCitation}
 형식: ${input.formatNote}
 진행: chunk ${input.chunkIndex + 1} / ${input.totalChunks}
 </document_metadata>
+
+<figures>
+${figureList}
+</figures>
 
 <context_so_far>
 ${input.contextSummary || "(첫 번째 chunk입니다 — 아직 읽은 내용이 없습니다.)"}
@@ -83,5 +109,5 @@ ${input.contextSummary || "(첫 번째 chunk입니다 — 아직 읽은 내용�
 ${input.chunkText}
 </chunk>
 
-위 chunk를 읽고, 문서의 흐름과 맥락(context_so_far 참고)을 고려하여 entries와 갱신된 contextSummary를 반환하세요.`;
+위 chunk를 읽고, 문서의 흐름과 맥락(context_so_far 참고)을 고려하여 entries와 갱신된 contextSummary를 반환하세요. 관련 시각 자료가 있으면 각 entry의 figureIds에 배정하세요.`;
 }

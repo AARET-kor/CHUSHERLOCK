@@ -230,6 +230,12 @@ body {
 .note-body blockquote {
   @apply mb-3 border-l-2 border-ink/20 pl-3 text-ink/70;
 }
+.note-body img {
+  @apply my-3 max-w-full rounded-xl border border-ink/10;
+}
+.note-body hr {
+  @apply my-4 border-ink/10;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,

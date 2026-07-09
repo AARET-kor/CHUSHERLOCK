@@ -16,6 +16,7 @@ export type ChunkCaller = (input: ChunkPromptInput) => Promise<ChunkResult>;
 export const anthropicChunkCaller: ChunkCaller = async (input) => {
   const client = getAnthropicClient();
   const leafKeys = getLeafCategories().map((c) => c.key);
+  const figureIds = (input.figures ?? []).map((f) => f.id);
 
   const stream = client.messages.stream({
     model: MODEL,
@@ -31,7 +32,7 @@ export const anthropicChunkCaller: ChunkCaller = async (input) => {
     output_config: {
       format: {
         type: "json_schema",
-        schema: buildChunkResultJsonSchema(leafKeys),
+        schema: buildChunkResultJsonSchema(leafKeys, figureIds),
       },
     },
     messages: [{ role: "user", content: buildChunkPrompt(input) }],
@@ -53,7 +54,13 @@ export const anthropicChunkCaller: ChunkCaller = async (input) => {
     throw new Error("모델 응답에서 텍스트를 찾지 못했습니다.");
   }
 
-  return chunkResultSchema.parse(JSON.parse(textBlock.text));
+  const result = chunkResultSchema.parse(JSON.parse(textBlock.text));
+  // Belt-and-suspenders: only keep figure ids that actually exist.
+  const validFigureIds = new Set(figureIds);
+  for (const entry of result.entries) {
+    entry.figureIds = entry.figureIds.filter((figureId) => validFigureIds.has(figureId));
+  }
+  return result;
 };
 
 /** Deterministic offline caller (CODEX_AI_MODE=fake): lets the whole
@@ -70,6 +77,7 @@ export const fakeChunkCaller: ChunkCaller = async (input) => {
         tags: ["fake-mode"],
         content: input.chunkText.slice(0, 1500),
         sourceLocation: `chunk ${input.chunkIndex + 1}`,
+        figureIds: (input.figures ?? []).map((f) => f.id),
       },
     ],
     contextSummary: `${input.contextSummary}\nchunk ${input.chunkIndex + 1} 처리됨.`.trim(),
@@ -85,6 +93,7 @@ export interface ProcessDocumentInput {
   sourceLabel: string;
   sourceCitation: string;
   formatNote: string;
+  figures?: import("./prompts").PromptFigure[];
 }
 
 export interface ProcessDocumentResult {
@@ -121,6 +130,7 @@ export async function processDocument(
       totalChunks: chunks.length,
       contextSummary,
       chunkText: chunks[i]!,
+      figures: input.figures,
     });
     suggestions.push(...result.entries);
     contextSummary = result.contextSummary;

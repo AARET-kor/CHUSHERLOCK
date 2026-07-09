@@ -9,6 +9,7 @@ data/*.sqlite
 data/*.sqlite-journal
 data/*.sqlite-shm
 data/*.sqlite-wal
+data/figures/
 exports/
 .DS_Store
 *.tsbuildinfo

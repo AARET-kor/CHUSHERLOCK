@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq, and, inArray, desc } from "drizzle-orm";
 import { db } from "../db/client";
-import { entries, sources, entrySources, entryRelations } from "../db/schema";
+import { entries, sources, entrySources, entryRelations, figures } from "../db/schema";
 import type { CodexEntry, SourceRef } from "../codex/types";
 import { getCategory } from "../codex/taxonomy";
 import { findOverlapCandidates, type OverlapCandidate } from "../codex/overlap";
@@ -206,6 +206,23 @@ export async function updateEntry(input: UpdateEntryInput): Promise<CodexEntry> 
 
 export async function deleteEntry(id: string): Promise<void> {
   await db.delete(entries).where(eq(entries.id, id));
+}
+
+/** Bind cropped source figures to the entry that now uses them. */
+export async function attachFiguresToEntry(entryId: string, figureIds: string[]): Promise<void> {
+  if (figureIds.length === 0) return;
+  await db.update(figures).set({ entryId }).where(inArray(figures.id, figureIds));
+}
+
+/** id → filename for the figures attached to the given entries (used by the
+ * Obsidian export to bundle image files and rewrite links). */
+export async function figureFilesForEntries(entryIds: string[]): Promise<Map<string, string>> {
+  if (entryIds.length === 0) return new Map();
+  const rows = await db
+    .select({ id: figures.id, filename: figures.filename })
+    .from(figures)
+    .where(inArray(figures.entryId, entryIds));
+  return new Map(rows.map((r) => [r.id, r.filename]));
 }
 
 export async function markExported(ids: string[]): Promise<void> {

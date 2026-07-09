@@ -76,6 +76,9 @@ export default async function EntryDetailPage({
       )}
 
       <div className="mb-8 flex flex-wrap gap-3">
+        <Link href={`/entries/${entry.id}/edit`} className="btn-primary !px-4 !py-2">
+          수정
+        </Link>
         <a
           href={`/api/entries/${entry.id}/export`}
           className="btn-secondary !px-4 !py-2"

@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { listEntries } from "../lib/services/entryService";
 import { getLeafCategories } from "../lib/codex/taxonomy";
 import { EntryExplorer } from "../components/EntryExplorer";
+import { IngestDock } from "../components/IngestDock";
 
 // Reads live from SQLite on every request — must not be statically
 // prerendered, or newly added entries would stay invisible until a rebuild.
@@ -11,68 +11,76 @@ export default async function DashboardPage() {
   const entries = await listEntries();
   const sorted = [...entries].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const categoryCount = new Set(entries.map((e) => e.categoryKey)).size;
+  const leafCategories = getLeafCategories();
 
   return (
     <div>
-      {/* Hero */}
-      <section className="mx-auto max-w-2xl pt-6 text-center md:pt-12">
-        <p
-          className="mb-3 font-mono text-xs tracking-widest text-ink/60 animate-fade-in-up"
-          style={{ animationDelay: "0.1s" }}
-        >
-          AESTHETIC MEDICINE KNOWLEDGE BASE
-        </p>
-        <h1
-          className="text-[32px] leading-[1.15] tracking-tight text-inkdeep animate-fade-in-up md:text-[44px]"
-          style={{ animationDelay: "0.2s" }}
-        >
-          쌓을수록 <span className="font-serifa font-bold">깊어지고,</span>
-          <br />
-          넣을수록 <span className="font-serifa font-bold">연결된다.</span>
-        </h1>
-        <p
-          className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-ink/70 animate-fade-in-up md:text-base"
-          style={{ animationDelay: "0.3s" }}
-        >
-          논문, 교과서, 파라미터, 노하우를 넣으면 카테고리와 쓰임별로 정리되고, 겹치는 지식은
-          자연스럽게 이어집니다. 정리된 노트는 Obsidian으로 그대로 내보낼 수 있습니다.
-        </p>
-        <div
-          className="mt-6 flex flex-col items-center justify-center gap-3 animate-fade-in-up sm:flex-row"
-          style={{ animationDelay: "0.4s" }}
-        >
-          <Link href="/ingest" className="btn-primary">
-            + 자료 넣기 (AI)
-          </Link>
-          <a href="/api/export/all" className="btn-secondary">
-            Obsidian으로 내보내기
-          </a>
+      {/* Dark hero band with the intake dock overlapping its lower edge. */}
+      <section className="relative">
+        <div className="relative overflow-hidden rounded-[32px] bg-inkdeep px-6 pb-24 pt-12 text-white md:px-14 md:pt-16">
+          <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/[0.06] blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-emerald-400/[0.07] blur-3xl" />
+
+          <p
+            className="mb-4 font-mono text-[11px] tracking-[0.25em] text-white/50 animate-fade-in-up"
+            style={{ animationDelay: "0.05s" }}
+          >
+            NEW CODEX — AESTHETIC MEDICINE KNOWLEDGE ENGINE
+          </p>
+          <h1
+            className="max-w-2xl text-[34px] leading-[1.12] tracking-tight animate-fade-in-up md:text-[52px]"
+            style={{ animationDelay: "0.15s" }}
+          >
+            던져 넣으면,
+            <br />
+            <span className="font-serifa font-bold italic">정리되어 연결된다.</span>
+          </h1>
+          <p
+            className="mt-5 max-w-lg text-sm leading-relaxed text-white/60 animate-fade-in-up md:text-base"
+            style={{ animationDelay: "0.25s" }}
+          >
+            논문·교과서·파라미터·노하우를 그대로 던져 넣으세요. AI가 문서 흐름을 읽고
+            카테고리·쓰임별로 정리하며, 그림과 표는 원본 그대로 잘라 노트에 담습니다.
+          </p>
+          <div
+            className="mt-6 flex flex-wrap gap-2 animate-fade-in-up"
+            style={{ animationDelay: "0.35s" }}
+          >
+            <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/60">
+              노트 {entries.length}
+            </span>
+            <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/60">
+              카테고리 {categoryCount} / {leafCategories.length}
+            </span>
+            <a
+              href="/api/export/all"
+              className="rounded-full border border-white/25 px-3 py-1 text-xs text-white/80 transition hover:border-white/60 hover:text-white"
+            >
+              Obsidian으로 내보내기 ↓
+            </a>
+          </div>
         </div>
+
         <div
-          className="mt-8 flex items-center justify-center gap-2 text-xs text-ink/50 animate-fade-in-up"
-          style={{ animationDelay: "0.5s" }}
+          className="relative z-10 -mt-14 px-3 animate-fade-in-up md:px-10"
+          style={{ animationDelay: "0.45s" }}
         >
-          <span className="rounded-full bg-mist px-3 py-1">노트 {entries.length}개</span>
-          <span className="rounded-full bg-mist px-3 py-1">카테고리 {categoryCount}곳 사용 중</span>
-          <span className="rounded-full bg-mist px-3 py-1">
-            분류체계 {getLeafCategories().length}개
-          </span>
+          <IngestDock leafCategories={leafCategories} />
         </div>
       </section>
 
       {/* Entries */}
-      <section className="mt-14">
+      <section className="mt-16">
         {sorted.length === 0 ? (
-          <div className="card mx-auto max-w-lg px-8 py-14 text-center">
-            <p className="font-serifa text-lg font-bold text-ink">아직 정리된 자료가 없습니다</p>
-            <p className="mt-2 text-sm text-ink/60">
-              &quot;자료 넣기&quot;에 논문이나 교과서를 통째로 넣어 첫 노트를 만들어 보세요.
-            </p>
-          </div>
+          <p className="mx-auto max-w-md text-center text-sm text-ink/40">
+            아직 노트가 없습니다 — 위에 첫 자료를 던져 넣어 보세요.
+          </p>
         ) : (
           <>
-            <h2 className="mb-4 text-sm font-medium tracking-wide text-ink/50">노트 탐색</h2>
-            <EntryExplorer entries={sorted} categories={getLeafCategories()} />
+            <h2 className="mb-4 font-mono text-[11px] tracking-[0.25em] text-ink/40">
+              KNOWLEDGE — 노트 탐색
+            </h2>
+            <EntryExplorer entries={sorted} categories={leafCategories} />
           </>
         )}
       </section>

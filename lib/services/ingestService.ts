@@ -4,6 +4,12 @@ import { db } from "../db/client";
 import { ingestJobs } from "../db/schema";
 import { processDocument } from "../ai/classify";
 import { extractText } from "../ingest/extract";
+import {
+  extractPdfFigures,
+  extractEmbeddedMedia,
+  listJobFigures,
+  type FigureRecord,
+} from "../ingest/figures";
 import type { SuggestedEntry } from "../ai/schemas";
 
 export interface CreateIngestJobInput {
@@ -65,18 +71,34 @@ export async function startIngestJob(input: CreateIngestJobInput): Promise<Inges
   return job;
 }
 
+async function extractFigures(jobId: string, file: { buffer: Buffer; filename: string }): Promise<FigureRecord[]> {
+  const lower = file.filename.toLowerCase();
+  try {
+    if (lower.endsWith(".pdf")) return await extractPdfFigures(file.buffer, jobId);
+    if (lower.endsWith(".docx")) return await extractEmbeddedMedia(file.buffer, jobId, "word/media/");
+    if (lower.endsWith(".pptx")) return await extractEmbeddedMedia(file.buffer, jobId, "ppt/media/");
+  } catch (error) {
+    // Figures are an enhancement — a failure here must not sink the whole
+    // ingest run; the text pipeline continues without them.
+    console.warn("[figures] extraction failed:", error instanceof Error ? error.message : error);
+  }
+  return [];
+}
+
 async function runJob(id: string, input: CreateIngestJobInput): Promise<void> {
   await updateJob(id, { status: "extracting" });
 
   let text: string;
   let formatNote: string;
   let sourceLabel: string;
+  let jobFigures: FigureRecord[] = [];
 
   if (input.file) {
     const extracted = await extractText(input.file.buffer, input.file.filename);
     text = extracted.text;
     formatNote = extracted.formatNote;
     sourceLabel = input.file.filename;
+    jobFigures = await extractFigures(id, input.file);
   } else {
     text = input.pastedText ?? "";
     formatNote = "직접 입력";
@@ -95,6 +117,7 @@ async function runJob(id: string, input: CreateIngestJobInput): Promise<void> {
       sourceLabel,
       sourceCitation: input.sourceCitation,
       formatNote,
+      figures: jobFigures,
     },
     {
       onProgress: async (processed, total) => {
@@ -110,3 +133,5 @@ async function runJob(id: string, input: CreateIngestJobInput): Promise<void> {
     suggestions: result.suggestions satisfies SuggestedEntry[],
   });
 }
+
+export { listJobFigures };

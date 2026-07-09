@@ -29,5 +29,6 @@ export async function POST(request: Request) {
   }
 
   const result = await entryService.createEntry(parsed.data);
+  await entryService.attachFiguresToEntry(result.entry.id, parsed.data.figureIds);
   return NextResponse.json(result, { status: 201 });
 }

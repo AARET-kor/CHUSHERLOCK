@@ -71,6 +71,20 @@ export const ingestJobs = sqliteTable("ingest_jobs", {
   updatedAt: text("updated_at").notNull(),
 });
 
+// Visual material (figures, tables, charts, photos) cropped verbatim from
+// source documents. Files live under data/figures/; rows link them to the
+// ingest job that produced them and, once saved, to the entry that uses them.
+export const figures = sqliteTable("figures", {
+  id: text("id").primaryKey(),
+  jobId: text("job_id"),
+  entryId: text("entry_id"),
+  filename: text("filename").notNull(), // file name inside the figures dir
+  kind: text("kind").notNull(), // figure | table | chart | photo
+  caption: text("caption").notNull(),
+  page: integer("page"), // 1-based page/slide number in the source
+  createdAt: text("created_at").notNull(),
+});
+
 // Self-referencing overlap/relation links, so new material that overlaps an
 // existing entry gets linked instead of duplicated (per the "existing vs.
 // new content should overlap naturally, not collide" requirement).

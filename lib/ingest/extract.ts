@@ -52,6 +52,11 @@ export async function extractText(
     return { text: result.value, formatNote: "Word (.docx)" };
   }
 
+  if (lower.endsWith(".pptx")) {
+    const text = await extractPptxText(buffer);
+    return { text, formatNote: "PowerPoint (.pptx)" };
+  }
+
   if (imageMediaType(filename)) {
     const text = await ocrImage(buffer, filename);
     return { text, formatNote: "사진 (OCR)" };
@@ -62,6 +67,32 @@ export async function extractText(
   }
 
   throw new Error(
-    "지원하지 않는 파일 형식입니다. PDF, DOCX, TXT, MD 또는 사진(JPG/PNG/WEBP)을 올리거나 텍스트를 붙여넣어 주세요."
+    "지원하지 않는 파일 형식입니다. PDF, DOCX, PPTX, TXT, MD 또는 사진(JPG/PNG/WEBP)을 올리거나 텍스트를 붙여넣어 주세요."
   );
+}
+
+/** PPTX is a zip of slide XML — pull the text runs (<a:t>) slide by slide,
+ * in slide order, with slide markers so chunking follows the deck's flow. */
+export async function extractPptxText(buffer: Buffer): Promise<string> {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(buffer);
+
+  const slideNames = Object.keys(zip.files)
+    .filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
+    .sort((a, b) => {
+      const numA = Number(a.match(/slide(\d+)\.xml$/)?.[1] ?? 0);
+      const numB = Number(b.match(/slide(\d+)\.xml$/)?.[1] ?? 0);
+      return numA - numB;
+    });
+
+  const slides: string[] = [];
+  for (const name of slideNames) {
+    const xml = await zip.files[name]!.async("string");
+    const runs = Array.from(xml.matchAll(/<a:t>([^<]*)<\/a:t>/g)).map((m) => m[1] ?? "");
+    const slideNumber = Number(name.match(/slide(\d+)\.xml$/)?.[1] ?? 0);
+    const text = runs.join(" ").replace(/\s+/g, " ").trim();
+    if (text) slides.push(`## Slide ${slideNumber}\n\n${text}`);
+  }
+
+  return slides.join("\n\n");
 }

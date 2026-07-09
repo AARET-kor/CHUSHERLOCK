@@ -39,6 +39,8 @@ export const createEntrySchema = z.object({
     .array(sourceInputSchema)
     .min(1, "최소 하나의 출처를 남겨야 합니다."),
   relatedEntryIds: z.array(z.string()).default([]),
+  /** Cropped source figures to attach to this entry. */
+  figureIds: z.array(z.string()).default([]),
   status: z.enum(["draft", "reviewed"]).default("draft"),
 });
 

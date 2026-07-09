@@ -20,9 +20,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 대시보드
               </Link>
-              <Link href="/ingest" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
-                자료 넣기
-              </Link>
               <Link href="/entries/new" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 직접 추가
               </Link>
@@ -45,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }}
           >
             <span className="font-serifa text-xl font-bold text-ink">N</span>
-            <Link href="/ingest" className="btn-primary !px-5 !py-2.5">
+            <Link href="/" className="btn-primary !px-5 !py-2.5">
               + 자료 넣기
             </Link>
           </div>

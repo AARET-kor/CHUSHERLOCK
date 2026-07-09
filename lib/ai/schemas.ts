@@ -12,6 +12,9 @@ export const suggestedEntrySchema = z.object({
   content: z.string(),
   /** Where in the source this came from, e.g. "Chapter 3 – Vascular complications". */
   sourceLocation: z.string(),
+  /** IDs of cropped figures/tables/charts from the source that belong with
+   * this note. Empty when the document had no visual material. */
+  figureIds: z.array(z.string()).default([]),
 });
 
 export type SuggestedEntry = z.infer<typeof suggestedEntrySchema>;
@@ -30,7 +33,7 @@ export type ChunkResult = z.infer<typeof chunkResultSchema>;
  * visible and stays within the structured-outputs feature set. The
  * categoryKey enum is injected from the live taxonomy so the model can only
  * ever return a valid leaf category. */
-export function buildChunkResultJsonSchema(leafCategoryKeys: string[]) {
+export function buildChunkResultJsonSchema(leafCategoryKeys: string[], figureIds: string[] = []) {
   return {
     type: "object",
     properties: {
@@ -48,8 +51,20 @@ export function buildChunkResultJsonSchema(leafCategoryKeys: string[]) {
             tags: { type: "array", items: { type: "string" } },
             content: { type: "string" },
             sourceLocation: { type: "string" },
+            figureIds:
+              figureIds.length > 0
+                ? { type: "array", items: { type: "string", enum: figureIds } }
+                : { type: "array", items: { type: "string" } },
           },
-          required: ["title", "categoryKey", "tier", "tags", "content", "sourceLocation"],
+          required: [
+            "title",
+            "categoryKey",
+            "tier",
+            "tags",
+            "content",
+            "sourceLocation",
+            "figureIds",
+          ],
           additionalProperties: false,
         },
       },
@@ -57,5 +72,5 @@ export function buildChunkResultJsonSchema(leafCategoryKeys: string[]) {
     },
     required: ["entries", "contextSummary"],
     additionalProperties: false,
-  } as const;
+  };
 }
