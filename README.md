@@ -32,10 +32,14 @@ booking/consultation-prep app) — no code or infra is shared.
   - `deep_study` — 심화 학습: paper-level depth.
   - `base_medical_knowledge` — 베이스 의학지식: the anatomy/physiology
     everything else assumes.
-- **Overlap instead of collision.** New material in the same category as an
-  existing entry gets auto-linked (`lib/codex/overlap.ts`, a title-token
-  Jaccard heuristic today) instead of silently duplicating or fighting the
-  old note. The related-notes section becomes Obsidian wikilinks on export.
+- **Overlap instead of collision.** New material gets auto-linked to
+  existing notes on the same topic instead of silently duplicating them.
+  Two passes at save time: a fast title-similarity heuristic
+  (`lib/codex/overlap.ts` — also powers the instant in-form warning) plus a
+  **semantic pass** (`lib/ai/relatedness.ts`) where Claude judges
+  same-category notes for genuine topic overlap. The semantic pass never
+  blocks a save — if the model is unavailable it degrades to the heuristic.
+  The related-notes section becomes Obsidian wikilinks on export.
 - **Markdown export over live sync.** Obsidian integration ships as a
   "download a vault-shaped .zip / .md" flow (`/api/export/all`,
   `/api/entries/[id]/export`) rather than a live Obsidian REST API
@@ -60,7 +64,11 @@ over-summarize** — read the document's flow, then reorganize by 목차 and
 쓰임 (usage) while preserving parameters, doses, and step sequences.
 
 1. **Extract** (`lib/ingest/extract.ts`) — PDF (pdf-parse), DOCX (mammoth),
-   or plain text/markdown → one raw text string.
+   or plain text/markdown → one raw text string. **Scanned PDFs** (no text
+   layer, detected by chars-per-page) and **photos of pages** (JPG/PNG/WEBP)
+   fall back to Claude vision OCR (`lib/ingest/ocr.ts`) — large PDFs are
+   split into 15-page segments with pdf-lib and transcribed verbatim,
+   preserving tables and structure as Markdown.
 2. **Chunk** (`lib/ingest/chunk.ts`) — split at natural boundaries
    (headings first, then paragraphs, then sentences), max ~24k chars,
    strictly in document order.
@@ -88,14 +96,33 @@ CODEX_AI_MODEL=claude-opus-4-8 # optional override
 CODEX_AI_MODE=fake             # optional: offline deterministic mode (no API calls)
 ```
 
-## Getting started
+## Getting started (로컬 실행)
+
+필요한 것: [Node.js 20+](https://nodejs.org) 와 Anthropic API 키
+([platform.claude.com](https://platform.claude.com) → API Keys → Create Key —
+키 전체 값은 생성 순간에만 보이므로 바로 복사해 두세요).
 
 ```bash
+git clone https://github.com/AARET-kor/CHUSHERLOCK.git new-codex
+cd new-codex
 npm install
-cp .env.example .env
-npm run db:generate   # only needed after changing lib/db/schema.ts
-npm run db:migrate     # creates ./data/codex.sqlite and seeds the taxonomy
+cp .env.example .env        # Windows: copy .env.example .env
+# .env 파일을 열어 ANTHROPIC_API_KEY=sk-ant-... 를 입력
+npm run db:migrate           # ./data/codex.sqlite 생성 + 분류체계 시드
 npm run dev
+```
+
+브라우저에서 `http://localhost:3000` 을 열면 됩니다.
+
+- **자료 넣기 (AI)** — PDF/DOCX/텍스트/사진을 올리면 AI가 읽고 분류 제안.
+- **직접 추가** — 수동 입력.
+- 키 없이 UI만 먼저 보려면: `.env`에 `CODEX_AI_MODE=fake` 를 넣고 실행
+  (API 호출 없이 가짜 제안으로 전체 흐름 체험).
+
+데이터는 전부 로컬 `./data/codex.sqlite` 파일에 저장됩니다.
+
+```bash
+npm run db:generate   # only needed after changing lib/db/schema.ts
 ```
 
 Then open `http://localhost:3000`:
@@ -159,10 +186,9 @@ file — entries only ever file under a leaf (see `getLeafCategories()`).
 - **Auth / multi-user.** Single-user local tool for now — "원장들용" (multi-
   clinic) access control is a later phase once the classification flow is
   validated.
-- **Semantic overlap detection.** Overlap linking still uses the
-  title-token heuristic in `lib/codex/overlap.ts`; upgrading it to
-  embedding/model-based similarity is a natural follow-up now that the
-  ingest pipeline exists.
+- **Semantic overlap in the in-form preview.** The instant warning while
+  typing still uses the title heuristic (it must be sub-second); the
+  model-based semantic pass runs at save time.
 
 ## Commands
 

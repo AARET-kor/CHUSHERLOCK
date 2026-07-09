@@ -22,7 +22,7 @@ interface JobView {
   sourceCitation: string;
   sourceType: string;
   sourceUrl: string | null;
-  status: "pending" | "processing" | "completed" | "failed";
+  status: "pending" | "extracting" | "processing" | "completed" | "failed";
   totalChunks: number;
   processedChunks: number;
   suggestions: SuggestedEntry[] | null;
@@ -98,16 +98,19 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
     }
   }
 
-  const inProgress = job && (job.status === "pending" || job.status === "processing");
+  const inProgress =
+    job && (job.status === "pending" || job.status === "extracting" || job.status === "processing");
 
   return (
     <div className="space-y-8">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">파일 업로드 (PDF / DOCX / TXT / MD)</label>
+          <label className="mb-1 block text-sm font-medium">
+            파일 업로드 (PDF / DOCX / TXT / MD / 사진) — 스캔본 PDF와 책 페이지 사진은 자동 OCR
+          </label>
           <input
             type="file"
-            accept=".pdf,.docx,.txt,.md,.markdown"
+            accept=".pdf,.docx,.txt,.md,.markdown,.jpg,.jpeg,.png,.webp"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="block w-full text-sm text-neutral-400 file:mr-3 file:rounded file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-neutral-200"
           />
@@ -176,7 +179,11 @@ export function IngestClient({ leafCategories }: { leafCategories: CategoryDef[]
       {inProgress && (
         <div className="rounded-lg border border-neutral-800 p-4">
           <p className="text-sm font-medium">
-            {job.status === "pending" ? "준비 중..." : "문서를 순서대로 읽는 중..."}
+            {job.status === "pending"
+              ? "준비 중..."
+              : job.status === "extracting"
+                ? "텍스트 추출 중... (스캔본/사진이면 OCR — 수 분 걸릴 수 있습니다)"
+                : "문서를 순서대로 읽는 중..."}
           </p>
           {job.totalChunks > 0 && (
             <>

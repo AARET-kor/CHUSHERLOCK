@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { extractText } from "../../../lib/ingest/extract";
 import { startIngestJob } from "../../../lib/services/ingestService";
 
 const metadataSchema = z.object({
@@ -17,6 +16,8 @@ const metadataSchema = z.object({
   ]),
   sourceUrl: z.string().url().optional().or(z.literal("")),
 });
+
+const MAX_UPLOAD_BYTES = 30 * 1024 * 1024; // Claude PDF request limit is 32MB
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -36,45 +37,27 @@ export async function POST(request: Request) {
   const file = formData.get("file");
   const pastedText = String(formData.get("text") ?? "").trim();
 
-  let text: string;
-  let sourceLabel: string;
-  let formatNote: string;
-
-  try {
-    if (file instanceof File && file.size > 0) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const extracted = await extractText(buffer, file.name);
-      text = extracted.text;
-      sourceLabel = file.name;
-      formatNote = extracted.formatNote;
-    } else if (pastedText) {
-      text = pastedText;
-      sourceLabel = "붙여넣은 텍스트";
-      formatNote = "직접 입력";
-    } else {
+  let fileInput: { buffer: Buffer; filename: string } | undefined;
+  if (file instanceof File && file.size > 0) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json(
-        { error: "파일을 올리거나 텍스트를 붙여넣어 주세요." },
+        { error: "파일이 너무 큽니다 (최대 30MB). 파일을 나눠서 올려 주세요." },
         { status: 400 }
       );
     }
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "파일 처리에 실패했습니다." },
-      { status: 400 }
-    );
+    fileInput = { buffer: Buffer.from(await file.arrayBuffer()), filename: file.name };
   }
 
-  if (!text.trim()) {
+  if (!fileInput && !pastedText) {
     return NextResponse.json(
-      { error: "문서에서 텍스트를 추출하지 못했습니다." },
+      { error: "파일을 올리거나 텍스트를 붙여넣어 주세요." },
       { status: 400 }
     );
   }
 
   const job = await startIngestJob({
-    text,
-    sourceLabel,
-    formatNote,
+    file: fileInput,
+    pastedText: pastedText || undefined,
     sourceCitation: parsedMeta.data.sourceCitation,
     sourceType: parsedMeta.data.sourceType,
     sourceUrl: parsedMeta.data.sourceUrl || undefined,

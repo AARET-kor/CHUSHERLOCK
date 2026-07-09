@@ -3,15 +3,16 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { ingestJobs } from "../db/schema";
 import { processDocument } from "../ai/classify";
+import { extractText } from "../ingest/extract";
 import type { SuggestedEntry } from "../ai/schemas";
 
 export interface CreateIngestJobInput {
-  text: string;
-  sourceLabel: string;
+  /** Uploaded file bytes; mutually exclusive with pastedText. */
+  file?: { buffer: Buffer; filename: string };
+  pastedText?: string;
   sourceCitation: string;
   sourceType: string;
   sourceUrl?: string;
-  formatNote: string;
 }
 
 export type IngestJobView = typeof ingestJobs.$inferSelect;
@@ -34,8 +35,8 @@ async function updateJob(id: string, patch: Partial<typeof ingestJobs.$inferInse
 
 /**
  * Creates the job row and kicks off processing in the background (the API
- * route returns immediately; the UI polls GET /api/ingest/[id]). Large
- * documents run for minutes, so the request/response cycle must not wait.
+ * route returns immediately; the UI polls GET /api/ingest/[id]). Extraction
+ * happens inside the job too — scanned-PDF OCR alone can take minutes.
  */
 export async function startIngestJob(input: CreateIngestJobInput): Promise<IngestJobView> {
   const id = randomUUID();
@@ -43,7 +44,7 @@ export async function startIngestJob(input: CreateIngestJobInput): Promise<Inges
 
   await db.insert(ingestJobs).values({
     id,
-    sourceLabel: input.sourceLabel,
+    sourceLabel: input.file?.filename ?? "붙여넣은 텍스트",
     sourceCitation: input.sourceCitation,
     sourceType: input.sourceType,
     sourceUrl: input.sourceUrl ?? null,
@@ -65,14 +66,35 @@ export async function startIngestJob(input: CreateIngestJobInput): Promise<Inges
 }
 
 async function runJob(id: string, input: CreateIngestJobInput): Promise<void> {
+  await updateJob(id, { status: "extracting" });
+
+  let text: string;
+  let formatNote: string;
+  let sourceLabel: string;
+
+  if (input.file) {
+    const extracted = await extractText(input.file.buffer, input.file.filename);
+    text = extracted.text;
+    formatNote = extracted.formatNote;
+    sourceLabel = input.file.filename;
+  } else {
+    text = input.pastedText ?? "";
+    formatNote = "직접 입력";
+    sourceLabel = "붙여넣은 텍스트";
+  }
+
+  if (!text.trim()) {
+    throw new Error("문서에서 텍스트를 추출하지 못했습니다.");
+  }
+
   await updateJob(id, { status: "processing" });
 
   const result = await processDocument(
     {
-      text: input.text,
-      sourceLabel: input.sourceLabel,
+      text,
+      sourceLabel,
       sourceCitation: input.sourceCitation,
-      formatNote: input.formatNote,
+      formatNote,
     },
     {
       onProgress: async (processed, total) => {

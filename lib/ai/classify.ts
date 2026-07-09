@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { getLeafCategories } from "../codex/taxonomy";
 import { chunkDocument } from "../ingest/chunk";
+import { getAnthropicClient, isFakeMode, MODEL } from "./client";
 import { buildSystemPrompt, buildChunkPrompt, type ChunkPromptInput } from "./prompts";
 import {
   chunkResultSchema,
@@ -9,21 +9,12 @@ import {
   type SuggestedEntry,
 } from "./schemas";
 
-const MODEL = process.env.CODEX_AI_MODEL ?? "claude-opus-4-8";
-
 /** One model round-trip for one chunk. Injectable so tests and the local
  * fake mode can run the full pipeline without API calls. */
 export type ChunkCaller = (input: ChunkPromptInput) => Promise<ChunkResult>;
 
-let anthropicClient: Anthropic | null = null;
-
-function getClient(): Anthropic {
-  if (!anthropicClient) anthropicClient = new Anthropic();
-  return anthropicClient;
-}
-
 export const anthropicChunkCaller: ChunkCaller = async (input) => {
-  const client = getClient();
+  const client = getAnthropicClient();
   const leafKeys = getLeafCategories().map((c) => c.key);
 
   const stream = client.messages.stream({
@@ -86,7 +77,7 @@ export const fakeChunkCaller: ChunkCaller = async (input) => {
 };
 
 export function defaultChunkCaller(): ChunkCaller {
-  return process.env.CODEX_AI_MODE === "fake" ? fakeChunkCaller : anthropicChunkCaller;
+  return isFakeMode() ? fakeChunkCaller : anthropicChunkCaller;
 }
 
 export interface ProcessDocumentInput {
