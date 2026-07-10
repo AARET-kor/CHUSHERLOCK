@@ -77,9 +77,14 @@ export default async function DashboardPage() {
           </p>
         ) : (
           <>
-            <h2 className="mb-4 font-mono text-[11px] tracking-[0.25em] text-ink/40">
-              KNOWLEDGE — 노트 탐색
-            </h2>
+            <div className="mb-4 flex items-baseline justify-between">
+              <h2 className="font-mono text-[11px] tracking-[0.25em] text-ink/40">
+                KNOWLEDGE — 노트 탐색
+              </h2>
+              <a href="/library" className="text-xs text-ink/50 underline-offset-4 hover:text-ink hover:underline">
+                폴더로 보기 →
+              </a>
+            </div>
             <EntryExplorer entries={sorted} categories={leafCategories} />
           </>
         )}

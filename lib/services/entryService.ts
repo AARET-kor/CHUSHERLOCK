@@ -208,6 +208,72 @@ export async function deleteEntry(id: string): Promise<void> {
   await db.delete(entries).where(eq(entries.id, id));
 }
 
+export interface MergeEntriesInput {
+  /** 2+ entry ids, in the order their content should appear. */
+  entryIds: string[];
+  title: string;
+  categoryKey: string;
+  tier: string;
+  status?: string;
+}
+
+/**
+ * Merges several notes into one: contents are stitched in order under their
+ * old titles, sources/tags/relations/figures are unioned and re-pointed, and
+ * the source notes are deleted. No AI calls — this is a deliberate, manual
+ * curation action.
+ */
+export async function mergeEntries(input: MergeEntriesInput): Promise<CodexEntry> {
+  const parts = await Promise.all(input.entryIds.map(getEntry));
+  const merged = parts.filter((e): e is CodexEntry => Boolean(e));
+  if (merged.length < 2) throw new Error("합칠 노트를 2개 이상 선택해 주세요.");
+
+  const id = randomUUID();
+  const timestamp = nowIso();
+
+  const content = merged
+    .map((entry) => `## ${entry.title}\n\n${entry.content.trim()}`)
+    .join("\n\n---\n\n");
+  const tags = Array.from(new Set(merged.flatMap((e) => e.tags)));
+  const sourceIds = Array.from(new Set(merged.flatMap((e) => e.sources.map((s) => s.id))));
+  const mergedIdSet = new Set(input.entryIds);
+  const relatedIds = Array.from(
+    new Set(merged.flatMap((e) => e.relatedEntryIds).filter((rid) => !mergedIdSet.has(rid)))
+  );
+
+  await db.insert(entries).values({
+    id,
+    title: input.title,
+    content,
+    categoryKey: input.categoryKey,
+    tier: input.tier,
+    tags,
+    status: input.status ?? "draft",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  });
+
+  if (sourceIds.length > 0) {
+    await db.insert(entrySources).values(sourceIds.map((sourceId) => ({ entryId: id, sourceId })));
+  }
+  if (relatedIds.length > 0) {
+    await db.insert(entryRelations).values(
+      relatedIds.flatMap((relatedId) => [
+        { entryId: id, relatedEntryId: relatedId },
+        { entryId: relatedId, relatedEntryId: id },
+      ])
+    );
+  }
+
+  // Re-point cropped figures to the merged note, then remove the originals.
+  await db.update(figures).set({ entryId: id }).where(inArray(figures.entryId, input.entryIds));
+  await db.delete(entries).where(inArray(entries.id, input.entryIds));
+
+  const entry = await getEntry(id);
+  if (!entry) throw new Error("Failed to load merged entry.");
+  return entry;
+}
+
 /** Bind cropped source figures to the entry that now uses them. */
 export async function attachFiguresToEntry(entryId: string, figureIds: string[]): Promise<void> {
   if (figureIds.length === 0) return;

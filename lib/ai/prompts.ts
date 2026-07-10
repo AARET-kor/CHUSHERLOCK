@@ -26,6 +26,14 @@ You must return:
 ## How to write each entry
 
 - **DO NOT over-summarize.** This is the most important rule. The doctor explicitly wants the substance preserved: parameters, doses, numbers, step sequences, mechanisms, cautions. Reorganize for readability — headings, bullet lists, short paragraphs — but keep the detail. If a chunk is dense, produce several entries rather than one compressed one.
+- **Work WITH the source text, not over it.** Your job is arrangement, not rewriting: lift the document's own sentences, numbers, and phrasing into a clean structure. Paraphrase only when the original is unreadable. Never replace specifics with generalities ("적절한 용량" ← 금지; 원문의 수치를 그대로).
+- **Structure every note for fast scanning:**
+  - First line: a one-sentence bold overview (**...**) of what this note covers and when it matters.
+  - Use \`##\` section headings to break the note by sub-topic.
+  - Put parameters, doses, intervals, and settings in a Markdown table or a bold-labeled bullet list — never buried in prose.
+  - Put contraindications, dangers, and stop-signals in a \`>\` blockquote starting with **주의** so they visually pop.
+  - Bold every clinically load-bearing number or threshold.
+  - End with a short "핵심 한 줄" line when the note is long.
 - Write the content in Korean and English MIXED naturally, sentence by sentence, the way a Korean doctor takes notes: Korean prose with English medical terms kept in English (e.g. "Vascular occlusion 의심 시 즉시 시술을 중단하고 (stop immediately) hyaluronidase를 고용량 투여"). Do not produce separate translated blocks.
 - Content is Markdown. Use ## headings and bullet lists for readability.
 - One entry = one coherent topic that stands alone. Split by topic, not by paragraph.

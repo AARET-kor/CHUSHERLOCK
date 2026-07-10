@@ -20,6 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 대시보드
               </Link>
+              <Link href="/library" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
+                라이브러리
+              </Link>
               <Link href="/entries/new" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 직접 추가
               </Link>
