@@ -3,7 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "New Codex",
+  title: "Cognitio",
   description: "Aesthetic medicine knowledge base with Obsidian export.",
 };
 
@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-40 border-b border-ink/5 bg-white/80 px-6 py-4 backdrop-blur">
           <nav className="mx-auto flex max-w-5xl items-center justify-between">
             <Link href="/" className="font-serifa text-2xl font-bold tracking-tight text-ink">
-              New Codex
+              Cognitio
             </Link>
             <div className="flex items-center gap-1 rounded-full bg-mist px-2 py-1 text-sm text-ink">
               <Link href="/" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "0 0 0 0.5px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.10), 0 12px 40px rgba(0,0,0,0.10)",
             }}
           >
-            <span className="font-serifa text-xl font-bold text-ink">N</span>
+            <span className="font-serifa text-xl font-bold text-ink">C</span>
             <Link href="/" className="btn-primary !px-5 !py-2.5">
               + 자료 넣기
             </Link>

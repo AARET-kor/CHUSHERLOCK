@@ -25,7 +25,7 @@ export default async function DashboardPage() {
             className="mb-4 font-mono text-[11px] tracking-[0.25em] text-white/50 animate-fade-in-up"
             style={{ animationDelay: "0.05s" }}
           >
-            NEW CODEX — AESTHETIC MEDICINE KNOWLEDGE ENGINE
+            COGNITIO — AESTHETIC MEDICINE KNOWLEDGE ENGINE
           </p>
           <h1
             className="max-w-2xl text-[34px] leading-[1.12] tracking-tight animate-fade-in-up md:text-[52px]"

@@ -31,13 +31,13 @@ export async function GET() {
         return filename ? `](${prefix}_figures/${filename})` : match;
       }
     );
-    zip.file(`New Codex/${file.relativePath}`, content);
+    zip.file(`Cognitio/${file.relativePath}`, content);
   }
 
   for (const filename of figureFiles.values()) {
     const filePath = path.join(FIGURES_DIR, path.basename(filename));
     if (fs.existsSync(filePath)) {
-      zip.file(`New Codex/_figures/${filename}`, fs.readFileSync(filePath));
+      zip.file(`Cognitio/_figures/${filename}`, fs.readFileSync(filePath));
     }
   }
 
@@ -47,7 +47,7 @@ export async function GET() {
   return new NextResponse(new Blob([buffer]), {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="new-codex-export.zip"`,
+      "Content-Disposition": `attachment; filename="cognitio-export.zip"`,
     },
   });
 }

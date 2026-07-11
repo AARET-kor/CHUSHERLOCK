@@ -1,4 +1,4 @@
-// Core domain vocabulary for New Codex.
+// Core domain vocabulary for Cognitio.
 // These types are intentionally decoupled from the DB schema (lib/db/schema.ts)
 // so the storage layer can change without reshaping the domain model.
 

@@ -1,5 +1,5 @@
 {
-  "name": "new-codex",
+  "name": "cognitio",
   "version": "0.1.0",
   "private": true,
   "description": "Personal + clinic knowledge base that classifies aesthetic medicine references and exports structured notes to Obsidian.",
@@ -16,6 +16,7 @@
     "@anthropic-ai/sdk": "^0.110.0",
     "better-sqlite3": "^11.9.1",
     "drizzle-orm": "^0.36.4",
+    "html-to-docx": "^1.8.0",
     "jszip": "^3.10.1",
     "mammoth": "^1.12.0",
     "marked": "^18.0.6",

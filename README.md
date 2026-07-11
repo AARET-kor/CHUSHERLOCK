@@ -1,4 +1,4 @@
-# New Codex
+# Cognitio
 
 A personal + clinic knowledge base for aesthetic medicine. You feed it raw
 material — device parameters, papers, textbook chapters, personal know-how —
@@ -103,8 +103,8 @@ CODEX_AI_MODE=fake             # optional: offline deterministic mode (no API ca
 키 전체 값은 생성 순간에만 보이므로 바로 복사해 두세요).
 
 ```bash
-git clone https://github.com/AARET-kor/CHUSHERLOCK.git new-codex
-cd new-codex
+git clone https://github.com/AARET-kor/CHUSHERLOCK.git cognitio
+cd cognitio
 npm install
 cp .env.example .env        # Windows: copy .env.example .env
 # .env 파일을 열어 ANTHROPIC_API_KEY=sk-ant-... 를 입력

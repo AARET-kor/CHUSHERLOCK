@@ -79,11 +79,20 @@ export default async function EntryDetailPage({
         <Link href={`/entries/${entry.id}/edit`} className="btn-primary !px-4 !py-2">
           수정
         </Link>
+        <a href={`/api/entries/${entry.id}/export`} className="btn-secondary !px-4 !py-2">
+          Obsidian .md
+        </a>
         <a
-          href={`/api/entries/${entry.id}/export`}
+          href={`/api/entries/${entry.id}/export?format=docx`}
           className="btn-secondary !px-4 !py-2"
         >
-          Obsidian .md export
+          Word .docx
+        </a>
+        <a
+          href={`/api/entries/${entry.id}/export?format=html`}
+          className="btn-secondary !px-4 !py-2"
+        >
+          HTML
         </a>
         <form action={deleteEntryAction.bind(null, entry.id)}>
           <button
