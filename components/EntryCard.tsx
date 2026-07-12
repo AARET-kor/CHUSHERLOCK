@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CodexEntry } from "../lib/codex/types";
+import { stripDecorations } from "../lib/codex/decorations";
 import { TierBadge } from "./TierBadge";
 import { CategoryBadge } from "./CategoryBadge";
 
@@ -16,7 +17,9 @@ export function EntryCard({ entry }: { entry: CodexEntry }) {
         )}
       </div>
       <h3 className="font-serifa text-base font-bold leading-snug text-ink">{entry.title}</h3>
-      <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-ink/60">{entry.content}</p>
+      <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-ink/60">
+        {stripDecorations(entry.content)}
+      </p>
       <div className="mt-3 flex items-center justify-between text-xs text-ink/40">
         <span>{entry.sources.length > 0 ? `출처 ${entry.sources.length}건` : ""}</span>
         {entry.relatedEntryIds.length > 0 && <span>관련 노트 {entry.relatedEntryIds.length}개</span>}

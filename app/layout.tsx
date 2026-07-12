@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <header className="sticky top-0 z-40 border-b border-ink/5 bg-white/80 px-6 py-4 backdrop-blur">
           <nav className="mx-auto flex max-w-5xl items-center justify-between">
-            <Link href="/" className="font-serifa text-2xl font-bold tracking-tight text-ink">
+            <Link href="/" className="brand-link font-serifa text-2xl font-bold tracking-tight text-ink">
               Cognitio
             </Link>
             <div className="flex items-center gap-1 rounded-full bg-mist px-2 py-1 text-sm text-ink">
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Floating bottom pill — the ever-present shortcut into the codex. */}
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
           <div
-            className="flex items-center gap-4 rounded-full bg-white py-2 pl-6 pr-2"
+            className="pill-rise flex items-center gap-4 rounded-full bg-white py-2 pl-6 pr-2"
             style={{
               boxShadow:
                 "0 0 0 0.5px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.10), 0 12px 40px rgba(0,0,0,0.10)",

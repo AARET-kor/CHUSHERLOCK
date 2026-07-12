@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CodexEntry, CategoryDef, ContentTier } from "../lib/codex/types";
 import { CONTENT_TIERS } from "../lib/codex/tiers";
+import { stripDecorations } from "../lib/codex/decorations";
 import { TierBadge } from "./TierBadge";
 
 interface TreeNode {
@@ -70,11 +71,11 @@ function firstFigureUrl(content: string): string | null {
 function overviewLine(content: string): string | null {
   const firstLine = content.split("\n").find((l) => l.trim());
   const match = firstLine?.trim().match(/^\*\*(.+)\*\*$/);
-  return match?.[1] ?? null;
+  return match ? stripDecorations(match[1]!) : null;
 }
 
 function plainPreview(content: string): string {
-  return content
+  return stripDecorations(content)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
     .replace(/[#*>|`-]/g, " ")
     .replace(/\s+/g, " ")
@@ -218,6 +219,8 @@ export function LibraryClient({
   const [error, setError] = useState<string | null>(null);
   const [dropTargetKey, setDropTargetKey] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -369,6 +372,35 @@ export function LibraryClient({
     }
   }
 
+  function shareSelection() {
+    const ids = Array.from(selection);
+    if (ids.length === 0) return;
+    // Plain navigation → the browser downloads the .cognote attachment.
+    window.location.href = `/api/share/export?ids=${ids.join(",")}`;
+  }
+
+  async function importCognoteFile(file: File) {
+    setBusy(true);
+    setImportMessage(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/share/import", { method: "POST", body });
+      const data = await response.json();
+      if (!response.ok) {
+        setImportMessage(data.error ?? "가져오기에 실패했습니다.");
+        return;
+      }
+      setImportMessage(
+        `노트 ${data.imported}개를 가져왔습니다.${data.skipped ? ` (${data.skipped}개 건너뜀)` : ""}`
+      );
+      router.refresh();
+    } finally {
+      setBusy(false);
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  }
+
   const leafCategories = taxonomy.filter(
     (c) => !taxonomy.some((other) => other.parentKey === c.key)
   );
@@ -412,10 +444,36 @@ export function LibraryClient({
 
       {/* Notes in the selected folder */}
       <section>
-        <div className="mb-3 flex items-baseline justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="font-serifa text-lg font-bold text-inkdeep">{selectedLabel}</h2>
-          <span className="text-xs text-ink/40">{visibleEntries.length}개</span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => importInputRef.current?.click()}
+              disabled={busy}
+              className="rounded-full border border-ink/15 bg-white px-3 py-1 text-xs text-ink/60 transition hover:border-ink/40 hover:text-ink disabled:opacity-40"
+              title="다른 사람이 공유한 .cognote 파일 가져오기"
+            >
+              ↓ 가져오기
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".cognote,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void importCognoteFile(file);
+              }}
+            />
+            <span className="text-xs text-ink/40">{visibleEntries.length}개</span>
+          </div>
         </div>
+        {importMessage && (
+          <p className="animate-pop-in mb-3 rounded-xl bg-mist/70 px-3 py-2 text-xs text-ink/70">
+            {importMessage}
+          </p>
+        )}
 
         {visibleEntries.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-ink/15 bg-mist/50 p-10 text-center text-sm text-ink/40">
@@ -533,6 +591,15 @@ export function LibraryClient({
           style={{ boxShadow: "0 12px 40px rgba(5,26,36,0.35)" }}
         >
           <span className="text-sm">{selection.size}개 선택</span>
+          <button
+            type="button"
+            onClick={shareSelection}
+            disabled={busy}
+            className="rounded-full bg-emerald-500/90 px-4 py-1.5 text-sm font-medium text-white transition hover:scale-105 disabled:opacity-40"
+            title="선택한 노트를 .cognote 파일로 내려받아 다른 사람과 공유"
+          >
+            공유
+          </button>
           <button
             type="button"
             onClick={openMerge}

@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { CategoryDef } from "../lib/codex/types";
 import { CONTENT_TIERS } from "../lib/codex/tiers";
 import { previewOverlapsAction } from "../lib/actions/entryActions";
 import type { OverlapCandidate } from "../lib/codex/overlap";
+import { EditorToolbar } from "./EditorToolbar";
 
 const SOURCE_TYPES = [
   "paper",
@@ -43,6 +44,7 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
 
   const parsedSources = useMemo(
     () =>
@@ -188,7 +190,13 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
 
       <div>
         <label className="mb-1 block text-sm font-medium">내용 (Content, 한글+영어 혼용 가능)</label>
+        <div className="mb-2">
+          <EditorToolbar
+            target={{ textareaRef: contentRef, value: content, onChange: setContent }}
+          />
+        </div>
         <textarea
+          ref={contentRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={12}

@@ -18,8 +18,11 @@ export default async function DashboardPage() {
       {/* Dark hero band with the intake dock overlapping its lower edge. */}
       <section className="relative">
         <div className="relative overflow-hidden rounded-[32px] bg-inkdeep px-6 pb-24 pt-12 text-white md:px-14 md:pt-16">
-          <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/[0.06] blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-emerald-400/[0.07] blur-3xl" />
+          <div className="hero-glow pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/[0.06] blur-3xl" />
+          <div
+            className="hero-glow pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-emerald-400/[0.07] blur-3xl"
+            style={{ animationDelay: "-4.5s" }}
+          />
 
           <p
             className="mb-4 font-mono text-[11px] tracking-[0.25em] text-white/50 animate-fade-in-up"

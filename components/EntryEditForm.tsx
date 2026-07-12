@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CategoryDef, CodexEntry, ContentTier } from "../lib/codex/types";
 import { CONTENT_TIERS } from "../lib/codex/tiers";
+import { EditorToolbar } from "./EditorToolbar";
+import { MarkdownContent } from "./MarkdownContent";
 
 export function EntryEditForm({
   entry,
@@ -21,6 +23,8 @@ export function EntryEditForm({
   const [status, setStatus] = useState(entry.status);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -104,13 +108,36 @@ export function EntryEditForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">내용 (Markdown)</label>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={Math.min(28, Math.max(10, content.split("\n").length + 2))}
-          className="field font-mono text-xs leading-relaxed"
-        />
+        <div className="mb-1 flex items-center justify-between">
+          <label className="block text-sm font-medium">내용 (Markdown)</label>
+          <button
+            type="button"
+            onClick={() => setShowPreview(!showPreview)}
+            className={`rounded-full px-3 py-1 text-xs transition-colors ${
+              showPreview ? "bg-ink text-white" : "bg-mist text-ink/60 hover:text-ink"
+            }`}
+          >
+            {showPreview ? "편집으로" : "미리보기"}
+          </button>
+        </div>
+        <div className="space-y-2">
+          <EditorToolbar
+            target={{ textareaRef: contentRef, value: content, onChange: setContent }}
+          />
+          {showPreview ? (
+            <div className="animate-pop-in card p-5">
+              <MarkdownContent content={content} />
+            </div>
+          ) : (
+            <textarea
+              ref={contentRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={Math.min(28, Math.max(10, content.split("\n").length + 2))}
+              className="field font-mono text-xs leading-relaxed"
+            />
+          )}
+        </div>
       </div>
 
       <div>

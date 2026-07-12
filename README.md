@@ -96,6 +96,25 @@ CODEX_AI_MODEL=claude-opus-4-8 # optional override
 CODEX_AI_MODE=fake             # optional: offline deterministic mode (no API calls)
 ```
 
+## 노트 꾸미기 & 공유
+
+- **형광펜/볼펜.** Note bodies support a decoration syntax on top of
+  Markdown: `==yellow:텍스트==` (highlight, 5 colors) and `++red:텍스트++`
+  (pen color, 5 colors) — see `lib/codex/decorations.ts`. The edit form has
+  a toolbar (`components/EditorToolbar.tsx`): select text, click a color, or
+  insert symbols (✓ ± ≥ ℃ ⚠️ 💉 …) from the Ω palette, with a live 미리보기
+  toggle. In the app, highlights paint themselves in left-to-right when a
+  note opens; in Word/HTML/Obsidian exports the colors travel as inline
+  styles, so nothing breaks outside the app.
+- **.cognote 공유.** Select notes in the library and press **공유** to
+  download a `.cognote` file — a single self-contained JSON where every
+  cropped figure is embedded as base64 alongside the note's Markdown,
+  decorations included. Anyone running Cognitio imports it via **가져오기**
+  (library header): figures are written under fresh ids, image links inside
+  the content are rewritten to match, and a note filed under a category the
+  receiver doesn't have falls back to a sensible default instead of failing.
+  Endpoints: `GET /api/share/export?ids=…`, `POST /api/share/import`.
+
 ## Getting started (로컬 실행)
 
 필요한 것: [Node.js 20+](https://nodejs.org) 와 Anthropic API 키

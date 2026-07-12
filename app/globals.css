@@ -232,18 +232,132 @@ body {
 }
 .note-body img {
   @apply my-3 max-w-full rounded-xl border border-ink/10;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+.note-body img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 12px 40px rgba(5, 26, 36, 0.15);
 }
 .note-body hr {
   @apply my-4 border-ink/10;
+}
+
+/* Highlighter (형광펜) — paints itself left→right when the note opens. */
+@keyframes hlSweep {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+.note-body mark.hl {
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  animation: hlSweep 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.25s backwards;
+  padding: 0 2px;
+  border-radius: 2px;
+  color: inherit;
+}
+.hl-yellow {
+  background-image: linear-gradient(#fef08a, #fef08a);
+}
+.hl-green {
+  background-image: linear-gradient(#bbf7d0, #bbf7d0);
+}
+.hl-pink {
+  background-image: linear-gradient(#fbcfe8, #fbcfe8);
+}
+.hl-blue {
+  background-image: linear-gradient(#bfdbfe, #bfdbfe);
+}
+.hl-orange {
+  background-image: linear-gradient(#fed7aa, #fed7aa);
+}
+
+/* Pen (볼펜) colors. */
+.pen {
+  font-weight: 600;
+}
+.pen-red {
+  color: #dc2626;
+}
+.pen-blue {
+  color: #2563eb;
+}
+.pen-emerald {
+  color: #059669;
+}
+.pen-violet {
+  color: #7c3aed;
+}
+.pen-amber {
+  color: #d97706;
+}
+
+/* Floating bottom pill rises into place after the page settles. */
+@keyframes pillRise {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.pill-rise {
+  animation: pillRise 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.5s backwards;
+}
+
+/* Brand mark — ink underline sweeps in on hover. */
+.brand-link {
+  position: relative;
+}
+.brand-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.brand-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* Slow-breathing gradient on the dark hero band. */
+@keyframes heroDrift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, 24px) scale(1.15);
+  }
+}
+.hero-glow {
+  animation: heroDrift 9s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
   .animate-pop-in,
   .progress-shimmer,
-  .dot-pulse span {
+  .dot-pulse span,
+  .note-body mark.hl,
+  .hero-glow,
+  .pill-rise {
     animation: none;
     opacity: 1;
+  }
+  .brand-link::after {
+    transition: none;
   }
   .card,
   .btn-primary,

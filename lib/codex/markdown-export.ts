@@ -1,6 +1,7 @@
 import type { CodexEntry } from "./types";
 import { getCategory, getCategoryPath } from "./taxonomy";
 import { getTierInfo } from "./tiers";
+import { applyDecorations } from "./decorations";
 
 export interface MarkdownExportFile {
   /** Vault-relative path, including the category folder path and filename. */
@@ -88,7 +89,9 @@ export function entryToMarkdown(
     "",
     `> **${tierInfo.labelKo} / ${tierInfo.labelEn}** — ${tierInfo.descriptionKo}`,
     "",
-    entry.content.trim(),
+    // Obsidian renders inline HTML, so color decorations travel as
+    // inline-styled tags inside the markdown body.
+    applyDecorations(entry.content.trim(), "inline"),
     relatedSection,
     sourceSection,
     "",

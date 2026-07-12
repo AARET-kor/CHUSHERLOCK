@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { marked } from "marked";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
+import { applyDecorations } from "../codex/decorations";
 import { db } from "../db/client";
 import { figures } from "../db/schema";
 import { FIGURES_DIR } from "../ingest/figures";
@@ -45,7 +46,10 @@ function markdownToHtml(markdown: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-  return marked.parse(escaped, { breaks: true, async: false }) as string;
+  const html = marked.parse(escaped, { breaks: true, async: false }) as string;
+  // Inline styles so highlights/pen colors survive in files that travel
+  // without our stylesheet (Word, standalone HTML).
+  return applyDecorations(html, "inline");
 }
 
 /** Standalone HTML document for one note — used directly for .html export
