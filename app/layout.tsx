@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Cognitio",
-  description: "Aesthetic medicine knowledge base with Obsidian export.",
+  description: "미용의학 지식을 읽고, 분류하고, 연결하는 개인 지식 엔진.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 라이브러리
               </Link>
               <Link href="/entries/new" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
-                직접 추가
+                빠른 메모
               </Link>
               <Link href="/categories" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 분류체계

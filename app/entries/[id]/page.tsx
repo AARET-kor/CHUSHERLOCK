@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEntry, listEntries } from "../../../lib/services/entryService";
-import { entryToMarkdown } from "../../../lib/codex/markdown-export";
 import { TierBadge } from "../../../components/TierBadge";
 import { CategoryBadge } from "../../../components/CategoryBadge";
 import { MarkdownContent } from "../../../components/MarkdownContent";
@@ -17,12 +16,9 @@ export default async function EntryDetailPage({
   if (!entry) notFound();
 
   const allEntries = await listEntries();
-  const titleById = new Map(allEntries.map((e) => [e.id, e.title]));
   const related = entry.relatedEntryIds
     .map((relatedId) => allEntries.find((e) => e.id === relatedId))
     .filter((e): e is NonNullable<typeof e> => Boolean(e));
-
-  const markdownPreview = entryToMarkdown(entry, titleById);
 
   return (
     <div>
@@ -79,14 +75,14 @@ export default async function EntryDetailPage({
         <Link href={`/entries/${entry.id}/edit`} className="btn-primary !px-4 !py-2">
           수정
         </Link>
-        <a href={`/api/entries/${entry.id}/export`} className="btn-secondary !px-4 !py-2">
-          Obsidian .md
-        </a>
         <a
           href={`/api/entries/${entry.id}/export?format=docx`}
           className="btn-secondary !px-4 !py-2"
         >
           Word .docx
+        </a>
+        <a href={`/api/entries/${entry.id}/export`} className="btn-secondary !px-4 !py-2">
+          Markdown .md
         </a>
         <a
           href={`/api/entries/${entry.id}/export?format=html`}
@@ -104,14 +100,6 @@ export default async function EntryDetailPage({
         </form>
       </div>
 
-      <details className="card p-5">
-        <summary className="cursor-pointer text-sm font-medium text-ink/80">
-          Markdown 미리보기 ({markdownPreview.relativePath})
-        </summary>
-        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-ink/60">
-          {markdownPreview.content}
-        </pre>
-      </details>
     </div>
   );
 }

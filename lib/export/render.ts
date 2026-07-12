@@ -42,10 +42,9 @@ async function inlineFigures(markdown: string): Promise<string> {
 }
 
 function markdownToHtml(markdown: string): string {
-  const escaped = markdown
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  // Escape & and < only — neutralizes raw HTML while keeping ">" intact so
+  // blockquotes still parse (same rule as components/MarkdownContent).
+  const escaped = markdown.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const html = marked.parse(escaped, { breaks: true, async: false }) as string;
   // Inline styles so highlights/pen colors survive in files that travel
   // without our stylesheet (Word, standalone HTML).

@@ -1,5 +1,5 @@
 import { PDFDocument } from "pdf-lib";
-import { getAnthropicClient, isFakeMode, MODEL } from "../ai/client";
+import { getAnthropicClient, isFakeMode, LIGHT_MODEL } from "../ai/client";
 
 // OCR for scanned material via Claude vision. Used when pdf-parse finds
 // (almost) no text layer, and for photo uploads of book pages / parameter
@@ -36,10 +36,12 @@ const OCR_INSTRUCTION = `이 문서는 스캔본/사진입니다. 보이는 모�
 
 async function transcribePdfSegment(pdfBase64: string): Promise<string> {
   const client = getAnthropicClient();
+  // Verbatim transcription needs no reasoning — the light model does this
+  // at a fraction of the cost, and omitting `thinking` (unsupported on
+  // Haiku anyway) saves the thinking tokens entirely.
   const stream = client.messages.stream({
-    model: MODEL,
+    model: LIGHT_MODEL,
     max_tokens: 64000,
-    thinking: { type: "adaptive" },
     messages: [
       {
         role: "user",
@@ -119,9 +121,8 @@ export async function ocrImage(buffer: Buffer, filename: string): Promise<string
 
   const client = getAnthropicClient();
   const stream = client.messages.stream({
-    model: MODEL,
+    model: LIGHT_MODEL,
     max_tokens: 32000,
-    thinking: { type: "adaptive" },
     messages: [
       {
         role: "user",

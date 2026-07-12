@@ -67,9 +67,23 @@ function firstFigureUrl(content: string): string | null {
   return match?.[1] ?? null;
 }
 
-/** The bold one-line overview our prompt asks for, if the note has one. */
+/** Preview line: the "한눈에 보기" summary block if the note has one (the
+ * format our prompt asks for), else the legacy bold first-line overview. */
 function overviewLine(content: string): string | null {
-  const firstLine = content.split("\n").find((l) => l.trim());
+  const lines = content.split("\n");
+  const headerIndex = lines.findIndex((l) => l.trim().startsWith("> **한눈에 보기**"));
+  if (headerIndex >= 0) {
+    const summary: string[] = [];
+    for (let i = headerIndex + 1; i < lines.length; i++) {
+      const trimmed = lines[i]!.trim();
+      if (!trimmed.startsWith(">")) break;
+      summary.push(trimmed.replace(/^>\s?/, ""));
+    }
+    if (summary.length > 0) {
+      return stripDecorations(summary.join(" ")).replace(/\*\*/g, "").trim();
+    }
+  }
+  const firstLine = lines.find((l) => l.trim());
   const match = firstLine?.trim().match(/^\*\*(.+)\*\*$/);
   return match ? stripDecorations(match[1]!) : null;
 }
@@ -220,6 +234,7 @@ export function LibraryClient({
   const [dropTargetKey, setDropTargetKey] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const counts = useMemo(() => {
@@ -233,12 +248,22 @@ export function LibraryClient({
   const tree = useMemo(() => buildTree(taxonomy, counts), [taxonomy, counts]);
 
   const visibleEntries = useMemo(() => {
-    if (selectedKey === "all") return entries;
-    const node = findNode(tree, selectedKey);
-    if (!node) return [];
-    const keys = new Set(descendantKeys(node));
-    return entries.filter((e) => keys.has(e.categoryKey));
-  }, [entries, selectedKey, tree]);
+    let list = entries;
+    if (selectedKey !== "all") {
+      const node = findNode(tree, selectedKey);
+      if (!node) return [];
+      const keys = new Set(descendantKeys(node));
+      list = entries.filter((e) => keys.has(e.categoryKey));
+    }
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (e) =>
+        e.title.toLowerCase().includes(q) ||
+        e.content.toLowerCase().includes(q) ||
+        e.tags.some((t) => t.toLowerCase().includes(q))
+    );
+  }, [entries, selectedKey, tree, query]);
 
   const parentByKey = useMemo(
     () => new Map(taxonomy.map((c) => [c.key, c.parentKey])),
@@ -444,9 +469,30 @@ export function LibraryClient({
 
       {/* Notes in the selected folder */}
       <section>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-serifa text-lg font-bold text-inkdeep">{selectedLabel}</h2>
           <div className="flex items-center gap-3">
+            <div className="relative">
+              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-ink/35">
+                ⌕
+              </span>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="제목·내용·태그 검색"
+                className="w-44 rounded-full border border-ink/15 bg-white py-1 pl-7 pr-7 text-xs text-ink placeholder:text-ink/35 transition-all focus:w-56 focus:border-ink/30 focus:outline-none focus:ring-2 focus:ring-ink/10 sm:w-52"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-ink/40 hover:text-ink"
+                  title="검색 지우기"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => importInputRef.current?.click()}
@@ -477,7 +523,9 @@ export function LibraryClient({
 
         {visibleEntries.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-ink/15 bg-mist/50 p-10 text-center text-sm text-ink/40">
-            이 폴더에는 아직 노트가 없습니다.
+            {query.trim()
+              ? `"${query.trim()}"에 해당하는 노트가 없습니다.`
+              : "이 폴더에는 아직 노트가 없습니다."}
           </p>
         ) : (
           <div key={selectedKey} className="space-y-8">

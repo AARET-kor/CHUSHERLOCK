@@ -10,11 +10,11 @@ import {
 import { entriesToMarkdownFiles } from "../../../../lib/codex/markdown-export";
 import { FIGURES_DIR } from "../../../../lib/ingest/figures";
 
-// Exports every entry as an Obsidian-vault-shaped folder of Markdown files
-// inside one .zip, so the user can unzip straight into (or on top of) their
-// existing Obsidian vault without any live Obsidian connection. Cropped
-// source figures ship alongside under _figures/ with links rewritten from
-// the app URL to vault-relative paths.
+// Full backup: every entry as a category-foldered tree of plain Markdown
+// files in one .zip — future-proof storage that opens anywhere (any text
+// editor; also drops cleanly into an Obsidian vault for those who use one).
+// Cropped source figures ship alongside under _figures/ with links
+// rewritten from the app URL to zip-relative paths.
 export async function GET() {
   const entries = await listEntries();
   const files = entriesToMarkdownFiles(entries);
@@ -47,7 +47,7 @@ export async function GET() {
   return new NextResponse(new Blob([buffer]), {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="cognitio-export.zip"`,
+      "Content-Disposition": `attachment; filename="cognitio-backup.zip"`,
     },
   });
 }

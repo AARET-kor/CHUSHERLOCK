@@ -118,13 +118,17 @@ export function LandingHero({
               라이브러리
             </Link>
             <Link href="/entries/new" className="transition hover:text-ink hover:underline">
-              직접 추가
+              빠른 메모
             </Link>
             <Link href="/categories" className="transition hover:text-ink hover:underline">
               분류체계
             </Link>
-            <a href="/api/export/all" className="transition hover:text-ink hover:underline">
-              Obsidian ↓
+            <a
+              href="/api/export/all"
+              title="모든 노트를 Markdown .zip으로 백업 (Obsidian 등에서도 열림)"
+              className="transition hover:text-ink hover:underline"
+            >
+              전체 백업 ↓
             </a>
           </div>
         </motion.div>

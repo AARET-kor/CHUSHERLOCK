@@ -1,7 +1,12 @@
 import { getLeafCategories } from "../codex/taxonomy";
 import { chunkDocument } from "../ingest/chunk";
 import { getAnthropicClient, isFakeMode, MODEL } from "./client";
-import { buildSystemPrompt, buildChunkPrompt, type ChunkPromptInput } from "./prompts";
+import {
+  buildSystemPrompt,
+  buildJobPrefix,
+  buildChunkTurn,
+  type ChunkPromptInput,
+} from "./prompts";
 import {
   chunkResultSchema,
   buildChunkResultJsonSchema,
@@ -35,7 +40,22 @@ export const anthropicChunkCaller: ChunkCaller = async (input) => {
         schema: buildChunkResultJsonSchema(leafKeys, figureIds),
       },
     },
-    messages: [{ role: "user", content: buildChunkPrompt(input) }],
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            // Job-stable prefix (metadata + figure list): identical for every
+            // chunk of one job, so chunks 2..N read it from cache instead of
+            // re-paying for it. The volatile part goes after the breakpoint.
+            type: "text",
+            text: buildJobPrefix(input),
+            cache_control: { type: "ephemeral" },
+          },
+          { type: "text", text: buildChunkTurn(input) },
+        ],
+      },
+    ],
   });
 
   const message = await stream.finalMessage();
@@ -75,7 +95,7 @@ export const fakeChunkCaller: ChunkCaller = async (input) => {
         categoryKey: leafKeys[input.chunkIndex % leafKeys.length]!,
         tier: "deep_study",
         tags: ["fake-mode"],
-        content: input.chunkText.slice(0, 1500),
+        content: `> **한눈에 보기**\n> 오프라인 fake 모드로 생성된 노트입니다.\n> 실제 모드에서는 이 자리에 쉬운 3-4줄 요약이 들어갑니다.\n\n${input.chunkText.slice(0, 1500)}`,
         sourceLocation: `chunk ${input.chunkIndex + 1}`,
         figureIds: (input.figures ?? []).map((f) => f.id),
       },
@@ -133,7 +153,9 @@ export async function processDocument(
       figures: input.figures,
     });
     suggestions.push(...result.entries);
-    contextSummary = result.contextSummary;
+    // Hard cap: the rolling summary feeds every later chunk's prompt, so a
+    // runaway summary compounds token cost across the whole document.
+    contextSummary = result.contextSummary.slice(0, 3500);
     await options.onProgress?.(i + 1, chunks.length);
   }
 

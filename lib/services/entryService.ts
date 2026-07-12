@@ -108,8 +108,10 @@ export interface CreateEntryResult {
 }
 
 /** Same-category entries offered to the semantic relatedness check,
- * newest first, capped so the prompt stays small. */
-const SEMANTIC_CANDIDATE_LIMIT = 40;
+ * newest first, capped so the prompt stays small (token budget). */
+const SEMANTIC_CANDIDATE_LIMIT = 24;
+/** Chars of each candidate note shown to the relatedness screen. */
+const SEMANTIC_EXCERPT_CHARS = 240;
 
 async function semanticRelatedIds(input: CreateEntryInput): Promise<string[]> {
   const candidateRows = await db
@@ -131,7 +133,7 @@ async function semanticRelatedIds(input: CreateEntryInput): Promise<string[]> {
     candidates: candidateRows.map((row) => ({
       id: row.id,
       title: row.title,
-      excerpt: row.content.slice(0, 300),
+      excerpt: row.content.slice(0, SEMANTIC_EXCERPT_CHARS),
     })),
   });
 }

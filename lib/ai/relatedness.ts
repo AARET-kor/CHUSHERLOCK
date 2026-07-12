@@ -1,4 +1,4 @@
-import { getAnthropicClient, isFakeMode, MODEL } from "./client";
+import { getAnthropicClient, isFakeMode, LIGHT_MODEL } from "./client";
 
 // Semantic overlap detection: given a new note and existing same-category
 // notes, ask the model which existing notes genuinely cover the same topic
@@ -36,7 +36,7 @@ export function buildRelatednessPrompt(input: RelatednessInput): string {
 카테고리: ${input.newNote.categoryLabel}
 제목: ${input.newNote.title}
 내용:
-${input.newNote.content.slice(0, 1500)}
+${input.newNote.content.slice(0, 1200)}
 </new_note>
 
 <existing_notes>
@@ -49,10 +49,11 @@ export const anthropicRelatednessCaller: RelatednessCaller = async (input) => {
   const client = getAnthropicClient();
   const candidateIds = input.candidates.map((c) => c.id);
 
+  // Yes/no topic matching is light-model work — no `thinking` param
+  // (unsupported on Haiku, and unneeded), 1/5 the per-token price.
   const response = await client.messages.create({
-    model: MODEL,
+    model: LIGHT_MODEL,
     max_tokens: 2000,
-    thinking: { type: "adaptive" },
     output_config: {
       format: {
         type: "json_schema",

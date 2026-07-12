@@ -3,8 +3,9 @@
 A personal + clinic knowledge base for aesthetic medicine. You feed it raw
 material — device parameters, papers, textbook chapters, personal know-how —
 and it files each piece under a category and a content tier, keeps the
-citation, links it to related existing notes instead of duplicating them, and
-exports everything as an Obsidian-ready vault.
+citation, and links it to related existing notes instead of duplicating
+them. The app itself is the library — search, decorate, share; export to
+Word/Markdown when something needs to leave.
 
 Material can be entered by hand (`/entries/new`) or run through the **AI
 ingest pipeline** (`/ingest`): upload a PDF/DOCX/text file or paste raw text,
@@ -39,13 +40,15 @@ booking/consultation-prep app) — no code or infra is shared.
   **semantic pass** (`lib/ai/relatedness.ts`) where Claude judges
   same-category notes for genuine topic overlap. The semantic pass never
   blocks a save — if the model is unavailable it degrades to the heuristic.
-  The related-notes section becomes Obsidian wikilinks on export.
-- **Markdown export over live sync.** Obsidian integration ships as a
-  "download a vault-shaped .zip / .md" flow (`/api/export/all`,
-  `/api/entries/[id]/export`) rather than a live Obsidian REST API
-  connection. Drop the export into (or on top of) your vault folder and
-  Obsidian picks it up — no plugin or running Obsidian instance required on
-  the server side.
+- **The app IS the library — no Obsidian required.** Cognitio stopped
+  treating Obsidian as the destination: you read, search, decorate, and
+  share notes here. Exports are for the real-world cases instead:
+  - **전체 백업** (`/api/export/all`) — every note as plain Markdown in a
+    category-foldered .zip. Future-proof, opens in any editor (and yes,
+    still drops cleanly into an Obsidian vault if you use one).
+  - **Word/HTML per note** — for handing a protocol to staff or colleagues
+    who live in Word; images embedded so nothing breaks.
+  - **.cognote 공유** — lossless note exchange between Cognitio users.
 
 ## Stack
 
@@ -79,8 +82,24 @@ over-summarize** — read the document's flow, then reorganize by 목차 and
    chunk **plus an updated rolling summary of the document so far**, which
    is fed into the next chunk's prompt — that's how a 300-page textbook gets
    read as one coherent document instead of 40 disconnected fragments.
-   The system prompt is static so prompt caching keeps per-chunk cost down.
-4. **Review** (`/ingest`) — suggestions render as editable cards (title,
+   Every note opens with an easy 3-4 line "한눈에 보기" summary, then the
+   source-faithful body.
+4. **Token efficiency** — the pipeline is tuned to keep API cost per
+   document low:
+   - **Two-model split**: the main model (`CODEX_AI_MODEL`, default
+     `claude-opus-4-8`) only does the part where quality matters — reading
+     chunks and writing notes. Mechanical subtasks (verbatim OCR
+     transcription, relatedness screening) run on `CODEX_AI_MODEL_LIGHT`
+     (default `claude-haiku-4-5`, ~1/5 the per-token price, no thinking
+     tokens).
+   - **Prompt caching at two breakpoints**: the static system prompt
+     (taxonomy + note-writing rules) and the job-stable prefix (document
+     metadata + figure list) each carry a `cache_control` marker, so chunks
+     2..N read both from cache (~0.1× input price) instead of re-paying.
+   - **Bounded rolling context**: the cross-chunk summary is hard-capped,
+     and relatedness candidates are trimmed (24 notes × 240-char excerpts),
+     so prompts can't grow unboundedly on large libraries.
+5. **Review** (`/ingest`) — suggestions render as editable cards (title,
    category, tier, content, tags, source location). Saving goes through the
    same `entryService.createEntry` as manual entry, so overlap
    auto-linking and the mandatory-source rule apply unchanged.
@@ -92,8 +111,9 @@ Environment:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...   # or `ant auth login`
-CODEX_AI_MODEL=claude-opus-4-8 # optional override
-CODEX_AI_MODE=fake             # optional: offline deterministic mode (no API calls)
+CODEX_AI_MODEL=claude-opus-4-8       # main model (notes) — optional override
+CODEX_AI_MODEL_LIGHT=claude-haiku-4-5 # light model (OCR/relatedness) — optional
+CODEX_AI_MODE=fake                    # optional: offline deterministic mode (no API calls)
 ```
 
 ## 노트 꾸미기 & 공유

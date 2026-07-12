@@ -28,8 +28,13 @@ You must return:
 - **DO NOT over-summarize.** This is the most important rule. The doctor explicitly wants the substance preserved: parameters, doses, numbers, step sequences, mechanisms, cautions. Reorganize for readability — headings, bullet lists, short paragraphs — but keep the detail. If a chunk is dense, produce several entries rather than one compressed one.
 - **Work WITH the source text, not over it.** Your job is arrangement, not rewriting: lift the document's own sentences, numbers, and phrasing into a clean structure. Paraphrase only when the original is unreadable. Never replace specifics with generalities ("적절한 용량" ← 금지; 원문의 수치를 그대로).
 - **Structure every note for fast scanning:**
-  - First line: a one-sentence bold overview (**...**) of what this note covers and when it matters.
-  - Use \`##\` section headings to break the note by sub-topic.
+  - **Every note OPENS with an easy 3-4 line summary, then the source-faithful body.** The very first thing in the note is this blockquote:
+
+    > **한눈에 보기**
+    > (쉬운 말로 3-4줄: 이 노트가 무엇을 다루고, 왜/언제 중요한지, 놓치면 안 되는 핵심 수치 1-2개.)
+
+    Write the summary in plain, immediately understandable language — 바쁜 진료 중에 훑어도 이해되게. It is the ONLY place where simplifying is allowed; the body below it must stay source-faithful. Do not repeat the title in the summary.
+  - AFTER the summary, use \`##\` section headings to break the source-based body by sub-topic.
   - Put parameters, doses, intervals, and settings in a Markdown table or a bold-labeled bullet list — never buried in prose.
   - Put contraindications, dangers, and stop-signals in a \`>\` blockquote starting with **주의** so they visually pop.
   - Bold every clinically load-bearing number or threshold.
@@ -88,7 +93,13 @@ export interface ChunkPromptInput {
   figures?: PromptFigure[];
 }
 
-export function buildChunkPrompt(input: ChunkPromptInput): string {
+/** The part of the user message that is byte-identical for every chunk of
+ * one job (document metadata + figure list). Kept separate so it can carry
+ * its own cache_control breakpoint — chunks 2..N then read the system
+ * prompt AND this block from cache instead of paying for them again. */
+export function buildJobPrefix(
+  input: Pick<ChunkPromptInput, "sourceLabel" | "sourceCitation" | "formatNote" | "figures">
+): string {
   const figureList =
     input.figures && input.figures.length > 0
       ? input.figures
@@ -103,12 +114,16 @@ export function buildChunkPrompt(input: ChunkPromptInput): string {
 자료명: ${input.sourceLabel}
 출처: ${input.sourceCitation}
 형식: ${input.formatNote}
-진행: chunk ${input.chunkIndex + 1} / ${input.totalChunks}
 </document_metadata>
 
 <figures>
 ${figureList}
-</figures>
+</figures>`;
+}
+
+/** The per-chunk (volatile) part: progress, rolling summary, chunk text. */
+export function buildChunkTurn(input: ChunkPromptInput): string {
+  return `<progress>chunk ${input.chunkIndex + 1} / ${input.totalChunks}</progress>
 
 <context_so_far>
 ${input.contextSummary || "(첫 번째 chunk입니다 — 아직 읽은 내용이 없습니다.)"}
@@ -119,4 +134,8 @@ ${input.chunkText}
 </chunk>
 
 위 chunk를 읽고, 문서의 흐름과 맥락(context_so_far 참고)을 고려하여 entries와 갱신된 contextSummary를 반환하세요. 관련 시각 자료가 있으면 각 entry의 figureIds에 배정하세요.`;
+}
+
+export function buildChunkPrompt(input: ChunkPromptInput): string {
+  return `${buildJobPrefix(input)}\n\n${buildChunkTurn(input)}`;
 }
