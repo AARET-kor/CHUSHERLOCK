@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEntry, listEntries } from "../../../lib/services/entryService";
+import { clusterNavForEntry } from "../../../lib/services/clusterService";
 import { TierBadge } from "../../../components/TierBadge";
 import { CategoryBadge } from "../../../components/CategoryBadge";
 import { MarkdownContent } from "../../../components/MarkdownContent";
@@ -20,8 +21,46 @@ export default async function EntryDetailPage({
     .map((relatedId) => allEntries.find((e) => e.id === relatedId))
     .filter((e): e is NonNullable<typeof e> => Boolean(e));
 
+  const nav = await clusterNavForEntry(id);
+
   return (
     <div>
+      {nav && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-ink/10 bg-mist/50 px-4 py-2.5 text-xs">
+          <Link href="/study" className="min-w-0 truncate text-ink/70 hover:text-ink">
+            <span className="text-ink/40">학습 묶음 · </span>
+            <span className="font-medium">{nav.clusterTitle}</span>
+            <span className="ml-1.5 tabular-nums text-ink/40">
+              {nav.position + 1}/{nav.total}
+            </span>
+          </Link>
+          <div className="flex shrink-0 gap-1.5">
+            {nav.prev ? (
+              <Link
+                href={`/entries/${nav.prev.id}`}
+                title={nav.prev.title}
+                className="rounded-full border border-ink/15 bg-white px-2.5 py-1 text-ink/60 transition hover:border-ink/40 hover:text-ink"
+              >
+                ← 이전
+              </Link>
+            ) : (
+              <span className="rounded-full border border-ink/5 px-2.5 py-1 text-ink/25">← 이전</span>
+            )}
+            {nav.next ? (
+              <Link
+                href={`/entries/${nav.next.id}`}
+                title={nav.next.title}
+                className="rounded-full border border-ink/15 bg-white px-2.5 py-1 text-ink/60 transition hover:border-ink/40 hover:text-ink"
+              >
+                다음 →
+              </Link>
+            ) : (
+              <span className="rounded-full border border-ink/5 px-2.5 py-1 text-ink/25">다음 →</span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <TierBadge tier={entry.tier} />
         <CategoryBadge categoryKey={entry.categoryKey} />

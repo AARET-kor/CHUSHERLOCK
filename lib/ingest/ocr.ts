@@ -75,6 +75,29 @@ async function extractPageSegment(
   return segment.saveAsBase64();
 }
 
+// Claude's request cap is 32MB. base64 inflates bytes by ~33%, so keep each
+// encoded segment comfortably under that. If a page-count segment is denser
+// than expected (high-DPI scans), it gets split further at send time so a
+// huge scan is transcribed in more, smaller calls instead of failing.
+const MAX_SEGMENT_BASE64_BYTES = 26 * 1024 * 1024;
+
+/** Transcribe one page range, splitting it in half (recursively) whenever the
+ * encoded PDF would exceed the request limit. Returns the joined text. */
+async function transcribeRange(
+  source: PDFDocument,
+  start: number,
+  end: number
+): Promise<string> {
+  const segmentBase64 = await extractPageSegment(source, start, end);
+  if (segmentBase64.length <= MAX_SEGMENT_BASE64_BYTES || end <= start) {
+    return transcribePdfSegment(segmentBase64);
+  }
+  const mid = Math.floor((start + end) / 2);
+  const left = await transcribeRange(source, start, mid);
+  const right = await transcribeRange(source, mid + 1, end);
+  return `${left}\n\n${right}`;
+}
+
 export async function ocrPdf(
   buffer: Buffer,
   onProgress?: (segment: number, totalSegments: number) => void | Promise<void>
@@ -89,8 +112,7 @@ export async function ocrPdf(
 
   for (let i = 0; i < ranges.length; i++) {
     const [start, end] = ranges[i]!;
-    const segmentBase64 = await extractPageSegment(source, start, end);
-    parts.push(await transcribePdfSegment(segmentBase64));
+    parts.push(await transcribeRange(source, start, end));
     await onProgress?.(i + 1, ranges.length);
   }
 

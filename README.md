@@ -84,21 +84,28 @@ over-summarize** — read the document's flow, then reorganize by 목차 and
    read as one coherent document instead of 40 disconnected fragments.
    Every note opens with an easy 3-4 line "한눈에 보기" summary, then the
    source-faithful body.
-4. **Token efficiency** — the pipeline is tuned to keep API cost per
-   document low:
-   - **Two-model split**: the main model (`CODEX_AI_MODEL`, default
-     `claude-opus-4-8`) only does the part where quality matters — reading
-     chunks and writing notes. Mechanical subtasks (verbatim OCR
-     transcription, relatedness screening) run on `CODEX_AI_MODEL_LIGHT`
-     (default `claude-haiku-4-5`, ~1/5 the per-token price, no thinking
-     tokens).
-   - **Prompt caching at two breakpoints**: the static system prompt
-     (taxonomy + note-writing rules) and the job-stable prefix (document
-     metadata + figure list) each carry a `cache_control` marker, so chunks
-     2..N read both from cache (~0.1× input price) instead of re-paying.
-   - **Bounded rolling context**: the cross-chunk summary is hard-capped,
-     and relatedness candidates are trimmed (24 notes × 240-char excerpts),
-     so prompts can't grow unboundedly on large libraries.
+   Notes are also written as a **living organism, not a transcript**: the
+   model is instructed to ruthlessly drop 신변잡기·여담·광고·references and
+   keep only clinically load-bearing content in full, follow one uniform
+   skeleton (요약 → 본문 → 핵심 한 줄 → 🔗 연계 학습), and end each note with
+   follow-up study threads that the clustering pass then uses to connect
+   notes.
+4. **Three-tier token efficiency** — each call goes to the cheapest model
+   that does the job well:
+   - **Opus** (`CODEX_AI_MODEL`, default `claude-opus-4-8`) — reading chunks
+     and writing the actual notes. Quality-critical; this is the product.
+   - **Sonnet** (`CODEX_AI_MODEL_MID`, default `claude-sonnet-5`) —
+     structured judgement over many items: figure bounding-box detection
+     (vision) and the learning-cluster pass. Near-Opus quality at a fraction
+     of the cost, and the clusterer reads compact note digests, not full
+     bodies.
+   - **Haiku** (`CODEX_AI_MODEL_LIGHT`, default `claude-haiku-4-5`) —
+     mechanical work: verbatim OCR transcription and relatedness screening.
+     ~1/5 the per-token price, no thinking tokens.
+   Plus: **prompt caching at two breakpoints** (static system prompt + the
+   job-stable prefix — chunks 2..N read both from cache at ~0.1× input
+   price), and **bounded context** (rolling summary hard-capped, relatedness
+   candidates trimmed to 24 notes × 240-char excerpts).
 5. **Review** (`/ingest`) — suggestions render as editable cards (title,
    category, tier, content, tags, source location). Saving goes through the
    same `entryService.createEntry` as manual entry, so overlap
@@ -107,12 +114,43 @@ over-summarize** — read the document's flow, then reorganize by 목차 and
 Jobs run in the background (`ingest_jobs` table) and the UI polls progress —
 a large document takes minutes and that's expected.
 
+### Large files (PDF / Word)
+
+The upload cap is **`CODEX_MAX_UPLOAD_MB` (default 100MB)**, not 30. Why big
+files are usually fine now:
+
+- **Text-layer PDFs and Word/PPT** are extracted **locally** (pdf-parse /
+  mammoth) — the model never sees the raw file, so file size barely affects
+  token cost. What drives cost is the extracted *text* length, chunked and
+  cached as above. A 60MB text PDF is not 60MB of tokens.
+- **Scanned PDFs** (no text layer) fall back to Claude vision OCR, which
+  *is* per-page work. Those are split into request-sized segments, and each
+  segment is **adaptively halved** if its encoded size would approach
+  Claude's 32MB request limit (`lib/ingest/ocr.ts`) — so a large scan is
+  billed page-by-page over more, smaller calls instead of failing or
+  timing out. OCR runs on Haiku to keep that bill low.
+- Practical guidance for a *very* large scanned textbook: cost scales with
+  page count, so ingest by chapter if you want to spread it out — but it
+  won't shut down. The old 30MB rejection is gone.
+
+### Learning clusters (`/study`)
+
+After notes exist, the **학습 (Study)** page groups them into learning
+clusters — small sets best studied together, in order, with a rationale and
+follow-up topics — via one Sonnet pass over compact note digests
+(`lib/ai/clusters.ts`, `lib/services/clusterService.ts`). Each note page
+then shows a **cluster nav bar** with 이전/다음 so you move through a topic
+chunk by chunk instead of jumping between fragments. Clusters are a derived
+view: press **다시 묶기** to rebuild after adding notes.
+
 Environment:
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-...   # or `ant auth login`
-CODEX_AI_MODEL=claude-opus-4-8       # main model (notes) — optional override
+ANTHROPIC_API_KEY=sk-ant-...          # or `ant auth login`
+CODEX_AI_MODEL=claude-opus-4-8        # main model (notes) — optional override
+CODEX_AI_MODEL_MID=claude-sonnet-5    # mid model (figures/clusters) — optional
 CODEX_AI_MODEL_LIGHT=claude-haiku-4-5 # light model (OCR/relatedness) — optional
+CODEX_MAX_UPLOAD_MB=100               # optional upload cap
 CODEX_AI_MODE=fake                    # optional: offline deterministic mode (no API calls)
 ```
 

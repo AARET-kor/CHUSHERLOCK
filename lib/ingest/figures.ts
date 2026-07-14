@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { getAnthropicClient, isFakeMode, MODEL } from "../ai/client";
+import { getAnthropicClient, isFakeMode, MID_MODEL } from "../ai/client";
 import { db } from "../db/client";
 import { figures } from "../db/schema";
 
@@ -102,10 +102,12 @@ const DETECT_SCHEMA = {
 
 async function detectRegions(pagePng: Buffer, width: number, height: number): Promise<FigureRegion[]> {
   const client = getAnthropicClient();
+  // Bbox detection is per-page vision work — Sonnet handles it with
+  // near-identical crop accuracy at a fraction of Opus cost. `thinking` is
+  // omitted so the call stays valid for any model the env override names.
   const response = await client.messages.create({
-    model: MODEL,
+    model: MID_MODEL,
     max_tokens: 4000,
-    thinking: { type: "adaptive" },
     output_config: { format: { type: "json_schema", schema: DETECT_SCHEMA } },
     messages: [
       {

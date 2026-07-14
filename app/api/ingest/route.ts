@@ -17,7 +17,14 @@ const metadataSchema = z.object({
   sourceUrl: z.string().url().optional().or(z.literal("")),
 });
 
-const MAX_UPLOAD_BYTES = 30 * 1024 * 1024; // Claude PDF request limit is 32MB
+// Upload cap. Text-layer PDFs and Word/PPT docs are extracted LOCALLY
+// (pdf-parse / mammoth) with no per-page model cost, so their size barely
+// affects token spend — the cap here is mostly a memory guard. Scanned PDFs
+// that fall back to vision OCR are split into request-sized segments
+// downstream (lib/ingest/ocr.ts), so a large scan is billed page-by-page,
+// not rejected. Raise/lower with CODEX_MAX_UPLOAD_MB.
+const MAX_UPLOAD_MB = Number(process.env.CODEX_MAX_UPLOAD_MB ?? 100);
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -41,7 +48,9 @@ export async function POST(request: Request) {
   if (file instanceof File && file.size > 0) {
     if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json(
-        { error: "파일이 너무 큽니다 (최대 30MB). 파일을 나눠서 올려 주세요." },
+        {
+          error: `파일이 너무 큽니다 (최대 ${MAX_UPLOAD_MB}MB). 더 큰 파일이 필요하면 CODEX_MAX_UPLOAD_MB 환경변수를 올리거나, 챕터별로 나눠서 올려 주세요.`,
+        },
         { status: 400 }
       );
     }

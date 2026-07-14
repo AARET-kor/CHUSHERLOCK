@@ -85,6 +85,37 @@ export const figures = sqliteTable("figures", {
   createdAt: text("created_at").notNull(),
 });
 
+// Learning clusters (학습 묶음): AI-curated groups of related notes with a
+// study order, a rationale, and follow-up study suggestions — so knowledge
+// is consumed in coherent chunks instead of fragments. Rebuilt as a whole
+// by the cluster pass; rows are cheap and disposable.
+export const clusters = sqliteTable("clusters", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  /** Why these notes belong together / what studying them yields. */
+  description: text("description").notNull(),
+  /** Follow-up topics worth studying next (연계 학습 제안). */
+  suggestions: text("suggestions", { mode: "json" }).notNull().$type<string[]>(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const clusterEntries = sqliteTable(
+  "cluster_entries",
+  {
+    clusterId: text("cluster_id")
+      .notNull()
+      .references(() => clusters.id, { onDelete: "cascade" }),
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => entries.id, { onDelete: "cascade" }),
+    /** Recommended study order within the cluster (0-based). */
+    position: integer("position").notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.clusterId, table.entryId] }),
+  })
+);
+
 // Self-referencing overlap/relation links, so new material that overlaps an
 // existing entry gets linked instead of duplicated (per the "existing vs.
 // new content should overlap naturally, not collide" requirement).
