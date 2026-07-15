@@ -1,0 +1,1 @@
+ALTER TABLE `ingest_jobs` ADD `figure_note` text;

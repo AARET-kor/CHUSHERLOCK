@@ -67,6 +67,10 @@ export const ingestJobs = sqliteTable("ingest_jobs", {
   processedChunks: integer("processed_chunks").notNull().default(0),
   suggestions: text("suggestions", { mode: "json" }).$type<unknown[]>(),
   error: text("error"),
+  /** Human-readable status of figure/graph extraction for this job: a count
+   * summary on success, or the failure reason (so extraction problems are
+   * visible instead of silently swallowed). */
+  figureNote: text("figure_note"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

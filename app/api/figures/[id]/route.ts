@@ -16,10 +16,17 @@ const MIME: Record<string, string> = {
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [row] = await db.select().from(figures).where(eq(figures.id, id));
-  if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!row) {
+    // Surfaced in the dev terminal so a note showing no image tells you why.
+    console.error(`[figures] no DB row for id=${id}`);
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
 
   const filePath = path.join(FIGURES_DIR, path.basename(row.filename));
   if (!fs.existsSync(filePath)) {
+    console.error(
+      `[figures] file missing on disk: ${path.resolve(filePath)} (FIGURES_DIR=${FIGURES_DIR}, cwd=${process.cwd()})`
+    );
     return NextResponse.json({ error: "file missing" }, { status: 404 });
   }
 

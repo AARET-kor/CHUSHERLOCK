@@ -71,18 +71,44 @@ export async function startIngestJob(input: CreateIngestJobInput): Promise<Inges
   return job;
 }
 
-async function extractFigures(jobId: string, file: { buffer: Buffer; filename: string }): Promise<FigureRecord[]> {
+interface FigureExtraction {
+  figures: FigureRecord[];
+  /** Human-readable status shown to the user (success count or failure). */
+  note: string;
+}
+
+async function extractFigures(
+  jobId: string,
+  file: { buffer: Buffer; filename: string }
+): Promise<FigureExtraction> {
   const lower = file.filename.toLowerCase();
+  const supported =
+    lower.endsWith(".pdf") || lower.endsWith(".docx") || lower.endsWith(".pptx");
+  if (!supported) {
+    return { figures: [], note: "이 형식은 그림 추출을 지원하지 않습니다 (PDF/DOCX/PPTX만)." };
+  }
   try {
-    if (lower.endsWith(".pdf")) return await extractPdfFigures(file.buffer, jobId);
-    if (lower.endsWith(".docx")) return await extractEmbeddedMedia(file.buffer, jobId, "word/media/");
-    if (lower.endsWith(".pptx")) return await extractEmbeddedMedia(file.buffer, jobId, "ppt/media/");
+    let figures: FigureRecord[] = [];
+    if (lower.endsWith(".pdf")) figures = await extractPdfFigures(file.buffer, jobId);
+    else if (lower.endsWith(".docx"))
+      figures = await extractEmbeddedMedia(file.buffer, jobId, "word/media/");
+    else if (lower.endsWith(".pptx"))
+      figures = await extractEmbeddedMedia(file.buffer, jobId, "ppt/media/");
+    return {
+      figures,
+      note:
+        figures.length > 0
+          ? `그림·표·그래프 ${figures.length}개를 원본에서 잘라냈습니다.`
+          : "문서에서 잘라낼 그림·표·그래프를 찾지 못했습니다.",
+    };
   } catch (error) {
     // Figures are an enhancement — a failure here must not sink the whole
-    // ingest run; the text pipeline continues without them.
-    console.warn("[figures] extraction failed:", error instanceof Error ? error.message : error);
+    // ingest run; the text pipeline continues without them. But the reason
+    // is now surfaced (job.figureNote) instead of silently swallowed.
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error("[figures] extraction failed:", reason);
+    return { figures: [], note: `그림 추출 중 오류가 발생했습니다: ${reason}` };
   }
-  return [];
 }
 
 async function runJob(id: string, input: CreateIngestJobInput): Promise<void> {
@@ -92,13 +118,17 @@ async function runJob(id: string, input: CreateIngestJobInput): Promise<void> {
   let formatNote: string;
   let sourceLabel: string;
   let jobFigures: FigureRecord[] = [];
+  let figureNote: string | null = null;
 
   if (input.file) {
     const extracted = await extractText(input.file.buffer, input.file.filename);
     text = extracted.text;
     formatNote = extracted.formatNote;
     sourceLabel = input.file.filename;
-    jobFigures = await extractFigures(id, input.file);
+    const figureResult = await extractFigures(id, input.file);
+    jobFigures = figureResult.figures;
+    figureNote = figureResult.note;
+    await updateJob(id, { figureNote });
   } else {
     text = input.pastedText ?? "";
     formatNote = "직접 입력";

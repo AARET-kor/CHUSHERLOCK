@@ -29,6 +29,7 @@ interface JobView {
   processedChunks: number;
   suggestions: SuggestedEntry[] | null;
   figures?: FigureMeta[];
+  figureNote?: string | null;
   error: string | null;
 }
 
@@ -286,6 +287,17 @@ export function IngestDock({ leafCategories }: { leafCategories: CategoryDef[] }
               수정 가능합니다. 저장 시 겹치는 기존 노트와 자동 연결되고, 잘라낸 그림·표는 노트에
               삽입됩니다. 출처: &quot;{job.sourceCitation}&quot;
             </p>
+            {job.figureNote && (
+              <p
+                className={`mt-2 rounded-lg px-3 py-1.5 text-xs ${
+                  job.figureNote.includes("오류")
+                    ? "bg-red-50 text-red-700"
+                    : "bg-mist/70 text-ink/60"
+                }`}
+              >
+                🖼️ {job.figureNote}
+              </p>
+            )}
           </div>
           {job.suggestions.map((suggestion, index) => (
             <div

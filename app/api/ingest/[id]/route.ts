@@ -21,6 +21,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       processedChunks: job.processedChunks,
       suggestions: job.suggestions ?? null,
       error: job.error,
+      figureNote: job.figureNote ?? null,
     },
   });
 }
