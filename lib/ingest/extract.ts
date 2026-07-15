@@ -16,6 +16,13 @@ export interface ExtractedDocument {
 
 const TEXT_EXTENSIONS = [".txt", ".md", ".markdown", ".csv"];
 
+/** Page-anchor marker inserted between pages of extracted PDF text so the
+ * classifier can align page-numbered figures to the notes built from the
+ * same page. Kept in one place so extract + prompt agree on the format. */
+export function pageMarker(pageNumber: number): string {
+  return `[[페이지 ${pageNumber}]]`;
+}
+
 export async function extractText(
   buffer: Buffer,
   filename: string
@@ -29,8 +36,17 @@ export async function extractText(
     let pageCount: number;
     try {
       const result = await parser.getText();
-      text = result.text;
-      pageCount = result.pages?.length ?? 0;
+      const pages = result.pages ?? [];
+      pageCount = pages.length;
+      // Anchor each page with a marker so downstream chunks carry page
+      // context. Cropped figures are stored WITH their page number, so this
+      // is what lets the model match a figure to the note built from the
+      // same page (see lib/ai/prompts.ts figureIds rules). Without it, page
+      // alignment is lost and figures rarely get attached.
+      text =
+        pages.length > 0
+          ? pages.map((p) => `${pageMarker(p.num)}\n${p.text}`).join("\n\n")
+          : result.text;
     } finally {
       await parser.destroy();
     }

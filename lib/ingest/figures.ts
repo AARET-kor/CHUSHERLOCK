@@ -122,7 +122,7 @@ async function detectRegions(pagePng: Buffer, width: number, height: number): Pr
             text: `이 문서 페이지 이미지(${width}x${height}px)에서 본문 텍스트가 아닌 시각 자료 — 그림(figure), 사진(photo), 표(table), 그래프/차트(chart), 다이어그램 — 의 영역을 찾아 픽셀 bounding box로 반환하세요.
 
 - 각 box는 해당 시각 자료 전체와 그 캡션(있다면)을 포함하도록 잡으세요.
-- caption에는 자료의 캡션 텍스트(없으면 내용을 한 줄로 설명)를 쓰세요.
+- caption에는 **이 자료가 무엇을 보여주는지 한 줄로 구체적으로** 쓰세요. 원본 캡션이 있으면 그것을 쓰되, 없거나 짧으면 주제를 알 수 있게 서술하세요 (예: "보톡스 finger maneuver로 확산 방향 조절하는 손 위치", "spread vs diffusion 비교 표"). 나중에 이 caption으로 노트와 그림을 연결하므로, 주제가 드러나게 쓰는 것이 중요합니다.
 - 본문 문단, 페이지 머리글/꼬리글, 페이지 번호, 배경 장식은 제외하세요.
 - 시각 자료가 없으면 빈 배열을 반환하세요.`,
           },

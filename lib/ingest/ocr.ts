@@ -25,16 +25,18 @@ export function pageRanges(totalPages: number, segmentSize = OCR_SEGMENT_PAGES):
   return ranges;
 }
 
-const OCR_INSTRUCTION = `이 문서는 스캔본/사진입니다. 보이는 모든 텍스트를 빠짐없이 그대로(verbatim) 전사하세요.
+function ocrInstruction(startPage: number): string {
+  return `이 문서는 스캔본/사진입니다. 보이는 모든 텍스트를 빠짐없이 그대로(verbatim) 전사하세요.
 
 - 요약하거나 생략하지 마세요. 파라미터, 수치, 표의 값은 특히 정확하게.
 - 한글/영어는 원문 그대로 유지하세요.
 - 문서 구조(제목, 소제목, 목록, 표)는 Markdown으로 표현하세요. 표는 Markdown 표로.
 - 그림/사진 자체는 전사하지 말고, 캡션이 있으면 캡션만 전사하세요.
-- 페이지가 여러 장이면 페이지 순서대로 이어서 쓰세요.
+- **각 페이지 시작 지점에 \`[[페이지 N]]\` 마커를 넣으세요.** 이 구간의 첫 페이지는 ${startPage}페이지입니다. 다음 페이지로 넘어가면 \`[[페이지 ${startPage + 1}]]\`, 그 다음은 \`[[페이지 ${startPage + 2}]]\` … 순서로 표기하세요.
 - 전사한 텍스트만 출력하고, 다른 설명은 붙이지 마세요.`;
+}
 
-async function transcribePdfSegment(pdfBase64: string): Promise<string> {
+async function transcribePdfSegment(pdfBase64: string, startPage: number): Promise<string> {
   const client = getAnthropicClient();
   // Verbatim transcription needs no reasoning — the light model does this
   // at a fraction of the cost, and omitting `thinking` (unsupported on
@@ -50,7 +52,7 @@ async function transcribePdfSegment(pdfBase64: string): Promise<string> {
             type: "document",
             source: { type: "base64", media_type: "application/pdf", data: pdfBase64 },
           },
-          { type: "text", text: OCR_INSTRUCTION },
+          { type: "text", text: ocrInstruction(startPage) },
         ],
       },
     ],
@@ -90,7 +92,8 @@ async function transcribeRange(
 ): Promise<string> {
   const segmentBase64 = await extractPageSegment(source, start, end);
   if (segmentBase64.length <= MAX_SEGMENT_BASE64_BYTES || end <= start) {
-    return transcribePdfSegment(segmentBase64);
+    // start is 0-based; page numbers shown to the model are 1-based.
+    return transcribePdfSegment(segmentBase64, start + 1);
   }
   const mid = Math.floor((start + end) / 2);
   const left = await transcribeRange(source, start, mid);
@@ -153,7 +156,7 @@ export async function ocrImage(buffer: Buffer, filename: string): Promise<string
             type: "image",
             source: { type: "base64", media_type: mediaType, data: buffer.toString("base64") },
           },
-          { type: "text", text: OCR_INSTRUCTION },
+          { type: "text", text: ocrInstruction(1) },
         ],
       },
     ],

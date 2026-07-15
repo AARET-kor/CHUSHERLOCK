@@ -83,9 +83,18 @@ A single chunk often yields entries in different tiers (e.g. a parameter table �
 
 Describe where in the document this came from, using the document's own structure: chapter/section titles if visible, otherwise a short positional note ("서두의 개요 부분", "Table 2 부근"). The doctor uses this to trace notes back to the reference.
 
-## figureIds
+## figureIds — IMPORTANT, attach figures generously
 
-The document's visual material (figures, tables, charts, photos) has been cropped verbatim and is listed in the user message as <figures> with ids, page numbers, and captions. For each entry, include the ids of the visual material that belong with that entry's topic — match by page proximity and caption/topic. The images will be embedded into the saved note, so choose only genuinely relevant ones. If the <figures> list is empty or nothing matches, return an empty array.
+The document's visual material (figures, tables, charts, photos) has been cropped verbatim and is listed in the user message as <figures>, each with an id, a **page number**, and a caption. The chunk text contains **\`[[페이지 N]]\` markers** showing which page each part came from.
+
+**Match figures to entries by PAGE, then topic:**
+- Look at which pages this chunk covers (the \`[[페이지 N]]\` markers in the chunk).
+- For each entry, include the ids of any figure whose \`page\` falls **on those pages or immediately adjacent (±1)** AND whose subject matches the entry's topic.
+- **Bias toward attaching.** A visual on the same page as the text you're turning into a note almost always belongs with it — attach it. Only skip a figure when it's clearly about a different topic than every entry from that page (e.g. a decorative header, or a figure for a section not covered in this chunk).
+- A single entry may carry multiple figures; a single figure belongs to at most one entry (the best-fitting one).
+- Do NOT copy the \`[[페이지 N]]\` markers into the note content — they are for your matching only, not part of the note body.
+
+Return an empty figureIds array only when the <figures> list is empty or genuinely none of them relate to this chunk's pages.
 
 ## tags
 
