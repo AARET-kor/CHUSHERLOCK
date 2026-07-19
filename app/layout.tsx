@@ -30,33 +30,33 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Link>
             <div className="flex items-center gap-1 rounded-full bg-mist px-2 py-1 text-sm text-ink">
               <Link href="/" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
-                대시보드
-              </Link>
-              <Link href="/ask" className="rounded-full px-3 py-1.5 font-medium transition hover:bg-white hover:shadow-sm">
-                물어보기
+                HOME
               </Link>
               <Link href="/library" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
-                라이브러리
+                LIBRARY
               </Link>
               <Link href="/study" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
-                학습
+                CHUNK!
               </Link>
               <Link
                 href="/review"
                 className="flex items-center gap-1.5 rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm"
               >
-                복습
+                ANKI&apos;s
                 {due > 0 && (
                   <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white tabular-nums">
                     {due > 99 ? "99+" : due}
                   </span>
                 )}
               </Link>
+              <Link href="/ask" className="rounded-full px-3 py-1.5 font-medium transition hover:bg-white hover:shadow-sm">
+                ASK to
+              </Link>
               <Link href="/entries/new" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
-                빠른 메모
+                Qmemo
               </Link>
               <Link href="/categories" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
-                분류체계
+                Sort
               </Link>
             </div>
           </nav>
