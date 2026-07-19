@@ -158,13 +158,42 @@ tells you what your library is missing.
 
 ### Learning clusters (`/study`)
 
-After notes exist, the **학습 (Study)** page groups them into learning
-clusters — small sets best studied together, in order, with a rationale and
-follow-up topics — via one Sonnet pass over compact note digests
-(`lib/ai/clusters.ts`, `lib/services/clusterService.ts`). Each note page
-then shows a **cluster nav bar** with 이전/다음 so you move through a topic
-chunk by chunk instead of jumping between fragments. Clusters are a derived
-view: press **다시 묶기** to rebuild after adding notes.
+The **학습 (Study)** page groups notes into learning clusters — small sets
+best studied together, in order, with a rationale and follow-up topics.
+Three ways to build them:
+
+- **AI로 묶기** — one Sonnet pass over compact note digests groups the whole
+  library (`lib/ai/clusters.ts`, `lib/services/clusterService.ts`).
+- **직접 묶기** — a manual builder: title, description, and a searchable note
+  picker where you add / remove / reorder notes into your own study unit.
+- **편집** — edit any cluster (including an AI one). Editing marks it
+  **manual**, so a later **AI 다시 묶기** rebuilds only the AI clusters and
+  **never touches your hand-curated ones** (`clusters.origin`).
+
+Each note page shows a **cluster nav bar** (이전/다음) so you move through a
+topic chunk by chunk. Any cluster can be turned into flashcards in one click
+(**🎴 카드로 학습** → generates cards for every note in it, then opens review).
+
+### Spaced repetition — flashcards (`/review`, Anki-style)
+
+Notes become long-term memory through **간격 반복 학습**. On any note press
+**🎴 카드 만들기** and Sonnet extracts focused Q/A flashcards from the
+load-bearing facts (doses, parameters, thresholds, contraindications —
+`lib/ai/flashcards.ts`). The **복습 (Review)** page then drills the cards
+that are due, Anki-style:
+
+- Flip a card (click / Space), then grade recall with **다시 / 어려움 / 보통
+  / 쉬움** (keys 1–4). Each button previews the next interval.
+- An **SM-2 scheduler** (`lib/srs/scheduler.ts`, fully unit-tested) sets
+  when the card returns: learning steps first, then intervals that compound
+  by the card's ease — **Daily → Weekly → Monthly → …** — so you stop
+  re-seeing what you already know and forgotten cards resurface fast.
+- The nav **복습** link shows a live badge of cards due now; the review page
+  shows due / learning / total counts.
+
+Cards are stored in the `flashcards` table with their full SM-2 state
+(ease, interval, reps, lapses, due date); scheduling is pure and testable,
+the service just persists it.
 
 Environment:
 

@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEntry, listEntries } from "../../../lib/services/entryService";
 import { clusterNavForEntry } from "../../../lib/services/clusterService";
+import { listCardsForEntry } from "../../../lib/services/flashcardService";
 import { TierBadge } from "../../../components/TierBadge";
 import { CategoryBadge } from "../../../components/CategoryBadge";
 import { MarkdownContent } from "../../../components/MarkdownContent";
+import { CardActions } from "../../../components/CardActions";
 import { deleteEntryAction } from "../../../lib/actions/entryActions";
 
 export default async function EntryDetailPage({
@@ -22,6 +24,7 @@ export default async function EntryDetailPage({
     .filter((e): e is NonNullable<typeof e> => Boolean(e));
 
   const nav = await clusterNavForEntry(id);
+  const cards = await listCardsForEntry(id);
 
   return (
     <div>
@@ -74,6 +77,14 @@ export default async function EntryDetailPage({
       <article className="card mb-8 p-6">
         <MarkdownContent content={entry.content} />
       </article>
+
+      {/* Spaced-repetition flashcards from this note */}
+      <section className="mb-8 rounded-2xl border border-ink/10 bg-mist/40 p-4">
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-ink/40">
+          🎴 능동 학습 — 이 노트를 플래시카드로
+        </p>
+        <CardActions entryId={entry.id} initialCount={cards.length} />
+      </section>
 
       {entry.sources.length > 0 && (
         <section className="mb-8">

@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { dueCardCount } from "../lib/services/flashcardService";
 
 export const metadata: Metadata = {
   title: "Cognitio",
   description: "미용의학 지식을 읽고, 분류하고, 연결하는 개인 지식 엔진.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/** Number of flashcards due now — shown as a nav badge. Safe before the
+ * flashcards table exists (fresh clone pre-migration): returns 0. */
+async function safeDueCount(): Promise<number> {
+  try {
+    return await dueCardCount();
+  } catch {
+    return 0;
+  }
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const due = await safeDueCount();
   return (
     <html lang="ko">
       <body className="min-h-screen">
@@ -28,6 +40,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Link>
               <Link href="/study" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 학습
+              </Link>
+              <Link
+                href="/review"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm"
+              >
+                복습
+                {due > 0 && (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white tabular-nums">
+                    {due > 99 ? "99+" : due}
+                  </span>
+                )}
               </Link>
               <Link href="/entries/new" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 빠른 메모

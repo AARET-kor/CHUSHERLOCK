@@ -66,8 +66,9 @@ export async function rebuildClusters(
   const timestamp = new Date().toISOString();
 
   db.transaction((tx) => {
-    tx.delete(clusterEntries).run();
-    tx.delete(clusters).run();
+    // Only AI clusters are replaced — hand-curated (manual) clusters and any
+    // AI cluster the user edited survive a rebuild. Links cascade-delete.
+    tx.delete(clusters).where(eq(clusters.origin, "ai")).run();
     for (const cluster of result) {
       const id = randomUUID();
       tx.insert(clusters)
@@ -76,6 +77,7 @@ export async function rebuildClusters(
           title: cluster.title,
           description: cluster.description,
           suggestions: cluster.suggestions,
+          origin: "ai",
           createdAt: timestamp,
         })
         .run();
@@ -96,10 +98,12 @@ export interface ClusterView {
   title: string;
   description: string;
   suggestions: string[];
+  origin: "ai" | "manual";
   entries: CodexEntry[];
 }
 
-/** All clusters, each with its notes hydrated in study order. */
+/** All clusters, each with its notes hydrated in study order. Manual
+ * (hand-curated) clusters are listed first. */
 export async function listClusters(): Promise<ClusterView[]> {
   const clusterRows = await db.select().from(clusters).orderBy(asc(clusters.createdAt));
   if (clusterRows.length === 0) return [];
@@ -121,15 +125,86 @@ export async function listClusters(): Promise<ClusterView[]> {
     linksByCluster.get(link.clusterId)!.push(link);
   }
 
-  return clusterRows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    suggestions: row.suggestions,
-    entries: (linksByCluster.get(row.id) ?? [])
-      .map((l) => entryById.get(l.entryId))
-      .filter((e): e is CodexEntry => Boolean(e)),
-  }));
+  return clusterRows
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      suggestions: row.suggestions,
+      origin: (row.origin as "ai" | "manual") ?? "ai",
+      entries: (linksByCluster.get(row.id) ?? [])
+        .map((l) => entryById.get(l.entryId))
+        .filter((e): e is CodexEntry => Boolean(e)),
+    }))
+    // manual clusters first, then AI
+    .sort((a, b) => (a.origin === b.origin ? 0 : a.origin === "manual" ? -1 : 1));
+}
+
+export interface ClusterInputData {
+  title: string;
+  description?: string;
+  suggestions?: string[];
+  /** Note ids in study order. */
+  entryIds: string[];
+}
+
+/** Create a hand-curated learning cluster (origin=manual, preserved across
+ * "다시 묶기"). */
+export async function createManualCluster(input: ClusterInputData): Promise<string> {
+  if (input.entryIds.length === 0) throw new Error("묶음에 노트를 하나 이상 넣어 주세요.");
+  const id = randomUUID();
+  const ts = new Date().toISOString();
+  db.transaction((tx) => {
+    tx.insert(clusters)
+      .values({
+        id,
+        title: input.title.trim() || "새 학습 묶음",
+        description: input.description?.trim() ?? "",
+        suggestions: input.suggestions ?? [],
+        origin: "manual",
+        createdAt: ts,
+      })
+      .run();
+    tx.insert(clusterEntries)
+      .values(input.entryIds.map((entryId, position) => ({ clusterId: id, entryId, position })))
+      .run();
+  });
+  return id;
+}
+
+/** Edit a cluster's fields and/or its note set. Editing converts an AI
+ * cluster to manual so a rebuild won't overwrite the user's changes. */
+export async function updateCluster(
+  id: string,
+  patch: { title?: string; description?: string; suggestions?: string[]; entryIds?: string[] }
+): Promise<void> {
+  const [existing] = await db.select().from(clusters).where(eq(clusters.id, id));
+  if (!existing) throw new Error("학습 묶음을 찾을 수 없습니다.");
+
+  db.transaction((tx) => {
+    tx.update(clusters)
+      .set({
+        title: patch.title?.trim() ?? existing.title,
+        description: patch.description?.trim() ?? existing.description,
+        suggestions: patch.suggestions ?? existing.suggestions,
+        origin: "manual", // an edited cluster is now user-owned
+      })
+      .where(eq(clusters.id, id))
+      .run();
+
+    if (patch.entryIds) {
+      tx.delete(clusterEntries).where(eq(clusterEntries.clusterId, id)).run();
+      if (patch.entryIds.length > 0) {
+        tx.insert(clusterEntries)
+          .values(patch.entryIds.map((entryId, position) => ({ clusterId: id, entryId, position })))
+          .run();
+      }
+    }
+  });
+}
+
+export async function deleteCluster(id: string): Promise<void> {
+  await db.delete(clusters).where(eq(clusters.id, id));
 }
 
 export interface ClusterNav {
