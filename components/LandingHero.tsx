@@ -169,7 +169,11 @@ export function LandingHero({
               그대로 잘라 노트에 담습니다.
             </motion.p>
 
-            <motion.div variants={fadeUp} transition={{ duration: 0.8, ease: "easeOut" }} className="mt-8">
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="mt-8 flex flex-wrap items-center gap-3"
+            >
               <button
                 type="button"
                 onClick={scrollToDock}
@@ -184,6 +188,12 @@ export function LandingHero({
                   자료 넣기
                 </span>
               </button>
+              <Link
+                href="/ask"
+                className="rounded-md border border-ink/20 px-6 py-3.5 text-[15px] font-medium text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/50"
+              >
+                💬 노트에게 물어보기
+              </Link>
             </motion.div>
           </motion.div>
 

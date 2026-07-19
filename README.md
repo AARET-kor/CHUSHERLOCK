@@ -1,6 +1,8 @@
 # Cognitio
 
-A personal + clinic knowledge base for aesthetic medicine. You feed it raw
+A personal + clinic knowledge base for aesthetic medicine — and a clinical
+assistant you can **ask**: it answers from your own notes and cites them
+(`/ask`, see below). You feed it raw
 material — device parameters, papers, textbook chapters, personal know-how —
 and it files each piece under a category and a content tier, keeps the
 citation, and links it to related existing notes instead of duplicating
@@ -132,6 +134,27 @@ files are usually fine now:
 - Practical guidance for a *very* large scanned textbook: cost scales with
   page count, so ingest by chapter if you want to spread it out — but it
   won't shut down. The old 30MB rejection is gone.
+
+### Ask Cognitio (`/ask`)
+
+The **물어보기 (Ask)** page turns the knowledge base into a clinical
+assistant: type a question and it answers **using only your own notes**,
+citing the ones it used. Two stages:
+
+1. **Retrieval** (`lib/ai/retrieval.ts`) — a dependency-free BM25-lite
+   ranker (field-weighted title/tags/content, IDF-scaled, CJK-bigram
+   tokenized for the mixed KO/EN note style) picks the most relevant ~16
+   notes. No embedding service or vector DB — a personal library ranks well
+   lexically and it runs instantly.
+2. **Synthesis** (`lib/ai/ask.ts`, `app/api/ask/route.ts`) — those notes go
+   to Opus with a strict grounding prompt: answer only from the notes, cite
+   inline as `[n]`, preserve the notes' own numbers, and say plainly when
+   the notes don't cover it (**never invent** — this is clinical use). The
+   answer **streams** token by token; the retrieved source notes ride in an
+   `X-Ask-Sources` header and render as numbered, clickable citations.
+
+Because it refuses to answer beyond the notes, "no answer" is a feature: it
+tells you what your library is missing.
 
 ### Learning clusters (`/study`)
 
