@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { CodexEntry, CategoryDef, ContentTier } from "../lib/codex/types";
 import { CONTENT_TIERS } from "../lib/codex/tiers";
 import { stripDecorations } from "../lib/codex/decorations";
@@ -16,6 +16,7 @@ interface TreeNode {
   /** Notes under this key or any descendant. */
   totalCount: number;
 }
+
 
 function buildTree(taxonomy: CategoryDef[], counts: Map<string, number>): TreeNode[] {
   const byParent = new Map<string | undefined, CategoryDef[]>();
@@ -222,8 +223,30 @@ export function LibraryClient({
   taxonomy: CategoryDef[];
 }) {
   const router = useRouter();
-  const [selectedKey, setSelectedKey] = useState<string>("all");
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Folder position (selected category + which folders are open) lives in the
+  // URL query, not just React state — so clicking a note and pressing Back
+  // returns you to exactly where you were instead of resetting to the top.
+  // useSearchParams reads the same value on server and client (this page is
+  // force-dynamic), so seeding initial state from it is hydration-safe.
+  const searchParams = useSearchParams();
+  const [selectedKey, setSelectedKey] = useState<string>(() => searchParams.get("cat") || "all");
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set((searchParams.get("open") || "").split(",").filter(Boolean))
+  );
+
+  // Keep the current history entry's URL in sync with the folder position.
+  // replaceState (not push) so drilling down doesn't spam history, but the
+  // entry Back returns to still carries the drilled-down position.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (selectedKey === "all") params.delete("cat");
+    else params.set("cat", selectedKey);
+    if (expanded.size === 0) params.delete("open");
+    else params.set("open", Array.from(expanded).join(","));
+    const qs = params.toString();
+    window.history.replaceState(window.history.state, "", window.location.pathname + (qs ? `?${qs}` : ""));
+  }, [selectedKey, expanded]);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [mergeOpen, setMergeOpen] = useState(false);
   const [mergeTitle, setMergeTitle] = useState("");
