@@ -20,6 +20,22 @@ describe("clampRegion", () => {
     expect(clampRegion({ ...base, x: 0, y: 0, width: 20, height: 20 }, 1400, 1900)).toBeNull();
     expect(clampRegion({ ...base, x: 1390, y: 0, width: 500, height: 500 }, 1400, 1900)).toBeNull();
   });
+
+  it("rejects non-finite coords instead of producing a NaN box", () => {
+    expect(clampRegion({ ...base, x: NaN, y: 0, width: 300, height: 300 }, 1400, 1900)).toBeNull();
+    expect(
+      clampRegion({ ...base, x: 0, y: 0, width: Infinity, height: 300 }, 1400, 1900)
+    ).toBeNull();
+  });
+
+  it("never lets a clamped box exceed the page bounds", () => {
+    const r = clampRegion({ ...base, x: 1399, y: 1899, width: 999, height: 999 }, 1400, 1900);
+    // x/y capped at pageDim-1, width/height cannot push past the edge
+    if (r) {
+      expect(r.x + r.width).toBeLessThanOrEqual(1400);
+      expect(r.y + r.height).toBeLessThanOrEqual(1900);
+    }
+  });
 });
 
 describe("extractPptxText", () => {

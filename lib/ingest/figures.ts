@@ -40,6 +40,11 @@ export function clampRegion(
   pageWidth: number,
   pageHeight: number
 ): FigureRegion | null {
+  // Reject non-finite coords (NaN/Infinity) up front — otherwise the Math.min
+  // chain propagates NaN into a box sharp would reject with "bad extract area".
+  if (![region.x, region.y, region.width, region.height].every(Number.isFinite)) {
+    return null;
+  }
   const x = Math.max(0, Math.min(Math.round(region.x), pageWidth - 1));
   const y = Math.max(0, Math.min(Math.round(region.y), pageHeight - 1));
   const width = Math.min(Math.round(region.width), pageWidth - x);
@@ -159,20 +164,34 @@ export async function extractPdfFigures(
       const rendered = shot.pages[0];
       if (!rendered) continue;
       const png = Buffer.from(rendered.data);
-      const width = Math.round(rendered.width);
-      const height = Math.round(rendered.height);
+
+      // Clamp against the ACTUAL decoded pixel dimensions, not the renderer's
+      // reported (and rounded) width/height — sharp.extract() validates the
+      // crop box against the real image, and a 1px mismatch there is what
+      // throws "extract_area: bad extract area".
+      const meta = await sharp.default(png).metadata();
+      const width = meta.width ?? Math.round(rendered.width);
+      const height = meta.height ?? Math.round(rendered.height);
 
       const regions = await detectRegions(png, width, height);
       for (const raw of regions) {
         const region = clampRegion(raw, width, height);
         if (!region) continue;
-        const cropped = await sharp.default(png).extract({
-          left: region.x,
-          top: region.y,
-          width: region.width,
-          height: region.height,
-        }).png().toBuffer();
-        records.push(await saveFigure(jobId, cropped, "png", region.kind, region.caption, page));
+        // One out-of-bounds box must not sink the whole page's figures.
+        try {
+          const cropped = await sharp.default(png).extract({
+            left: region.x,
+            top: region.y,
+            width: region.width,
+            height: region.height,
+          }).png().toBuffer();
+          records.push(await saveFigure(jobId, cropped, "png", region.kind, region.caption, page));
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : String(error);
+          console.warn(
+            `[figures] skipped a region on page ${page} (${region.x},${region.y} ${region.width}x${region.height} of ${width}x${height}): ${reason}`
+          );
+        }
       }
       await onProgress?.(page, totalPages);
     }
