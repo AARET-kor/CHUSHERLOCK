@@ -133,3 +133,55 @@ describe("promote route", () => {
     expect(res.status).toBe(409);
   });
 });
+
+describe("promote route validation and races", () => {
+  const body = { title: "제목입니다", tier: "deep_study" as const };
+
+  it("rejects unknown and non-leaf categories with a readable message", async () => {
+    const { turn } = makeDoneTurn("- 저출력 반복이 기본입니다 [AI]");
+    const params = Promise.resolve({ turnId: turn.id });
+    for (const categoryKey of ["no-such-category", "botox"]) {
+      const res = await promoteRoute.POST(req("POST", { ...body, categoryKey }), { params });
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("카테고리를 선택해 주세요.");
+    }
+  });
+
+  it("surfaces entry validation failures as plain text, not Zod JSON", async () => {
+    const { turn } = makeDoneTurn("확인 필요 [1]");
+    const res = await promoteRoute.POST(req("POST", { ...body, categoryKey: "melasma" }), {
+      params: Promise.resolve({ turnId: turn.id }),
+    });
+    expect(res.status).toBe(400);
+    const { error } = await res.json();
+    expect(typeof error).toBe("string");
+    expect(error.trimStart().startsWith("[")).toBe(false);
+    expect(error).not.toContain('"code"');
+  });
+
+  it("rejects a selection that is not part of the card", async () => {
+    const { turn } = makeDoneTurn("- 저출력 반복이 기본입니다 [AI]");
+    const res = await promoteRoute.POST(
+      req("POST", { ...body, categoryKey: "melasma", selection: "카드에 없는 문장입니다 정말로" }),
+      { params: Promise.resolve({ turnId: turn.id }) }
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("선택한 내용이 카드에 없습니다.");
+  });
+
+  it("lets exactly one of two concurrent saves win", async () => {
+    const { turn } = makeDoneTurn("- 동시 저장 테스트 내용입니다 [AI]\n- 두 번째 줄도 충분히 깁니다 [AI]");
+    const before = (await entryService.listEntries()).length;
+    const send = () =>
+      promoteRoute.POST(req("POST", { ...body, categoryKey: "melasma" }), {
+        params: Promise.resolve({ turnId: turn.id }),
+      });
+    const [a, b] = await Promise.all([send(), send()]);
+    const statuses = [a.status, b.status].sort();
+    expect(statuses).toEqual([200, 409]);
+    const ok = await (a.status === 200 ? a : b).json();
+    const dup = await (a.status === 409 ? a : b).json();
+    expect(dup.entryId).toBe(ok.entryId);
+    expect((await entryService.listEntries()).length).toBe(before + 1);
+  });
+});

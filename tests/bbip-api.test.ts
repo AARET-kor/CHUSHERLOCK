@@ -96,4 +96,34 @@ describe("BBIP API", () => {
       })).status
     ).toBe(404);
   });
+
+  it("rejects inputs that are only personal data", async () => {
+    for (const body of [
+      { input: "010-1234-5678" },
+      { chips: { patient: ["010-1234-5678"], conditions: [], meds: [], procedures: [] } },
+    ]) {
+      const res = await sessionsRoute.POST(post(body));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe("케이스를 확인해 주세요.");
+    }
+  });
+
+  it("closes orphaned streaming turns on load but leaves active ones", async () => {
+    const service = await import("../lib/services/bbipService");
+    const { activeTurnIds } = await import("../lib/bbip/runTurn");
+    const session = service.createSession({
+      chips: { patient: [], conditions: ["기미"], meds: [], procedures: [] },
+      flags: [],
+      sourceNoteIds: [],
+    });
+    const orphan = service.startTurn(session.id, { kind: "brief" }, "fake");
+    const live = service.startTurn(session.id, { kind: "section", sectionKey: "ddx" }, "fake");
+    activeTurnIds().add(live.id);
+    const params = Promise.resolve({ id: session.id });
+    const view = await (await sessionRoute.GET(new Request("http://test.local"), { params })).json();
+    activeTurnIds().delete(live.id);
+    const byId = Object.fromEntries(view.turns.map((t: { id: string }) => [t.id, t]));
+    expect(byId[orphan.id]).toMatchObject({ status: "failed", error: "interrupted" });
+    expect(byId[live.id].status).toBe("streaming");
+  });
 });

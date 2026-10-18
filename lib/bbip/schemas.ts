@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getLeafCategories } from "../codex/taxonomy";
 import { contentTierSchema } from "../schemas/entrySchemas";
 
 const chipList = z.array(z.string().trim().min(1).max(40)).max(8);
@@ -35,9 +36,11 @@ export const turnRequestSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("custom"), question: z.string().trim().min(2).max(500) }),
 ]);
 
+const LEAF_KEYS = new Set(getLeafCategories().map((c) => c.key));
+
 export const promoteSchema = z.object({
   title: z.string().trim().min(2, "제목은 2자 이상이어야 합니다.").max(200),
-  categoryKey: z.string().min(1, "카테고리를 선택해 주세요."),
+  categoryKey: z.string().refine((key) => LEAF_KEYS.has(key), "카테고리를 선택해 주세요."),
   tier: contentTierSchema,
   selection: z.string().trim().min(10).max(20000).optional(),
 });

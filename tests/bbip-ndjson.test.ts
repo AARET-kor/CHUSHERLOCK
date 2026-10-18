@@ -31,18 +31,34 @@ describe("NDJSON round trip", () => {
   });
 
   it("keeps draining after the consumer cancels", async () => {
-    let drained = false;
+    let finish!: () => void;
+    const drained = new Promise<void>((resolve) => (finish = resolve));
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
     async function* slow(): AsyncGenerator<StreamEvent> {
       yield { type: "start", turnId: "t" };
-      await new Promise((r) => setTimeout(r, 20));
+      await gate;
       yield { type: "delta", text: "late" };
-      drained = true;
+      finish();
     }
     const reader = ndjsonStream(slow()).getReader();
     await reader.read();
     await reader.cancel();
-    await new Promise((r) => setTimeout(r, 60));
-    expect(drained).toBe(true);
+    release();
+    await drained;
+  });
+
+  it("turns a throwing generator into an error event and closes", async () => {
+    async function* boom(): AsyncGenerator<StreamEvent> {
+      yield { type: "start", turnId: "t" };
+      throw new Error("kaboom");
+    }
+    const out: StreamEvent[] = [];
+    for await (const event of readNdjson(ndjsonStream(boom()))) out.push(event);
+    expect(out).toEqual([
+      { type: "start", turnId: "t" },
+      { type: "error", message: "생성 실패" },
+    ]);
   });
 });
 

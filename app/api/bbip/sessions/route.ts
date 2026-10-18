@@ -1,7 +1,10 @@
 // app/api/bbip/sessions/route.ts
-import { openSession } from "../../../../lib/bbip/openSession";
+import { sanitizeInput } from "../../../../lib/bbip/parse";
+import { EmptyCaseError, openSession } from "../../../../lib/bbip/openSession";
 import { createSessionSchema } from "../../../../lib/bbip/schemas";
 import { listSessions } from "../../../../lib/services/bbipService";
+
+const EMPTY_CASE = "케이스를 확인해 주세요.";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +18,17 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  return Response.json(await openSession(parsed.data));
+  if ("input" in parsed.data && sanitizeInput(parsed.data.input).trim().length < 2) {
+    return Response.json({ error: EMPTY_CASE }, { status: 400 });
+  }
+  try {
+    return Response.json(await openSession(parsed.data));
+  } catch (error) {
+    if (error instanceof EmptyCaseError) {
+      return Response.json({ error: EMPTY_CASE }, { status: 400 });
+    }
+    throw error;
+  }
 }
 
 /** GET → { sessions } (newest 30, for the history drawer) */

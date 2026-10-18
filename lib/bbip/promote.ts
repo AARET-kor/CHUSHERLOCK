@@ -45,6 +45,14 @@ export function promoteDefaults(
   };
 }
 
+/** The card cannot become a valid note (e.g. too short once markers are stripped). */
+export class PromoteValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PromoteValidationError";
+  }
+}
+
 const TABLE_RULE = /^[\s|:-]+$/;
 
 export function buildPromoteInput(args: {
@@ -77,7 +85,7 @@ export function buildPromoteInput(args: {
       conflictStatus: "none" as const,
     }));
 
-  return createEntrySchema.parse({
+  const result = createEntrySchema.safeParse({
     title: args.title,
     content,
     categoryKey: args.categoryKey,
@@ -90,4 +98,10 @@ export function buildPromoteInput(args: {
     provenance: { model: args.turn.model, promptVersion: args.session.promptVersion },
     status: "draft",
   });
+  if (!result.success) {
+    throw new PromoteValidationError(
+      result.error.issues[0]?.message ?? "노트 내용을 확인해 주세요."
+    );
+  }
+  return result.data;
 }

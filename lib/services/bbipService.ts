@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { bbipSessions, bbipTurns } from "../db/schema";
 import {
@@ -140,6 +140,23 @@ export function markPromoted(turnId: string, entryId: string): boolean {
     .where(and(eq(bbipTurns.id, turnId), isNull(bbipTurns.promotedEntryId)))
     .run();
   return result.changes === 1;
+}
+
+/** Closes a session's "streaming" turns that no live generator in this process owns. */
+export function failOrphanedTurns(sessionId: string, activeIds: Set<string>): number {
+  const orphans = db
+    .select({ id: bbipTurns.id })
+    .from(bbipTurns)
+    .where(and(eq(bbipTurns.sessionId, sessionId), eq(bbipTurns.status, "streaming")))
+    .all()
+    .map((row) => row.id)
+    .filter((id) => !activeIds.has(id));
+  if (!orphans.length) return 0;
+  return db
+    .update(bbipTurns)
+    .set({ status: "failed", error: "interrupted" })
+    .where(and(eq(bbipTurns.status, "streaming"), inArray(bbipTurns.id, orphans)))
+    .run().changes;
 }
 
 /** Marks turns stuck in "streaming" (e.g. the server died mid-stream) as failed. */

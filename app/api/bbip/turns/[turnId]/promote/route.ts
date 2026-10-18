@@ -1,10 +1,12 @@
 import { noteRefsFor, selectPromptNotes } from "../../../../../../lib/bbip/context";
-import { buildPromoteInput, promoteDefaults } from "../../../../../../lib/bbip/promote";
+import { buildPromoteInput, PromoteValidationError, promoteDefaults } from "../../../../../../lib/bbip/promote";
 import { promoteSchema } from "../../../../../../lib/bbip/schemas";
 import { getSession, getTurn, markPromoted } from "../../../../../../lib/services/bbipService";
 import { createEntry, deleteEntry, listEntries } from "../../../../../../lib/services/entryService";
 
 export const dynamic = "force-dynamic";
+
+const SAVE_FAILED = "노트 저장에 실패했습니다.";
 
 type Params = { params: Promise<{ turnId: string }> };
 
@@ -46,14 +48,28 @@ export async function POST(request: Request, { params }: Params) {
       { status: 409 }
     );
   }
+  if (parsed.data.selection !== undefined && !loaded.turn.output.includes(parsed.data.selection)) {
+    return Response.json({ error: "선택한 내용이 카드에 없습니다." }, { status: 400 });
+  }
+  let input: ReturnType<typeof buildPromoteInput>;
   try {
-    const input = buildPromoteInput({
+    input = buildPromoteInput({
       session: loaded.session,
       turn: loaded.turn,
       notes: noteRefsFor(loaded.notes),
       ...parsed.data,
     });
+  } catch (error) {
+    if (error instanceof PromoteValidationError) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+    console.error("bbip promote: building note failed", error);
+    return Response.json({ error: SAVE_FAILED }, { status: 500 });
+  }
+  let entryId: string | null = null;
+  try {
     const { entry } = await createEntry(input);
+    entryId = entry.id;
     // markPromoted only claims an unclaimed turn; a concurrent double-submit
     // loses here and its freshly created duplicate note is rolled back.
     if (!markPromoted(turnId, entry.id)) {
@@ -66,9 +82,14 @@ export async function POST(request: Request, { params }: Params) {
     }
     return Response.json({ entryId: entry.id });
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "노트 저장에 실패했습니다." },
-      { status: 400 }
-    );
+    console.error("bbip promote: saving note failed", error);
+    if (entryId) {
+      try {
+        await deleteEntry(entryId);
+      } catch {
+        /* best effort */
+      }
+    }
+    return Response.json({ error: SAVE_FAILED }, { status: 500 });
   }
 }
