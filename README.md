@@ -9,6 +9,11 @@ follow-ups, nine sections (유의사항 · 부작용/대처법 · 감별질환 �
 question, and save any card as a draft note. The knowledge-base dashboard
 moved to `/kb`. Design: `docs/superpowers/specs/2026-10-18-bbip-design.md`.
 
+BBIP calls to Opus 5.x / Sonnet 5.5 opt into the server-side refusal
+fallback (`fallbacks: "default"`); each card records the model that actually
+served it, and that model is what a saved note's provenance shows. A card
+cut off by the length limit is marked failed and cannot be saved.
+
 A personal + clinic knowledge base for aesthetic medicine — and a clinical
 assistant you can **ask**: it answers from your own notes and cites them
 (`/ask`, see below). You feed it raw
@@ -232,7 +237,6 @@ CODEX_AI_MODEL_MID=claude-sonnet-5-5  # mid model (figures/clusters/BBIP section
 CODEX_AI_MODEL_LIGHT=claude-haiku-5-5 # light model (OCR/relatedness/BBIP case parsing) — optional
 BBIP_BRIEF_MODEL=claude-opus-5-5      # optional: BBIP ⚡ brief model (default: CODEX_AI_MODEL)
 BBIP_BRIEF_EFFORT=low                 # optional: BBIP brief effort
-BBIP_FALLBACK_MODEL=claude-opus-4-8   # optional: server-side refusal fallback for Opus calls
 CODEX_MAX_UPLOAD_MB=100               # optional upload cap
 CODEX_AI_MODE=fake                    # optional: offline deterministic mode (no API calls)
 CODEX_INGEST_LEASE_MS=45000           # optional durable-worker lease

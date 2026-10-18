@@ -1,3 +1,4 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { isFakeMode } from "../ai/client";
 import type { CodexEntry } from "../codex/types";
 import { listEntries } from "../services/entryService";
@@ -9,7 +10,7 @@ import {
   startTurn,
 } from "../services/bbipService";
 import { FollowupExtractor } from "./followups";
-import { generateTurnText, RefusalError, type GenerateArgs } from "./generate";
+import { generateTurnText, RefusalError, TruncatedError, type GenerateArgs } from "./generate";
 import { modelForRequest } from "./models";
 import { sanitizeInput } from "./parse";
 import type { StreamEvent, TurnRequest } from "./types";
@@ -31,6 +32,24 @@ export interface RunTurnDeps {
 }
 
 const defaultDeps: RunTurnDeps = { listEntries: () => listEntries(), generate: generateTurnText };
+
+function isOverloaded(error: InstanceType<typeof Anthropic.APIError>): boolean {
+  if (error.status === 529 || error.type === "overloaded_error") return true;
+  // Mid-stream SSE errors carry no status; the type is only in the body.
+  const body = error.error as { error?: { type?: unknown } } | undefined;
+  return body?.error?.type === "overloaded_error";
+}
+
+/** Korean text for SDK errors (card + DB); null for anything else. */
+export function aiErrorMessage(error: unknown): string | null {
+  if (error instanceof Anthropic.RateLimitError) return "요청이 많아 잠시 후 다시 시도해 주세요.";
+  if (error instanceof Anthropic.AuthenticationError) return "API 키 설정을 확인해 주세요.";
+  if (error instanceof Anthropic.InternalServerError) return "AI 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.";
+  if (error instanceof Anthropic.APIError) {
+    return isOverloaded(error) ? "AI 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요." : "AI 요청에 실패했습니다.";
+  }
+  return null;
+}
 
 /** Generates one card and persists it as it goes. The turn row is written
  * as "streaming" first and closed as "done"/"failed", so a client that
@@ -68,12 +87,17 @@ export async function* runTurn(
   activeTurnIds().add(turn.id);
   const extractor = safeRequest.kind === "brief" ? new FollowupExtractor() : null;
   let output = "";
+  // Model that actually served the turn (fallback may switch it).
+  let servedModel: string | undefined;
+  const onFinal: GenerateArgs["onFinal"] = (info) => {
+    servedModel = info.model;
+  };
   // If the consumer stops iterating (client disconnect), the generator is
   // closed at a yield and only `finally` runs — close the turn there.
   let settled = false;
   try {
     yield { type: "start", turnId: turn.id };
-    for await (const chunk of deps.generate({ session, entries, priorTurns, request: safeRequest })) {
+    for await (const chunk of deps.generate({ session, entries, priorTurns, request: safeRequest, onFinal })) {
       const visible = extractor ? extractor.push(chunk) : chunk;
       if (visible) {
         output += visible;
@@ -85,20 +109,33 @@ export async function* runTurn(
       output += finished.tail;
       yield { type: "delta", text: finished.tail };
     }
-    finishTurn(turn.id, output.trimEnd(), finished.followups);
+    finishTurn(turn.id, output.trimEnd(), finished.followups, servedModel);
     settled = true;
     if (finished.followups.length) yield { type: "followups", items: finished.followups };
     yield { type: "done", turnId: turn.id };
   } catch (error) {
     if (error instanceof RefusalError) {
-      failTurn(turn.id, output, "refusal");
+      failTurn(turn.id, output, "refusal", servedModel);
       settled = true;
       yield { type: "error", message: "안전 정책으로 답변이 중단되었습니다." };
-    } else {
-      const message = error instanceof Error ? error.message : "알 수 없는 오류";
-      failTurn(turn.id, output, message);
+    } else if (error instanceof TruncatedError) {
+      failTurn(turn.id, output, "truncated", servedModel);
       settled = true;
-      yield { type: "error", message: `생성 실패: ${message}` };
+      yield { type: "error", message: "답변이 길이 제한으로 잘렸습니다." };
+    } else {
+      const friendly = aiErrorMessage(error);
+      if (friendly) {
+        // Details stay server-side; the card and DB get the Korean text.
+        console.error("[bbip] generation failed:", error);
+        failTurn(turn.id, output, friendly, servedModel);
+        settled = true;
+        yield { type: "error", message: friendly };
+      } else {
+        const message = error instanceof Error ? error.message : "알 수 없는 오류";
+        failTurn(turn.id, output, message, servedModel);
+        settled = true;
+        yield { type: "error", message: `생성 실패: ${message}` };
+      }
     }
   } finally {
     activeTurnIds().delete(turn.id);

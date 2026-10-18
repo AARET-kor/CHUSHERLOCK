@@ -102,16 +102,18 @@ export function startTurn(sessionId: string, request: TurnRequest, model: string
   return toTurn(row);
 }
 
-export function finishTurn(turnId: string, output: string, followups: string[]): void {
+/** `model`, when given, is the model that actually served the turn (it can
+ * differ from the requested one after a server-side refusal fallback). */
+export function finishTurn(turnId: string, output: string, followups: string[], model?: string): void {
   db.update(bbipTurns)
-    .set({ output, followups, status: "done", error: null })
+    .set({ output, followups, status: "done", error: null, ...(model ? { model } : {}) })
     .where(and(eq(bbipTurns.id, turnId), eq(bbipTurns.status, "streaming")))
     .run();
 }
 
-export function failTurn(turnId: string, output: string, error: string): void {
+export function failTurn(turnId: string, output: string, error: string, model?: string): void {
   db.update(bbipTurns)
-    .set({ output, status: "failed", error })
+    .set({ output, status: "failed", error, ...(model ? { model } : {}) })
     .where(and(eq(bbipTurns.id, turnId), eq(bbipTurns.status, "streaming")))
     .run();
 }

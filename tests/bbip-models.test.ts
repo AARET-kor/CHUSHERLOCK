@@ -7,7 +7,6 @@ const KEYS = [
   "CODEX_AI_MODEL_LIGHT",
   "BBIP_BRIEF_MODEL",
   "BBIP_BRIEF_EFFORT",
-  "BBIP_FALLBACK_MODEL",
 ];
 const saved: Record<string, string | undefined> = {};
 

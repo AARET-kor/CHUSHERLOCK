@@ -52,8 +52,13 @@ describe("bbipService", () => {
     const turn = service.startTurn(session.id, { kind: "section", sectionKey: "ddx" }, "fake");
     expect(turn).toMatchObject({ status: "streaming", output: "", sectionKey: "ddx", followups: [] });
 
-    service.finishTurn(turn.id, "본문", ["q1"]);
-    expect(service.getTurn(turn.id)).toMatchObject({ status: "done", output: "본문", followups: ["q1"] });
+    service.finishTurn(turn.id, "본문", ["q1"], "claude-opus-4-8");
+    expect(service.getTurn(turn.id)).toMatchObject({
+      status: "done",
+      output: "본문",
+      followups: ["q1"],
+      model: "claude-opus-4-8",
+    });
 
     const failed = service.startTurn(session.id, { kind: "custom", question: "질문" }, "fake");
     service.failTurn(failed.id, "부분", "boom");

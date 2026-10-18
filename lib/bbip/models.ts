@@ -12,19 +12,20 @@ function parseEffort(value: string | undefined, fallback: Effort): Effort {
 export const BRIEF_MODEL = process.env.BBIP_BRIEF_MODEL ?? MODEL;
 export const BRIEF_EFFORT: Effort = parseEffort(process.env.BBIP_BRIEF_EFFORT, "low");
 
-/** Server-side refusal fallback for Opus calls (array form of the beta —
- * the form SDK 0.110 types). */
-export const FALLBACK_MODEL = process.env.BBIP_FALLBACK_MODEL ?? "claude-opus-4-8";
-export const FALLBACK_BETA = "server-side-fallback-2026-06-01";
+/** Server-side refusal fallback, "default" form: the API picks the fallback
+ * model by refusal category, so there is no model list to maintain. */
+export const FALLBACK_BETA = "server-side-fallback-2026-07-01";
+
+/** Opus 5.x and Sonnet 5.5 on the first-party API accept `fallbacks:
+ * "default"`. Provider-prefixed ids (Bedrock "anthropic.…") do not match. */
+export function usesServerFallback(model: string): boolean {
+  return /^claude-(opus-5|sonnet-5-5)/.test(model);
+}
 
 /** `output_config.effort` errors on Haiku 4.5 / Sonnet 4.5 and older, so env
  * overrides to those models must not send it. */
 export function supportsEffort(model: string): boolean {
   return !/(?:^|[./])claude-(?:3[-.]|haiku-4|sonnet-4(?:-[05]|-\d{8}|@|$)|opus-4(?:-[01]|-\d{8}|@|$))/.test(model);
-}
-
-export function isOpus(model: string): boolean {
-  return model.includes("opus");
 }
 
 export interface ModelChoice {

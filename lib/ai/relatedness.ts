@@ -49,8 +49,9 @@ export const anthropicRelatednessCaller: RelatednessCaller = async (input) => {
   const client = getAnthropicClient();
   const candidateIds = input.candidates.map((c) => c.id);
 
-  // Yes/no topic matching is light-model work — no `thinking` param
-  // (unsupported on Haiku, and unneeded), 1/5 the per-token price.
+  // Yes/no topic matching is light-model work. No `thinking` param: Haiku
+  // 5.5 runs adaptive thinking by default, and omitting it keeps the call
+  // valid whatever model CODEX_AI_MODEL_LIGHT points at.
   const response = await client.messages.create({
     model: LIGHT_MODEL,
     max_tokens: 2000,
@@ -79,7 +80,7 @@ export const anthropicRelatednessCaller: RelatednessCaller = async (input) => {
       },
     },
     messages: [{ role: "user", content: buildRelatednessPrompt(input) }],
-  });
+  }, { timeout: 15_000, maxRetries: 1 }); // bounded: saving a note (e.g. BBIP promote) waits on this
 
   if (response.stop_reason === "refusal") return [];
   const textBlock = response.content.find((b) => b.type === "text");

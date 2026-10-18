@@ -1,5 +1,6 @@
 // tests/bbip-run-turn.test.ts
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import Anthropic from "@anthropic-ai/sdk";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { StreamEvent } from "../lib/bbip/types";
 import { setupTempDb } from "./helpers/tempDb";
 
@@ -123,6 +124,54 @@ describe("runTurn", () => {
     expect(turn!.output).toContain("중단");
   });
 
+  it("records the model that actually served the turn", async () => {
+    const session = newSession();
+    async function* served(args: { onFinal?: (info: { model: string; stopReason: string | null }) => void }) {
+      yield "본문";
+      args.onFinal?.({ model: "claude-opus-4-8", stopReason: "end_turn" });
+    }
+    const events = await collect(
+      runTurnModule.runTurn(session.id, { kind: "custom", question: "질문" }, { listEntries: async () => [], generate: served })
+    );
+    expect(events.at(-1)?.type).toBe("done");
+    expect(service.listTurns(session.id)[0]).toMatchObject({ status: "done", model: "claude-opus-4-8" });
+  });
+
+  it("fails a truncated turn so it cannot be promoted or reused", async () => {
+    const session = newSession();
+    async function* truncated(args: { onFinal?: (info: { model: string; stopReason: string | null }) => void }) {
+      yield "부분";
+      yield "\n\n> **주의** 답변이 길이 제한으로 잘렸습니다.";
+      args.onFinal?.({ model: "claude-opus-5-5", stopReason: "max_tokens" });
+      throw new generateModule.TruncatedError();
+    }
+    const events = await collect(
+      runTurnModule.runTurn(session.id, { kind: "custom", question: "질문" }, { listEntries: async () => [], generate: truncated })
+    );
+    expect(events.at(-1)).toEqual({ type: "error", message: "답변이 길이 제한으로 잘렸습니다." });
+    const [turn] = service.listTurns(session.id);
+    expect(turn).toMatchObject({ status: "failed", error: "truncated" });
+    expect(turn!.output).toContain("길이 제한");
+  });
+
+  it("maps SDK errors to Korean messages for the card and the DB", async () => {
+    const session = newSession();
+    async function* limited(): AsyncGenerator<string> {
+      throw Anthropic.APIError.generate(429, { type: "error", error: { type: "rate_limit_error" } }, "429 rate limited", new Headers());
+    }
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const events = await collect(
+      runTurnModule.runTurn(session.id, { kind: "custom", question: "질문" }, { listEntries: async () => [], generate: limited })
+    );
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+    expect(events.at(-1)).toEqual({ type: "error", message: "요청이 많아 잠시 후 다시 시도해 주세요." });
+    expect(service.listTurns(session.id)[0]).toMatchObject({
+      status: "failed",
+      error: "요청이 많아 잠시 후 다시 시도해 주세요.",
+    });
+  });
+
   it("strips phone numbers from the custom question before storing and generating", async () => {
     const session = newSession();
     let seen: string | undefined;
@@ -139,5 +188,27 @@ describe("runTurn", () => {
     );
     expect(seen).toBe("환자 질문");
     expect(service.listTurns(session.id)[0]!.question).toBe("환자 질문");
+  });
+});
+
+describe("aiErrorMessage", () => {
+  const headers = new Headers();
+  it.each([
+    [Anthropic.APIError.generate(429, {}, "rate", headers), "요청이 많아 잠시 후 다시 시도해 주세요."],
+    [Anthropic.APIError.generate(401, {}, "auth", headers), "API 키 설정을 확인해 주세요."],
+    [Anthropic.APIError.generate(500, {}, "server", headers), "AI 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요."],
+    [Anthropic.APIError.generate(529, {}, "overloaded", headers), "AI 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요."],
+    [
+      new Anthropic.APIError(undefined, { type: "error", error: { type: "overloaded_error" } }, undefined, undefined),
+      "AI 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요.",
+    ],
+    [Anthropic.APIError.generate(400, {}, "bad", headers), "AI 요청에 실패했습니다."],
+    [new Anthropic.APIConnectionError({ message: "down" }), "AI 요청에 실패했습니다."],
+  ])("maps %s", (error, expected) => {
+    expect(runTurnModule.aiErrorMessage(error)).toBe(expected);
+  });
+
+  it("returns null for non-SDK errors", () => {
+    expect(runTurnModule.aiErrorMessage(new Error("boom"))).toBeNull();
   });
 });
