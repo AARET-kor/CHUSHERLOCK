@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test("dashboard and quick-note flow work end to end", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/kb");
   await expect(page.getByRole("heading", { name: "COGNITIO" })).toBeVisible();
   await expect(page.getByRole("navigation")).toBeVisible();
   await expect(page.getByText("자료 넣기 — Drop Anything")).toBeVisible();
@@ -18,7 +18,7 @@ test("dashboard and quick-note flow work end to end", async ({ page }) => {
 });
 
 test("fake ingest completes and exposes provenance claims", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/kb");
   await page.getByRole("button", { name: "파일 대신 텍스트 붙여넣기" }).click();
   await page.locator('textarea[placeholder*="논문 초록"]').fill(
     "[[페이지 1]] 권장 용량은 10 mg이다. blanching 발생 시 즉시 중단한다."
@@ -65,11 +65,11 @@ test("CHUNK deck builds flashcards and opens a focused review", async ({ page })
 
 test("critical pages have no serious or critical accessibility violations", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  for (const route of ["/", "/entries/new", "/study"]) {
+  for (const route of ["/kb", "/", "/entries/new", "/study"]) {
     await page.goto(route);
     // The editorial hero intentionally reveals copy in a delayed sequence;
     // audit its settled state instead of the transient fade opacity.
-    await page.waitForTimeout(route === "/" ? 3_500 : 300);
+    await page.waitForTimeout(route === "/kb" ? 3_500 : 300);
     const results = await new AxeBuilder({ page }).analyze();
     const blocking = results.violations.filter(
       (violation) => violation.impact === "serious" || violation.impact === "critical"

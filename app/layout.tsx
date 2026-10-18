@@ -4,8 +4,8 @@ import "./globals.css";
 import { dueCardCount } from "../lib/services/flashcardService";
 
 export const metadata: Metadata = {
-  title: "Cognitio",
-  description: "미용의학 지식을 읽고, 분류하고, 연결하는 개인 지식 엔진.",
+  title: "BBIP",
+  description: "미용 GP 진료 비서 — 케이스를 넣으면 핵심부터.",
 };
 
 /** Number of flashcards due now — shown as a nav badge. Safe before the
@@ -29,10 +29,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               href="/"
               className="brand-link shrink-0 font-serifa text-xl font-bold tracking-tight text-ink sm:text-2xl"
             >
-              Cognitio
+              BBIP
             </Link>
             <div className="mobile-nav flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-full bg-mist px-2 py-1 text-xs text-ink sm:flex-initial sm:text-sm">
-              <Link href="/" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
+              <Link href="/" className="rounded-full px-3 py-1.5 font-bold transition hover:bg-white hover:shadow-sm">
+                BBIP
+              </Link>
+              <Link href="/kb" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 HOME
               </Link>
               <Link href="/library" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
@@ -76,8 +79,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 "0 0 0 0.5px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.10), 0 12px 40px rgba(0,0,0,0.10)",
             }}
           >
-            <span className="font-serifa text-xl font-bold text-ink">C</span>
-            <Link href="/" className="btn-primary !px-5 !py-2.5">
+            <span className="font-serifa text-xl font-bold text-ink">B</span>
+            <Link href="/kb#ingest-dock" className="btn-primary !px-5 !py-2.5">
               + 자료 넣기
             </Link>
           </div>
