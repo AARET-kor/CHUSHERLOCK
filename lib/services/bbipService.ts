@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { bbipSessions, bbipTurns } from "../db/schema";
 import {
@@ -158,15 +158,5 @@ export function failOrphanedTurns(sessionId: string, activeIds: Set<string>): nu
     .update(bbipTurns)
     .set({ status: "failed", error: "interrupted" })
     .where(and(eq(bbipTurns.status, "streaming"), inArray(bbipTurns.id, orphans)))
-    .run().changes;
-}
-
-/** Marks turns stuck in "streaming" (e.g. the server died mid-stream) as failed. */
-export function failStaleTurns(olderThanMs = 30 * 60_000): number {
-  const cutoff = new Date(Date.now() - olderThanMs).toISOString();
-  return db
-    .update(bbipTurns)
-    .set({ status: "failed", error: "interrupted" })
-    .where(and(eq(bbipTurns.status, "streaming"), lt(bbipTurns.createdAt, cutoff)))
     .run().changes;
 }

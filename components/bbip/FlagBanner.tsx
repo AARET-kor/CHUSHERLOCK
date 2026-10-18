@@ -36,6 +36,14 @@ export function FlagBanner({ flags }: { flags: Flag[] }) {
                 }`}
               >
                 {flag.text}
+                {flag.source === "model" && (
+                  <span
+                    title="AI 파서가 추가한 항목 — 확인 필요"
+                    className="ml-2 inline-flex items-center rounded-full bg-white/80 px-1.5 py-px align-[0.1em] font-mono text-[10px] font-semibold text-violet-800 ring-1 ring-inset ring-violet-200"
+                  >
+                    AI
+                  </span>
+                )}
               </p>
             </div>
           </div>

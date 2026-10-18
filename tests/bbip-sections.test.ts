@@ -1,6 +1,6 @@
 // tests/bbip-sections.test.ts
 import { describe, expect, it } from "vitest";
-import { SECTIONS, getSection, isSectionKey, turnTitle } from "../lib/bbip/sections";
+import { SECTIONS, getSection, turnTitle } from "../lib/bbip/sections";
 
 describe("BBIP sections", () => {
   it("defines nine unique sections with instructions", () => {
@@ -18,11 +18,6 @@ describe("BBIP sections", () => {
     expect(getSection("ddx").tier).toBe("opus");
     expect(getSection("marketing").tier).toBe("sonnet");
     expect(getSection("homecare").promoteTier).toBe("chairside_talk");
-  });
-
-  it("validates section keys", () => {
-    expect(isSectionKey("ddx")).toBe(true);
-    expect(isSectionKey("nope")).toBe(false);
   });
 
   it("titles turns by kind", () => {

@@ -12,7 +12,10 @@ moved to `/kb`. Design: `docs/superpowers/specs/2026-10-18-bbip-design.md`.
 BBIP calls to Opus 5.x / Sonnet 5.5 opt into the server-side refusal
 fallback (`fallbacks: "default"`); each card records the model that actually
 served it, and that model is what a saved note's provenance shows. A card
-cut off by the length limit is marked failed and cannot be saved.
+cut off by the length limit is marked failed and cannot be saved. Cards
+left "streaming" by a crash are closed as interrupted when the session is
+next opened; that orphan detection tracks live generations in memory, so it
+assumes a single server process.
 
 A personal + clinic knowledge base for aesthetic medicine — and a clinical
 assistant you can **ask**: it answers from your own notes and cites them
@@ -117,7 +120,8 @@ over-summarize** — read the document's flow, then reorganize by 목차 and
      bodies.
    - **Haiku** (`CODEX_AI_MODEL_LIGHT`, default `claude-haiku-5-5`) —
      mechanical work: verbatim OCR transcription and relatedness screening.
-     ~1/5 the per-token price, no thinking tokens.
+     ~1/5 the per-token price. (Haiku 5.5 runs adaptive thinking by
+     default, so these calls do spend some thinking tokens.)
    Plus: **prompt caching at two breakpoints** (static system prompt + the
    job-stable prefix — chunks 2..N read both from cache at ~0.1× input
    price), and **bounded context** (rolling summary hard-capped, relatedness

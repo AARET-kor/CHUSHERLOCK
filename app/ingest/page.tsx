@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-// The intake dock now lives on the dashboard — keep old links working.
+// The intake dock now lives on the knowledge-base dashboard (/kb) — keep
+// old links working.
 export default function IngestPage() {
-  redirect("/");
+  redirect("/kb#ingest-dock");
 }

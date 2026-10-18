@@ -118,10 +118,6 @@ export function getSection(key: SectionKey): SectionDef {
   return section;
 }
 
-export function isSectionKey(value: string): value is SectionKey {
-  return BY_KEY.has(value as SectionKey);
-}
-
 /** Card heading for a turn — shared by the UI, prompts, and note titles. */
 export function turnTitle(turn: Pick<TurnRequest, "kind" | "sectionKey" | "question">): string {
   if (turn.kind === "brief") return "⚡ 핵심 브리핑";

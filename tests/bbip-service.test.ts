@@ -82,18 +82,6 @@ describe("bbipService", () => {
     expect(service.getTurn(turn.id)).toMatchObject({ output: "완료", followups: [] });
   });
 
-  it("fails stale streaming turns only", () => {
-    const session = service.createSession({ chips, flags: [], sourceNoteIds: [] });
-    const stale = service.startTurn(session.id, { kind: "brief" }, "fake");
-    const fresh = service.startTurn(session.id, { kind: "brief" }, "fake");
-    env.sqliteClient
-      .prepare("UPDATE bbip_turns SET created_at = ? WHERE id = ?")
-      .run(new Date(Date.now() - 40 * 60_000).toISOString(), stale.id);
-    expect(service.failStaleTurns()).toBeGreaterThanOrEqual(1);
-    expect(service.getTurn(stale.id)).toMatchObject({ status: "failed", error: "interrupted" });
-    expect(service.getTurn(fresh.id)?.status).toBe("streaming");
-  });
-
   it("orders same-millisecond sessions newest first via rowid", () => {
     const a = service.createSession({ chips, flags: [], sourceNoteIds: [] });
     const b = service.createSession({ chips, flags: [], sourceNoteIds: [] });
