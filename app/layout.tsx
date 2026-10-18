@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               >
                 ANKI&apos;s
                 {due > 0 && (
-                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white tabular-nums">
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[10px] font-bold text-white tabular-nums">
                     {due > 99 ? "99+" : due}
                   </span>
                 )}

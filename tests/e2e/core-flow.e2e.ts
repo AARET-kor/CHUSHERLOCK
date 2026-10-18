@@ -68,8 +68,9 @@ test("critical pages have no serious or critical accessibility violations", asyn
   for (const route of ["/kb", "/", "/entries/new", "/study"]) {
     await page.goto(route);
     // The editorial hero intentionally reveals copy in a delayed sequence;
-    // audit its settled state instead of the transient fade opacity.
-    await page.waitForTimeout(route === "/kb" ? 3_500 : 300);
+    // audit its settled state instead of the transient fade opacity. /study
+    // cluster cards stagger in for up to ~0.8s, so non-hero routes wait 1s.
+    await page.waitForTimeout(route === "/kb" ? 3_500 : 1_000);
     const results = await new AxeBuilder({ page }).analyze();
     const blocking = results.violations.filter(
       (violation) => violation.impact === "serious" || violation.impact === "critical"
