@@ -1,4 +1,13 @@
-# Cognitio
+# BBIP (built on Cognitio)
+
+**BBIP** is the chairside assistant on `/`: type a one-line case
+("40대 여성, 기미, 아스피린 복용, 피코토닝 희망") and it shows parsed chips,
+🚨 safety flags, then a ⚡ core brief grounded in your notes (📚[n]) with
+clearly marked AI supplements (🤖AI). Dig deeper with case-specific
+follow-ups, nine sections (유의사항 · 부작용/대처법 · 감별질환 · 시술팁 ·
+간격/회차 · 홈케어 · 마케팅/업셀링 · 비슷한 치료 · 참고사항) or your own
+question, and save any card as a draft note. The knowledge-base dashboard
+moved to `/kb`. Design: `docs/superpowers/specs/2026-10-18-bbip-design.md`.
 
 A personal + clinic knowledge base for aesthetic medicine — and a clinical
 assistant you can **ask**: it answers from your own notes and cites them
@@ -78,7 +87,7 @@ over-summarize** — read the document's flow, then reorganize by 목차 and
    (headings first, then paragraphs, then sentences), max ~24k chars,
    strictly in document order.
 3. **Sequential read** (`lib/ai/classify.ts`) — each chunk goes to Claude
-   (`claude-opus-4-8` by default, adaptive thinking, structured JSON output
+   (`claude-opus-5-5` by default, adaptive thinking, structured JSON output
    whose `categoryKey` enum is generated from the live taxonomy so invalid
    categories are impossible). The model returns the notes found in that
    chunk **plus an updated rolling summary of the document so far**, which
@@ -94,14 +103,14 @@ over-summarize** — read the document's flow, then reorganize by 목차 and
    notes.
 4. **Three-tier token efficiency** — each call goes to the cheapest model
    that does the job well:
-   - **Opus** (`CODEX_AI_MODEL`, default `claude-opus-4-8`) — reading chunks
+   - **Opus** (`CODEX_AI_MODEL`, default `claude-opus-5-5`) — reading chunks
      and writing the actual notes. Quality-critical; this is the product.
-   - **Sonnet** (`CODEX_AI_MODEL_MID`, default `claude-sonnet-5`) —
+   - **Sonnet** (`CODEX_AI_MODEL_MID`, default `claude-sonnet-5-5`) —
      structured judgement over many items: figure bounding-box detection
      (vision) and the learning-cluster pass. Near-Opus quality at a fraction
      of the cost, and the clusterer reads compact note digests, not full
      bodies.
-   - **Haiku** (`CODEX_AI_MODEL_LIGHT`, default `claude-haiku-4-5`) —
+   - **Haiku** (`CODEX_AI_MODEL_LIGHT`, default `claude-haiku-5-5`) —
      mechanical work: verbatim OCR transcription and relatedness screening.
      ~1/5 the per-token price, no thinking tokens.
    Plus: **prompt caching at two breakpoints** (static system prompt + the
@@ -218,9 +227,12 @@ Environment:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...          # or `ant auth login`
-CODEX_AI_MODEL=claude-opus-4-8        # main model (notes) — optional override
-CODEX_AI_MODEL_MID=claude-sonnet-5    # mid model (figures/clusters) — optional
-CODEX_AI_MODEL_LIGHT=claude-haiku-4-5 # light model (OCR/relatedness) — optional
+CODEX_AI_MODEL=claude-opus-5-5        # main model (notes) — optional override
+CODEX_AI_MODEL_MID=claude-sonnet-5-5  # mid model (figures/clusters/BBIP sections) — optional
+CODEX_AI_MODEL_LIGHT=claude-haiku-5-5 # light model (OCR/relatedness/BBIP case parsing) — optional
+BBIP_BRIEF_MODEL=claude-opus-5-5      # optional: BBIP ⚡ brief model (default: CODEX_AI_MODEL)
+BBIP_BRIEF_EFFORT=low                 # optional: BBIP brief effort
+BBIP_FALLBACK_MODEL=claude-opus-4-8   # optional: server-side refusal fallback for Opus calls
 CODEX_MAX_UPLOAD_MB=100               # optional upload cap
 CODEX_AI_MODE=fake                    # optional: offline deterministic mode (no API calls)
 CODEX_INGEST_LEASE_MS=45000           # optional durable-worker lease
@@ -307,7 +319,8 @@ mode; it does not write to the normal knowledge-base database.
 
 Then open `http://localhost:3000`:
 
-- `/` — dashboard of everything you've filed, plus a "전체 Obsidian export
+- `/` — the BBIP console (case → chips/flags → brief → cards → save as note).
+- `/kb` — dashboard of everything you've filed, plus a "전체 Obsidian export
   (.zip)" button.
 - `/entries/new` — add material. Title/category blur triggers an overlap
   check so you see related existing notes before you save.
@@ -320,6 +333,7 @@ Then open `http://localhost:3000`:
 ```txt
 app/                      Next.js routes (dashboard, entry CRUD UI, exports)
 components/                EntryForm, EntryCard, TierBadge, CategoryBadge
+components/bbip/           BBIP console UI
 lib/
   codex/
     types.ts               Core domain types (Entry, Category, Tier, Source)
@@ -340,8 +354,9 @@ lib/
     entryActions.ts          Server actions used by client components (overlap
                               preview, delete)
   ai/
-    classify.ts               NOT IMPLEMENTED — documented extension point for
-                              LLM-backed auto classification (see file header)
+    classify.ts               chunk-by-chunk AI classification (implemented)
+  bbip/                    BBIP chairside assistant (parse, flags, prompts,
+                           context, generate, runTurn, evidence, promote)
 tests/                       Vitest: taxonomy, entrySchemas, overlap, markdown-export
 ```
 
