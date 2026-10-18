@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** Points the app at a fresh migrated SQLite file in a temp dir. Must run
  * before anything imports lib/db/client (it reads CODEX_DB_PATH on load). */
@@ -16,7 +17,10 @@ export async function setupTempDb(prefix: string) {
     import("drizzle-orm/better-sqlite3/migrator"),
     import("../../lib/codex/taxonomy"),
   ]);
-  migrate(db, { migrationsFolder: path.resolve("drizzle") });
+  if (sqliteClient.name !== process.env.CODEX_DB_PATH) {
+    throw new Error("db client loaded before setupTempDb");
+  }
+  migrate(db, { migrationsFolder: fileURLToPath(new URL("../../drizzle", import.meta.url)) });
   const insert = sqliteClient.prepare(
     `INSERT OR IGNORE INTO categories
       (key, label_ko, label_en, parent_key, description_ko, description_en)

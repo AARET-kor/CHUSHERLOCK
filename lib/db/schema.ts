@@ -288,8 +288,9 @@ export const entryRelations = sqliteTable(
   })
 );
 
-// BBIP — one row per chairside case. Only parsed chips are stored; the raw
-// one-line memo is never persisted (no patient identifiers at rest).
+// BBIP — one row per chairside case. The raw one-line case memo is never
+// persisted. Parsed chips (e.g. demographics like "40대 여성") and any custom
+// question text typed in the UI (bbip_turns.question) ARE stored.
 export const bbipSessions = sqliteTable(
   "bbip_sessions",
   {
@@ -323,7 +324,7 @@ export const bbipTurns = sqliteTable(
     model: text("model").notNull(),
     status: text("status").notNull().default("streaming"), // TurnStatus
     error: text("error"),
-    promotedEntryId: text("promoted_entry_id"),
+    promotedEntryId: text("promoted_entry_id").references(() => entries.id, { onDelete: "set null" }),
     createdAt: text("created_at").notNull(),
   },
   (table) => ({

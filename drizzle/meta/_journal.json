@@ -78,6 +78,13 @@
       "when": 1792318110358,
       "tag": "0010_perfect_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1792318356598,
+      "tag": "0011_pale_norrin_radd",
+      "breakpoints": true
     }
   ]
 }

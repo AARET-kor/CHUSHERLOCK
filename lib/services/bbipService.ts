@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, lt, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import { bbipSessions, bbipTurns } from "../db/schema";
 import {
@@ -77,7 +77,7 @@ export function listSessions(limit = 30): BbipSession[] {
   return db
     .select()
     .from(bbipSessions)
-    .orderBy(desc(bbipSessions.createdAt))
+    .orderBy(desc(bbipSessions.createdAt), desc(sql`rowid`))
     .limit(limit)
     .all()
     .map(toSession);
@@ -105,14 +105,14 @@ export function startTurn(sessionId: string, request: TurnRequest, model: string
 export function finishTurn(turnId: string, output: string, followups: string[]): void {
   db.update(bbipTurns)
     .set({ output, followups, status: "done", error: null })
-    .where(eq(bbipTurns.id, turnId))
+    .where(and(eq(bbipTurns.id, turnId), eq(bbipTurns.status, "streaming")))
     .run();
 }
 
 export function failTurn(turnId: string, output: string, error: string): void {
   db.update(bbipTurns)
     .set({ output, status: "failed", error })
-    .where(eq(bbipTurns.id, turnId))
+    .where(and(eq(bbipTurns.id, turnId), eq(bbipTurns.status, "streaming")))
     .run();
 }
 
@@ -132,6 +132,22 @@ export function listTurns(sessionId: string): BbipTurn[] {
     .map(toTurn);
 }
 
-export function markPromoted(turnId: string, entryId: string): void {
-  db.update(bbipTurns).set({ promotedEntryId: entryId }).where(eq(bbipTurns.id, turnId)).run();
+/** Claims the turn for promotion; false if it was already promoted. */
+export function markPromoted(turnId: string, entryId: string): boolean {
+  const result = db
+    .update(bbipTurns)
+    .set({ promotedEntryId: entryId })
+    .where(and(eq(bbipTurns.id, turnId), isNull(bbipTurns.promotedEntryId)))
+    .run();
+  return result.changes === 1;
+}
+
+/** Marks turns stuck in "streaming" (e.g. the server died mid-stream) as failed. */
+export function failStaleTurns(olderThanMs = 10 * 60_000): number {
+  const cutoff = new Date(Date.now() - olderThanMs).toISOString();
+  return db
+    .update(bbipTurns)
+    .set({ status: "failed", error: "interrupted" })
+    .where(and(eq(bbipTurns.status, "streaming"), lt(bbipTurns.createdAt, cutoff)))
+    .run().changes;
 }
