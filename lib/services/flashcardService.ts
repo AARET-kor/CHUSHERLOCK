@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq, and, lte, asc } from "drizzle-orm";
+import { eq, and, lte, asc, inArray } from "drizzle-orm";
 import { db } from "../db/client";
 import { flashcards, entries } from "../db/schema";
 import { getEntry } from "./entryService";
@@ -124,8 +124,34 @@ export async function listDueCards(limit = 40): Promise<FlashcardView[]> {
   return hydrate(rows);
 }
 
+/** Due cards scoped to a learning cluster (or any explicit note set). */
+export async function listDueCardsForEntries(
+  entryIds: string[],
+  limit = 40
+): Promise<FlashcardView[]> {
+  if (entryIds.length === 0) return [];
+  const rows = await db
+    .select()
+    .from(flashcards)
+    .where(and(inArray(flashcards.entryId, entryIds), lte(flashcards.dueAt, nowIso())))
+    .orderBy(asc(flashcards.dueAt))
+    .limit(limit);
+  return hydrate(rows);
+}
+
 export async function listCardsForEntry(entryId: string): Promise<FlashcardView[]> {
   const rows = await db.select().from(flashcards).where(eq(flashcards.entryId, entryId));
+  return hydrate(rows);
+}
+
+/** All cards for a note set, fetched in one query for the CHUNK dashboard. */
+export async function listCardsForEntries(entryIds: string[]): Promise<FlashcardView[]> {
+  if (entryIds.length === 0) return [];
+  const rows = await db
+    .select()
+    .from(flashcards)
+    .where(inArray(flashcards.entryId, entryIds))
+    .orderBy(asc(flashcards.dueAt));
   return hydrate(rows);
 }
 
@@ -176,14 +202,9 @@ export interface FlashcardStats {
   notesWithCards: number;
 }
 
-export async function flashcardStats(): Promise<FlashcardStats> {
-  const rows = await db
-    .select({
-      status: flashcards.status,
-      dueAt: flashcards.dueAt,
-      entryId: flashcards.entryId,
-    })
-    .from(flashcards);
+type StatsRow = Pick<Row, "status" | "dueAt" | "entryId">;
+
+function statsFromRows(rows: StatsRow[]): FlashcardStats {
   const now = nowIso();
   const noteSet = new Set<string>();
   let due = 0;
@@ -198,6 +219,32 @@ export async function flashcardStats(): Promise<FlashcardStats> {
     else if (r.status === "lapsed") lapsed += 1;
   }
   return { total: rows.length, due, learning, review, lapsed, notesWithCards: noteSet.size };
+}
+
+export async function flashcardStats(): Promise<FlashcardStats> {
+  const rows = await db
+    .select({
+      status: flashcards.status,
+      dueAt: flashcards.dueAt,
+      entryId: flashcards.entryId,
+    })
+    .from(flashcards);
+  return statsFromRows(rows);
+}
+
+export async function flashcardStatsForEntries(entryIds: string[]): Promise<FlashcardStats> {
+  if (entryIds.length === 0) {
+    return { total: 0, due: 0, learning: 0, review: 0, lapsed: 0, notesWithCards: 0 };
+  }
+  const rows = await db
+    .select({
+      status: flashcards.status,
+      dueAt: flashcards.dueAt,
+      entryId: flashcards.entryId,
+    })
+    .from(flashcards)
+    .where(inArray(flashcards.entryId, entryIds));
+  return statsFromRows(rows);
 }
 
 export async function deleteCard(cardId: string): Promise<void> {

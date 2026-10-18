@@ -11,7 +11,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body) {
+    return NextResponse.json({ error: "올바른 JSON 요청이 아닙니다." }, { status: 400 });
+  }
   const parsed = updateEntrySchema.safeParse({ ...body, id });
   if (!parsed.success) {
     return NextResponse.json(

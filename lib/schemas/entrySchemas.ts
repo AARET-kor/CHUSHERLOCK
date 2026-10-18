@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+export const evidenceLevelSchema = z.enum([
+  "unknown",
+  "expert_consensus",
+  "observational",
+  "randomized_trial",
+  "systematic_review",
+  "guideline",
+]);
+
 export const sourceInputSchema = z.object({
   type: z.enum([
     "paper",
@@ -15,6 +24,9 @@ export const sourceInputSchema = z.object({
   url: z.string().url().optional().or(z.literal("")),
   authors: z.string().optional(),
   year: z.number().int().min(1900).max(2100).optional(),
+  versionLabel: z.string().max(120).optional(),
+  validUntil: z.string().date().optional().or(z.literal("")),
+  evidenceLevel: evidenceLevelSchema.optional(),
 });
 
 export const contentTierSchema = z.enum([
@@ -23,6 +35,23 @@ export const contentTierSchema = z.enum([
   "deep_study",
   "base_medical_knowledge",
 ]);
+
+export const claimInputSchema = z.object({
+  claimText: z.string().min(1).max(4000),
+  representation: z.enum(["verbatim", "ai_paraphrase", "author_note"]),
+  originalQuote: z.string().max(4000).optional(),
+  sourceLocation: z.string().min(1).max(500),
+  pageStart: z.number().int().positive().nullable().optional(),
+  pageEnd: z.number().int().positive().nullable().optional(),
+  section: z.string().max(500).optional(),
+  sourceIndex: z.number().int().nonnegative().default(0),
+  evidenceLevel: evidenceLevelSchema.default("unknown"),
+  conflictStatus: z.enum(["none", "possible", "confirmed"]).default("none"),
+  conflictNote: z.string().max(2000).optional(),
+  conflictsWithClaimId: z.string().optional(),
+  verifiedBy: z.string().max(200).optional(),
+  verifiedAt: z.string().datetime().optional(),
+});
 
 export const createEntrySchema = z.object({
   title: z
@@ -41,13 +70,24 @@ export const createEntrySchema = z.object({
   relatedEntryIds: z.array(z.string()).default([]),
   /** Cropped source figures to attach to this entry. */
   figureIds: z.array(z.string()).default([]),
+  claims: z.array(claimInputSchema).max(50).default([]),
+  provenance: z
+    .object({
+      model: z.string().max(200).optional(),
+      promptVersion: z.string().max(100).optional(),
+    })
+    .optional(),
   status: z.enum(["draft", "reviewed"]).default("draft"),
+  reviewedBy: z.string().max(200).optional(),
+  reviewDueAt: z.string().date().optional().or(z.literal("")),
 });
 
 export type CreateEntryInput = z.infer<typeof createEntrySchema>;
 
 export const updateEntrySchema = createEntrySchema.partial().extend({
   id: z.string().min(1),
+  changedBy: z.string().max(200).optional(),
+  changeNote: z.string().max(500).optional(),
 });
 
 export type UpdateEntryInput = z.infer<typeof updateEntrySchema>;

@@ -38,6 +38,13 @@ export interface CategoryDef {
 }
 
 export type EntryStatus = "draft" | "reviewed";
+export type EvidenceLevel =
+  | "unknown"
+  | "expert_consensus"
+  | "observational"
+  | "randomized_trial"
+  | "systematic_review"
+  | "guideline";
 
 export interface SourceRef {
   id: string;
@@ -46,6 +53,29 @@ export interface SourceRef {
   url?: string;
   authors?: string;
   year?: number;
+  versionLabel?: string;
+  validUntil?: string;
+  evidenceLevel?: EvidenceLevel;
+}
+
+export interface EntryClaim {
+  id: string;
+  sourceId?: string;
+  claimText: string;
+  representation: "verbatim" | "ai_paraphrase" | "author_note";
+  originalQuote?: string;
+  sourceLocation: string;
+  pageStart?: number;
+  pageEnd?: number;
+  section?: string;
+  evidenceLevel: EvidenceLevel;
+  conflictStatus: "none" | "possible" | "confirmed";
+  conflictNote?: string;
+  conflictsWithClaimId?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  generatedByModel?: string;
+  promptVersion?: string;
 }
 
 export interface CodexEntry {
@@ -65,4 +95,9 @@ export interface CodexEntry {
   status: EntryStatus;
   createdAt: string;
   updatedAt: string;
+  contentVersion: number;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewDueAt?: string;
+  claims: EntryClaim[];
 }

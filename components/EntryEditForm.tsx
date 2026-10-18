@@ -24,6 +24,9 @@ export function EntryEditForm({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [reviewedBy, setReviewedBy] = useState(entry.reviewedBy ?? "");
+  const [reviewDueAt, setReviewDueAt] = useState(entry.reviewDueAt?.slice(0, 10) ?? "");
+  const [changeNote, setChangeNote] = useState("");
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -40,6 +43,10 @@ export function EntryEditForm({
           categoryKey,
           tier,
           status,
+          reviewedBy: reviewedBy || undefined,
+          reviewDueAt,
+          changedBy: reviewedBy || "사용자",
+          changeNote: changeNote || undefined,
           tags: tags
             .split(",")
             .map((t) => t.trim())
@@ -143,6 +150,36 @@ export function EntryEditForm({
       <div>
         <label className="mb-1 block text-sm font-medium">태그 (쉼표로 구분)</label>
         <input value={tags} onChange={(e) => setTags(e.target.value)} className="field" />
+      </div>
+
+      <div className="grid gap-4 rounded-xl border border-ink/10 bg-mist/40 p-4 sm:grid-cols-3">
+        <label className="text-xs text-ink/60">
+          검토자
+          <input
+            value={reviewedBy}
+            onChange={(e) => setReviewedBy(e.target.value)}
+            className="field mt-1"
+            placeholder="이름 또는 역할"
+          />
+        </label>
+        <label className="text-xs text-ink/60">
+          다음 재검토일
+          <input
+            type="date"
+            value={reviewDueAt}
+            onChange={(e) => setReviewDueAt(e.target.value)}
+            className="field mt-1"
+          />
+        </label>
+        <label className="text-xs text-ink/60">
+          변경 사유
+          <input
+            value={changeNote}
+            onChange={(e) => setChangeNote(e.target.value)}
+            className="field mt-1"
+            placeholder="수치 교정, 신규 가이드 반영 등"
+          />
+        </label>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

@@ -1,11 +1,31 @@
 import Link from "next/link";
-import { listDueCards, flashcardStats } from "../../lib/services/flashcardService";
+import {
+  listDueCards,
+  listDueCardsForEntries,
+  flashcardStats,
+  flashcardStatsForEntries,
+} from "../../lib/services/flashcardService";
+import { listClusters } from "../../lib/services/clusterService";
 import { ReviewClient, type ReviewCard } from "../../components/ReviewClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function ReviewPage() {
-  const [due, stats] = await Promise.all([listDueCards(60), flashcardStats()]);
+export default async function ReviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ clusterId?: string }>;
+}) {
+  const { clusterId } = await searchParams;
+  const cluster = clusterId
+    ? (await listClusters()).find((candidate) => candidate.id === clusterId) ?? null
+    : null;
+  const entryIds = cluster?.entries.map((entry) => entry.id) ?? [];
+  const [due, stats] = cluster
+    ? await Promise.all([
+        listDueCardsForEntries(entryIds, 60),
+        flashcardStatsForEntries(entryIds),
+      ])
+    : await Promise.all([listDueCards(60), flashcardStats()]);
 
   const cards: ReviewCard[] = due.map((c) => ({
     id: c.id,
@@ -27,11 +47,29 @@ export default async function ReviewPage() {
         <div>
           <div className="mb-2 flex items-center gap-3 font-mono text-[10px] tracking-[0.2em] md:text-[11px]">
             <span className="text-ink/45">[ REVIEW ]</span>
-            <span className="font-bold uppercase text-ink">복습 — 간격 반복 학습</span>
+            <span className="font-bold uppercase text-ink">
+              {cluster ? "Chunk deck — 집중 복습" : "복습 — 간격 반복 학습"}
+            </span>
           </div>
           <h1 className="font-serifa text-2xl font-bold tracking-tight text-inkdeep md:text-3xl">
-            오늘의 <span className="italic">복습</span>
+            {cluster ? (
+              <>
+                {cluster.title} <span className="italic">복습</span>
+              </>
+            ) : (
+              <>
+                오늘의 <span className="italic">복습</span>
+              </>
+            )}
           </h1>
+          {cluster && (
+            <Link
+              href={`/study#cluster-${cluster.id}`}
+              className="mt-2 inline-flex text-xs text-ink/45 underline underline-offset-4 transition hover:text-ink"
+            >
+              학습 덱으로 돌아가기
+            </Link>
+          )}
         </div>
         <div className="flex gap-4 text-center">
           <Stat label="복습 대기" value={stats.due} highlight />
@@ -48,12 +86,19 @@ export default async function ReviewPage() {
             노트를 열어 <strong className="text-ink/70">카드 만들기</strong>로 핵심을 카드로 만들면,
             여기서 <strong className="text-ink/70">Daily · Weekly · Monthly</strong> 간격으로 반복 복습할 수 있어요.
           </p>
-          <Link href="/library" className="btn-secondary mt-5 !px-5 !py-2">
-            노트 보러 가기
+          <Link
+            href={cluster ? `/study#cluster-${cluster.id}` : "/library"}
+            className="btn-secondary mt-5 !px-5 !py-2"
+          >
+            {cluster ? "학습 덱으로" : "노트 보러 가기"}
           </Link>
         </div>
       ) : (
-        <ReviewClient initialCards={cards} />
+        <ReviewClient
+          initialCards={cards}
+          returnHref={cluster ? `/study#cluster-${cluster.id}` : "/study"}
+          returnLabel={cluster ? "이 덱으로 돌아가기" : "학습 묶음으로"}
+        />
       )}
     </div>
   );

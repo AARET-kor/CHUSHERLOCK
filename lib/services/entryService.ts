@@ -1,8 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { eq, and, inArray, desc } from "drizzle-orm";
-import { db } from "../db/client";
-import { entries, sources, entrySources, entryRelations, figures } from "../db/schema";
-import type { CodexEntry, SourceRef } from "../codex/types";
+import { db, sqliteClient } from "../db/client";
+import {
+  entries,
+  sources,
+  entrySources,
+  entryRelations,
+  entryClaims,
+  figures,
+} from "../db/schema";
+import type { CodexEntry, EntryClaim, SourceRef } from "../codex/types";
 import { getCategory } from "../codex/taxonomy";
 import { findOverlapCandidates, type OverlapCandidate } from "../codex/overlap";
 import { findSemanticRelatedIds } from "../ai/relatedness";
@@ -18,19 +25,103 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-async function hydrateEntry(row: typeof entries.$inferSelect): Promise<CodexEntry> {
-  const entrySourceRows = await db
-    .select({ source: sources })
-    .from(entrySources)
-    .innerJoin(sources, eq(entrySources.sourceId, sources.id))
-    .where(eq(entrySources.entryId, row.id));
+function batches<T>(values: T[], size = 500): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < values.length; i += size) result.push(values.slice(i, i + size));
+  return result;
+}
 
-  const relationRows = await db
-    .select({ relatedEntryId: entryRelations.relatedEntryId })
-    .from(entryRelations)
-    .where(eq(entryRelations.entryId, row.id));
+/**
+ * Hydrate an arbitrary entry list in bounded bulk queries. The old
+ * implementation issued two extra queries per note (N+1); this remains a
+ * constant two queries for normal libraries and scales in 500-id batches.
+ */
+async function hydrateEntries(rows: Array<typeof entries.$inferSelect>): Promise<CodexEntry[]> {
+  if (rows.length === 0) return [];
+  const ids = rows.map((row) => row.id);
+  const entrySourceRows: Array<{ entryId: string; source: typeof sources.$inferSelect }> = [];
+  const relationRows: Array<{ entryId: string; relatedEntryId: string }> = [];
+  const claimRows: Array<typeof entryClaims.$inferSelect> = [];
 
-  return {
+  for (const idBatch of batches(ids)) {
+    entrySourceRows.push(
+      ...(await db
+        .select({ entryId: entrySources.entryId, source: sources })
+        .from(entrySources)
+        .innerJoin(sources, eq(entrySources.sourceId, sources.id))
+        .where(inArray(entrySources.entryId, idBatch)))
+    );
+    relationRows.push(
+      ...(await db
+        .select({
+          entryId: entryRelations.entryId,
+          relatedEntryId: entryRelations.relatedEntryId,
+        })
+        .from(entryRelations)
+        .where(inArray(entryRelations.entryId, idBatch)))
+    );
+    claimRows.push(
+      ...(await db
+        .select()
+        .from(entryClaims)
+        .where(inArray(entryClaims.entryId, idBatch)))
+    );
+  }
+
+  const sourcesByEntry = new Map<string, SourceRef[]>();
+  for (const { entryId, source } of entrySourceRows) {
+    const hydrated: SourceRef = {
+      id: source.id,
+      type: source.type as SourceRef["type"],
+      citation: source.citation,
+      url: source.url ?? undefined,
+      authors: source.authors ?? undefined,
+      year: source.year ?? undefined,
+      versionLabel: source.versionLabel ?? undefined,
+      validUntil: source.validUntil ?? undefined,
+      evidenceLevel: source.evidenceLevel
+        ? (source.evidenceLevel as SourceRef["evidenceLevel"])
+        : undefined,
+    };
+    const current = sourcesByEntry.get(entryId) ?? [];
+    current.push(hydrated);
+    sourcesByEntry.set(entryId, current);
+  }
+
+  const relationsByEntry = new Map<string, string[]>();
+  for (const { entryId, relatedEntryId } of relationRows) {
+    const current = relationsByEntry.get(entryId) ?? [];
+    current.push(relatedEntryId);
+    relationsByEntry.set(entryId, current);
+  }
+
+  const claimsByEntry = new Map<string, EntryClaim[]>();
+  for (const claim of claimRows) {
+    const hydrated: EntryClaim = {
+      id: claim.id,
+      sourceId: claim.sourceId ?? undefined,
+      claimText: claim.claimText,
+      representation: claim.representation as EntryClaim["representation"],
+      originalQuote: claim.originalQuote ?? undefined,
+      sourceLocation: claim.sourceLocation,
+      pageStart: claim.pageStart ?? undefined,
+      pageEnd: claim.pageEnd ?? undefined,
+      section: claim.section ?? undefined,
+      evidenceLevel: claim.evidenceLevel as EntryClaim["evidenceLevel"],
+      conflictStatus: claim.conflictStatus as EntryClaim["conflictStatus"],
+      conflictNote: claim.conflictNote ?? undefined,
+      conflictsWithClaimId: claim.conflictsWithClaimId ?? undefined,
+      verifiedBy: claim.verifiedBy ?? undefined,
+      verifiedAt: claim.verifiedAt ?? undefined,
+      generatedByModel: claim.generatedByModel ?? undefined,
+      promptVersion: claim.promptVersion ?? undefined,
+    };
+    const current = claimsByEntry.get(claim.entryId) ?? [];
+    current.push(hydrated);
+    claimsByEntry.set(claim.entryId, current);
+  }
+
+  return rows.map((row) => ({
     id: row.id,
     title: row.title,
     content: row.content,
@@ -40,16 +131,14 @@ async function hydrateEntry(row: typeof entries.$inferSelect): Promise<CodexEntr
     status: row.status as CodexEntry["status"],
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-    sources: entrySourceRows.map(({ source }) => ({
-      id: source.id,
-      type: source.type as SourceRef["type"],
-      citation: source.citation,
-      url: source.url ?? undefined,
-      authors: source.authors ?? undefined,
-      year: source.year ?? undefined,
-    })),
-    relatedEntryIds: relationRows.map((r) => r.relatedEntryId),
-  };
+    contentVersion: row.contentVersion,
+    reviewedBy: row.reviewedBy ?? undefined,
+    reviewedAt: row.reviewedAt ?? undefined,
+    reviewDueAt: row.reviewDueAt ?? undefined,
+    sources: sourcesByEntry.get(row.id) ?? [],
+    relatedEntryIds: relationsByEntry.get(row.id) ?? [],
+    claims: claimsByEntry.get(row.id) ?? [],
+  }));
 }
 
 export async function listEntries(filter: EntryFilter = {}): Promise<CodexEntry[]> {
@@ -62,13 +151,13 @@ export async function listEntries(filter: EntryFilter = {}): Promise<CodexEntry[
     ? await db.select().from(entries).where(and(...conditions))
     : await db.select().from(entries);
 
-  return Promise.all(rows.map(hydrateEntry));
+  return hydrateEntries(rows);
 }
 
 export async function getEntry(id: string): Promise<CodexEntry | null> {
   const [row] = await db.select().from(entries).where(eq(entries.id, id));
   if (!row) return null;
-  return hydrateEntry(row);
+  return (await hydrateEntries([row]))[0] ?? null;
 }
 
 /** Overlap candidates for a prospective title/category, before the entry is
@@ -81,25 +170,6 @@ export async function previewOverlaps(
     .select({ id: entries.id, title: entries.title, categoryKey: entries.categoryKey })
     .from(entries);
   return findOverlapCandidates(title, categoryKey, existing);
-}
-
-async function resolveOrCreateSource(input: CreateEntryInput["sources"][number]): Promise<string> {
-  const [existing] = await db
-    .select({ id: sources.id })
-    .from(sources)
-    .where(eq(sources.citation, input.citation));
-  if (existing) return existing.id;
-
-  const id = randomUUID();
-  await db.insert(sources).values({
-    id,
-    type: input.type,
-    citation: input.citation,
-    url: input.url || null,
-    authors: input.authors || null,
-    year: input.year ?? null,
-  });
-  return id;
 }
 
 export interface CreateEntryResult {
@@ -142,7 +212,24 @@ async function semanticRelatedIds(input: CreateEntryInput): Promise<string[]> {
  * title-similarity pass (lib/codex/overlap.ts) plus a semantic pass where
  * the model judges same-category notes for genuine topic overlap
  * (lib/ai/relatedness.ts — never throws, degrades to the heuristic). */
-export async function createEntry(input: CreateEntryInput): Promise<CreateEntryResult> {
+export interface PreparedFigure {
+  id: string;
+  filename: string;
+  kind: string;
+  caption: string;
+  page: number | null;
+  createdAt: string;
+}
+
+/**
+ * All relational writes for one note are committed together. `preparedFigures`
+ * is used by .cognote import after its files have been staged on disk; a DB
+ * failure leaves no partial entry/source/relation/figure rows.
+ */
+export async function createEntry(
+  input: CreateEntryInput,
+  options: { preparedFigures?: PreparedFigure[] } = {}
+): Promise<CreateEntryResult> {
   const overlaps = await previewOverlaps(input.title, input.categoryKey);
   const semanticIds = await semanticRelatedIds(input);
   const relatedEntryIds = Array.from(
@@ -151,33 +238,141 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
 
   const id = randomUUID();
   const timestamp = nowIso();
+  const transaction = sqliteClient.transaction(() => {
+    const sourceIds = input.sources.map((source) => {
+      const existing = sqliteClient
+        .prepare("SELECT id FROM sources WHERE citation = ? LIMIT 1")
+        .get(source.citation) as { id: string } | undefined;
+      const sourceId = existing?.id ?? randomUUID();
+      if (!existing) {
+        sqliteClient
+          .prepare(
+            `INSERT INTO sources (id, type, citation, url, authors, year)
+             VALUES (?, ?, ?, ?, ?, ?)`
+          )
+          .run(
+            sourceId,
+            source.type,
+            source.citation,
+            source.url || null,
+            source.authors || null,
+            source.year ?? null
+          );
+      }
+      sqliteClient
+        .prepare(
+          `UPDATE sources
+              SET version_label = COALESCE(?, version_label),
+                  valid_until = COALESCE(?, valid_until),
+                  evidence_level = COALESCE(?, evidence_level)
+            WHERE id = ?`
+        )
+        .run(
+          source.versionLabel || null,
+          source.validUntil || null,
+          source.evidenceLevel || null,
+          sourceId
+        );
+      return sourceId;
+    });
 
-  const sourceIds = await Promise.all(input.sources.map(resolveOrCreateSource));
+    sqliteClient
+      .prepare(
+        `INSERT INTO entries
+          (id, title, content, category_key, tier, tags, status, created_at, updated_at,
+           content_version, reviewed_by, reviewed_at, review_due_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`
+      )
+      .run(
+        id,
+        input.title,
+        input.content,
+        input.categoryKey,
+        input.tier,
+        JSON.stringify(input.tags),
+        input.status,
+        timestamp,
+        timestamp,
+        input.status === "reviewed" ? input.reviewedBy || "사용자" : null,
+        input.status === "reviewed" ? timestamp : null,
+        input.reviewDueAt || null
+      );
 
-  await db.insert(entries).values({
-    id,
-    title: input.title,
-    content: input.content,
-    categoryKey: input.categoryKey,
-    tier: input.tier,
-    tags: input.tags,
-    status: input.status,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  });
-
-  if (sourceIds.length > 0) {
-    await db.insert(entrySources).values(sourceIds.map((sourceId) => ({ entryId: id, sourceId })));
-  }
-
-  if (relatedEntryIds.length > 0) {
-    await db.insert(entryRelations).values(
-      relatedEntryIds.flatMap((relatedId) => [
-        { entryId: id, relatedEntryId: relatedId },
-        { entryId: relatedId, relatedEntryId: id },
-      ])
+    const insertEntrySource = sqliteClient.prepare(
+      "INSERT OR IGNORE INTO entry_sources (entry_id, source_id) VALUES (?, ?)"
     );
-  }
+    for (const sourceId of sourceIds) insertEntrySource.run(id, sourceId);
+
+    const insertClaim = sqliteClient.prepare(
+      `INSERT INTO entry_claims
+        (id, entry_id, source_id, claim_text, representation, original_quote,
+         source_location, page_start, page_end, section, evidence_level,
+         conflict_status, conflict_note, conflicts_with_claim_id, verified_by,
+         verified_at, generated_by_model, prompt_version, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    for (const claim of input.claims) {
+      insertClaim.run(
+        randomUUID(),
+        id,
+        sourceIds[claim.sourceIndex] ?? sourceIds[0] ?? null,
+        claim.claimText,
+        claim.representation,
+        claim.originalQuote || null,
+        claim.sourceLocation,
+        claim.pageStart ?? null,
+        claim.pageEnd ?? claim.pageStart ?? null,
+        claim.section || null,
+        claim.evidenceLevel,
+        claim.conflictStatus,
+        claim.conflictNote || null,
+        claim.conflictsWithClaimId || null,
+        claim.verifiedBy || null,
+        claim.verifiedAt || null,
+        input.provenance?.model || null,
+        input.provenance?.promptVersion || null,
+        timestamp
+      );
+    }
+
+    const insertRelation = sqliteClient.prepare(
+      "INSERT OR IGNORE INTO entry_relations (entry_id, related_entry_id) VALUES (?, ?)"
+    );
+    for (const relatedId of relatedEntryIds) {
+      if (relatedId === id) continue;
+      const exists = sqliteClient
+        .prepare("SELECT 1 FROM entries WHERE id = ?")
+        .get(relatedId);
+      if (!exists) continue;
+      insertRelation.run(id, relatedId);
+      insertRelation.run(relatedId, id);
+    }
+
+    const insertFigure = sqliteClient.prepare(
+      `INSERT INTO figures
+        (id, job_id, entry_id, filename, kind, caption, page, created_at)
+       VALUES (?, NULL, ?, ?, ?, ?, ?, ?)`
+    );
+    for (const figure of options.preparedFigures ?? []) {
+      insertFigure.run(
+        figure.id,
+        id,
+        figure.filename,
+        figure.kind,
+        figure.caption,
+        figure.page,
+        figure.createdAt
+      );
+    }
+
+    if (input.figureIds.length > 0) {
+      const attachFigure = sqliteClient.prepare(
+        "UPDATE figures SET entry_id = ? WHERE id = ?"
+      );
+      for (const figureId of input.figureIds) attachFigure.run(id, figureId);
+    }
+  });
+  transaction.immediate();
 
   const entry = await getEntry(id);
   if (!entry) throw new Error("Failed to load entry immediately after creation.");
@@ -187,19 +382,59 @@ export async function createEntry(input: CreateEntryInput): Promise<CreateEntryR
 export async function updateEntry(input: UpdateEntryInput): Promise<CodexEntry> {
   const existing = await getEntry(input.id);
   if (!existing) throw new Error(`Entry not found: ${input.id}`);
+  const timestamp = nowIso();
+  const nextStatus = input.status ?? existing.status;
+  const reviewedAt =
+    nextStatus === "reviewed"
+      ? existing.reviewedAt ?? timestamp
+      : null;
+  const reviewedBy =
+    nextStatus === "reviewed"
+      ? input.reviewedBy || existing.reviewedBy || input.changedBy || "사용자"
+      : null;
 
-  await db
-    .update(entries)
-    .set({
-      title: input.title ?? existing.title,
-      content: input.content ?? existing.content,
-      categoryKey: input.categoryKey ?? existing.categoryKey,
-      tier: input.tier ?? existing.tier,
-      tags: input.tags ?? existing.tags,
-      status: input.status ?? existing.status,
-      updatedAt: nowIso(),
+  sqliteClient
+    .transaction(() => {
+      sqliteClient
+        .prepare(
+          `INSERT INTO entry_revisions
+            (id, entry_id, version, title, content, status, changed_by, change_note, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          randomUUID(),
+          existing.id,
+          existing.contentVersion,
+          existing.title,
+          existing.content,
+          existing.status,
+          input.changedBy || reviewedBy,
+          input.changeNote || null,
+          timestamp
+        );
+      sqliteClient
+        .prepare(
+          `UPDATE entries
+              SET title = ?, content = ?, category_key = ?, tier = ?, tags = ?,
+                  status = ?, updated_at = ?, content_version = content_version + 1,
+                  reviewed_by = ?, reviewed_at = ?, review_due_at = ?
+            WHERE id = ?`
+        )
+        .run(
+          input.title ?? existing.title,
+          input.content ?? existing.content,
+          input.categoryKey ?? existing.categoryKey,
+          input.tier ?? existing.tier,
+          JSON.stringify(input.tags ?? existing.tags),
+          nextStatus,
+          timestamp,
+          reviewedBy,
+          reviewedAt,
+          input.reviewDueAt === "" ? null : input.reviewDueAt ?? existing.reviewDueAt ?? null,
+          input.id
+        );
     })
-    .where(eq(entries.id, input.id));
+    .immediate();
 
   const updated = await getEntry(input.id);
   if (!updated) throw new Error(`Entry disappeared during update: ${input.id}`);
@@ -243,33 +478,48 @@ export async function mergeEntries(input: MergeEntriesInput): Promise<CodexEntry
     new Set(merged.flatMap((e) => e.relatedEntryIds).filter((rid) => !mergedIdSet.has(rid)))
   );
 
-  await db.insert(entries).values({
-    id,
-    title: input.title,
-    content,
-    categoryKey: input.categoryKey,
-    tier: input.tier,
-    tags,
-    status: input.status ?? "draft",
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  });
+  sqliteClient
+    .transaction(() => {
+      sqliteClient
+        .prepare(
+          `INSERT INTO entries
+            (id, title, content, category_key, tier, tags, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          id,
+          input.title,
+          content,
+          input.categoryKey,
+          input.tier,
+          JSON.stringify(tags),
+          input.status ?? "draft",
+          timestamp,
+          timestamp
+        );
 
-  if (sourceIds.length > 0) {
-    await db.insert(entrySources).values(sourceIds.map((sourceId) => ({ entryId: id, sourceId })));
-  }
-  if (relatedIds.length > 0) {
-    await db.insert(entryRelations).values(
-      relatedIds.flatMap((relatedId) => [
-        { entryId: id, relatedEntryId: relatedId },
-        { entryId: relatedId, relatedEntryId: id },
-      ])
-    );
-  }
+      const insertSource = sqliteClient.prepare(
+        "INSERT OR IGNORE INTO entry_sources (entry_id, source_id) VALUES (?, ?)"
+      );
+      for (const sourceId of sourceIds) insertSource.run(id, sourceId);
 
-  // Re-point cropped figures to the merged note, then remove the originals.
-  await db.update(figures).set({ entryId: id }).where(inArray(figures.entryId, input.entryIds));
-  await db.delete(entries).where(inArray(entries.id, input.entryIds));
+      const insertRelation = sqliteClient.prepare(
+        "INSERT OR IGNORE INTO entry_relations (entry_id, related_entry_id) VALUES (?, ?)"
+      );
+      for (const relatedId of relatedIds) {
+        insertRelation.run(id, relatedId);
+        insertRelation.run(relatedId, id);
+      }
+
+      const placeholders = input.entryIds.map(() => "?").join(",");
+      sqliteClient
+        .prepare(`UPDATE figures SET entry_id = ? WHERE entry_id IN (${placeholders})`)
+        .run(id, ...input.entryIds);
+      sqliteClient
+        .prepare(`DELETE FROM entries WHERE id IN (${placeholders})`)
+        .run(...input.entryIds);
+    })
+    .immediate();
 
   const entry = await getEntry(id);
   if (!entry) throw new Error("Failed to load merged entry.");

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
 
 // Categories are seeded from lib/codex/taxonomy.ts at migrate time, but kept
 // as a real table (not just the static list) so future user-added leaf
@@ -12,29 +12,51 @@ export const categories = sqliteTable("categories", {
   descriptionEn: text("description_en"),
 });
 
-export const sources = sqliteTable("sources", {
-  id: text("id").primaryKey(),
-  type: text("type").notNull(), // SourceType
-  citation: text("citation").notNull(),
-  url: text("url"),
-  authors: text("authors"),
-  year: integer("year"),
-});
+export const sources = sqliteTable(
+  "sources",
+  {
+    id: text("id").primaryKey(),
+    type: text("type").notNull(), // SourceType
+    citation: text("citation").notNull(),
+    url: text("url"),
+    authors: text("authors"),
+    year: integer("year"),
+    versionLabel: text("version_label"),
+    validUntil: text("valid_until"),
+    evidenceLevel: text("evidence_level"),
+  },
+  (table) => ({
+    citationIdx: index("sources_citation_idx").on(table.citation),
+  })
+);
 
-export const entries = sqliteTable("entries", {
-  id: text("id").primaryKey(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  categoryKey: text("category_key")
-    .notNull()
-    .references(() => categories.key),
-  tier: text("tier").notNull(), // ContentTier
-  tags: text("tags", { mode: "json" }).notNull().$type<string[]>(),
-  status: text("status").notNull().default("draft"), // EntryStatus
-  createdAt: text("created_at").notNull(),
-  updatedAt: text("updated_at").notNull(),
-  exportedAt: text("exported_at"),
-});
+export const entries = sqliteTable(
+  "entries",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    categoryKey: text("category_key")
+      .notNull()
+      .references(() => categories.key),
+    tier: text("tier").notNull(), // ContentTier
+    tags: text("tags", { mode: "json" }).notNull().$type<string[]>(),
+    status: text("status").notNull().default("draft"), // EntryStatus
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+    exportedAt: text("exported_at"),
+    contentVersion: integer("content_version").notNull().default(1),
+    reviewedBy: text("reviewed_by"),
+    reviewedAt: text("reviewed_at"),
+    reviewDueAt: text("review_due_at"),
+  },
+  (table) => ({
+    categoryIdx: index("entries_category_idx").on(table.categoryKey),
+    tierIdx: index("entries_tier_idx").on(table.tier),
+    statusIdx: index("entries_status_idx").on(table.status),
+    updatedIdx: index("entries_updated_idx").on(table.updatedAt),
+  })
+);
 
 // Many-to-many: an entry can cite multiple sources, a source can back
 // multiple entries.
@@ -50,6 +72,66 @@ export const entrySources = sqliteTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.entryId, table.sourceId] }),
+    sourceIdx: index("entry_sources_source_idx").on(table.sourceId),
+  })
+);
+
+/** Claim-level provenance: each clinically relevant statement can point to
+ * the exact page/section and preserve the source wording separately from
+ * the AI's paraphrase. */
+export const entryClaims = sqliteTable(
+  "entry_claims",
+  {
+    id: text("id").primaryKey(),
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => entries.id, { onDelete: "cascade" }),
+    sourceId: text("source_id").references(() => sources.id, { onDelete: "set null" }),
+    claimText: text("claim_text").notNull(),
+    representation: text("representation").notNull(), // verbatim | ai_paraphrase | author_note
+    originalQuote: text("original_quote"),
+    sourceLocation: text("source_location").notNull(),
+    pageStart: integer("page_start"),
+    pageEnd: integer("page_end"),
+    section: text("section"),
+    evidenceLevel: text("evidence_level").notNull().default("unknown"),
+    conflictStatus: text("conflict_status").notNull().default("none"),
+    conflictNote: text("conflict_note"),
+    conflictsWithClaimId: text("conflicts_with_claim_id"),
+    verifiedBy: text("verified_by"),
+    verifiedAt: text("verified_at"),
+    generatedByModel: text("generated_by_model"),
+    promptVersion: text("prompt_version"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    entryIdx: index("entry_claims_entry_idx").on(table.entryId),
+    sourceIdx: index("entry_claims_source_idx").on(table.sourceId),
+    conflictIdx: index("entry_claims_conflict_idx").on(table.conflictStatus),
+  })
+);
+
+/** Immutable snapshots written before every edit for clinical auditability. */
+export const entryRevisions = sqliteTable(
+  "entry_revisions",
+  {
+    id: text("id").primaryKey(),
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => entries.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    status: text("status").notNull(),
+    changedBy: text("changed_by"),
+    changeNote: text("change_note"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    entryVersionIdx: index("entry_revisions_entry_version_idx").on(
+      table.entryId,
+      table.version
+    ),
   })
 );
 
@@ -67,27 +149,52 @@ export const ingestJobs = sqliteTable("ingest_jobs", {
   processedChunks: integer("processed_chunks").notNull().default(0),
   suggestions: text("suggestions", { mode: "json" }).$type<unknown[]>(),
   error: text("error"),
+  /** Durable input saved under data/ingest-jobs until the job completes.
+   * Keeping the input outside process memory makes interrupted work
+   * recoverable after a restart or hot reload. */
+  payloadPath: text("payload_path"),
+  payloadKind: text("payload_kind"), // file | text
+  /** Lease/retry metadata for the SQLite-backed worker. */
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  workerId: text("worker_id"),
+  heartbeatAt: text("heartbeat_at"),
+  leaseUntil: text("lease_until"),
+  nextRunAt: text("next_run_at"),
+  cancelRequestedAt: text("cancel_requested_at"),
+  aiModel: text("ai_model"),
+  promptVersion: text("prompt_version"),
   /** Human-readable status of figure/graph extraction for this job: a count
    * summary on success, or the failure reason (so extraction problems are
    * visible instead of silently swallowed). */
   figureNote: text("figure_note"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
-});
+}, (table) => ({
+  statusNextRunIdx: index("ingest_jobs_status_next_run_idx").on(table.status, table.nextRunAt),
+  leaseIdx: index("ingest_jobs_lease_idx").on(table.leaseUntil),
+}));
 
 // Visual material (figures, tables, charts, photos) cropped verbatim from
 // source documents. Files live under data/figures/; rows link them to the
 // ingest job that produced them and, once saved, to the entry that uses them.
-export const figures = sqliteTable("figures", {
-  id: text("id").primaryKey(),
-  jobId: text("job_id"),
-  entryId: text("entry_id"),
-  filename: text("filename").notNull(), // file name inside the figures dir
-  kind: text("kind").notNull(), // figure | table | chart | photo
-  caption: text("caption").notNull(),
-  page: integer("page"), // 1-based page/slide number in the source
-  createdAt: text("created_at").notNull(),
-});
+export const figures = sqliteTable(
+  "figures",
+  {
+    id: text("id").primaryKey(),
+    jobId: text("job_id"),
+    entryId: text("entry_id"),
+    filename: text("filename").notNull(), // file name inside the figures dir
+    kind: text("kind").notNull(), // figure | table | chart | photo
+    caption: text("caption").notNull(),
+    page: integer("page"), // 1-based page/slide number in the source
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    entryIdx: index("figures_entry_idx").on(table.entryId),
+    jobIdx: index("figures_job_idx").on(table.jobId),
+  })
+);
 
 // Learning clusters (학습 묶음): AI-curated groups of related notes with a
 // study order, a rationale, and follow-up study suggestions — so knowledge
@@ -156,7 +263,10 @@ export const flashcards = sqliteTable("flashcards", {
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
   lastReviewedAt: text("last_reviewed_at"),
-});
+}, (table) => ({
+  dueIdx: index("flashcards_due_idx").on(table.dueAt),
+  entryIdx: index("flashcards_entry_idx").on(table.entryId),
+}));
 
 // Self-referencing overlap/relation links, so new material that overlaps an
 // existing entry gets linked instead of duplicated (per the "existing vs.
@@ -173,5 +283,6 @@ export const entryRelations = sqliteTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.entryId, table.relatedEntryId] }),
+    relatedIdx: index("entry_relations_related_idx").on(table.relatedEntryId),
   })
 );

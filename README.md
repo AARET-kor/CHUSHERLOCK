@@ -113,8 +113,27 @@ over-summarize** — read the document's flow, then reorganize by 목차 and
    same `entryService.createEntry` as manual entry, so overlap
    auto-linking and the mandatory-source rule apply unchanged.
 
-Jobs run in the background (`ingest_jobs` table) and the UI polls progress —
-a large document takes minutes and that's expected.
+Jobs are durable (`ingest_jobs` + persisted payload under
+`data/ingest-jobs/`) and the UI polls progress — a large document takes
+minutes and that's expected. A SQLite lease and heartbeat prevent two
+processes from taking the same job. Interrupted/expired leases are reclaimed
+on server startup, transient failures retry up to three times with backoff,
+and the UI can cancel or manually retry a job.
+
+### Clinical provenance and review
+
+New AI-ingested notes include claim-level provenance rather than only a
+document-level citation. Each clinically load-bearing claim records:
+
+- exact page range and section;
+- the source wording separately from the organized/AI-paraphrased claim;
+- evidence level and possible/confirmed conflicts;
+- the model and prompt version that generated it;
+- claim verifier, note reviewer, review date, and next review due date.
+
+Editing a note writes an immutable previous-version snapshot to
+`entry_revisions`. Expired sources, overdue reviews, and conflicting claims
+are surfaced on the note page before clinical use.
 
 ### Large files (PDF / Word)
 
@@ -204,7 +223,20 @@ CODEX_AI_MODEL_MID=claude-sonnet-5    # mid model (figures/clusters) — optiona
 CODEX_AI_MODEL_LIGHT=claude-haiku-4-5 # light model (OCR/relatedness) — optional
 CODEX_MAX_UPLOAD_MB=100               # optional upload cap
 CODEX_AI_MODE=fake                    # optional: offline deterministic mode (no API calls)
+CODEX_INGEST_LEASE_MS=45000           # optional durable-worker lease
+CODEX_COGNOTE_MAX_MB=50               # optional .cognote request cap
+CODEX_COGNOTE_MAX_NOTES=100           # optional notes per import
+CODEX_COGNOTE_MAX_FIGURES=500         # optional figures per import
+CODEX_COGNOTE_MAX_FIGURE_MB=10        # optional decoded size per figure
+CODEX_COGNOTE_MAX_DECODED_MB=40       # optional decoded image total
+CODEX_DISK_RESERVE_MB=100             # free space kept after import
+CODEX_ACCESS_TOKEN=choose-a-long-token # optional: protect every page/API when exposed
 ```
+
+When `CODEX_ACCESS_TOKEN` is set, API clients send
+`Authorization: Bearer <token>`. Browsers can use HTTP Basic authentication
+with any username and the token as the password. Leave it unset only for a
+localhost-only personal server.
 
 ## 노트 꾸미기 & 공유
 
@@ -253,6 +285,25 @@ npm run dev
 ```bash
 npm run db:generate   # only needed after changing lib/db/schema.ts
 ```
+
+Storage reconciliation is dry-run by default:
+
+```bash
+npm run db:cleanup
+npm run db:cleanup -- --apply  # remove only the reported old orphan rows/files
+```
+
+## Verification
+
+```bash
+npm run typecheck
+npm test            # unit + DB/API/integration + performance + offline AI quality gates
+npm run test:e2e    # Chromium user flows + Axe accessibility checks
+npm run build
+```
+
+The E2E suite uses an isolated `data/codex-e2e.sqlite` database and fake AI
+mode; it does not write to the normal knowledge-base database.
 
 Then open `http://localhost:3000`:
 

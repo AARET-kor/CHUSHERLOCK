@@ -69,6 +69,7 @@ export function EntryExplorer({
           ))}
         </div>
         <select
+          aria-label="노트 카테고리 필터"
           value={categoryKey}
           onChange={(e) => setCategoryKey(e.target.value)}
           className="field sm:ml-auto sm:w-56"

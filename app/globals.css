@@ -5,6 +5,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Keep small secondary copy at WCAG AA contrast on white/mist surfaces. */
+[class~="text-ink/30"],
+[class~="text-ink/35"],
+[class~="text-ink/40"],
+[class~="text-ink/45"],
+[class~="text-ink/50"] {
+  color: #51626b !important;
+}
+
 body {
   background-color: #ffffff;
   color: #051a24;
@@ -337,6 +346,15 @@ body {
 }
 .brand-link:hover::after {
   transform: scaleX(1);
+}
+
+/* Keep the compact mobile navigation usable without widening the page. */
+.mobile-nav {
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+}
+.mobile-nav::-webkit-scrollbar {
+  display: none;
 }
 
 /* Slow-breathing gradient on the dark hero band. */

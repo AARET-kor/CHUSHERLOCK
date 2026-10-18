@@ -39,7 +39,15 @@ const BUTTONS: { rating: Rating; label: string; key: string; className: string }
   { rating: "easy", label: "쉬움", key: "4", className: "bg-sky-600/90 hover:bg-sky-600" },
 ];
 
-export function ReviewClient({ initialCards }: { initialCards: ReviewCard[] }) {
+export function ReviewClient({
+  initialCards,
+  returnHref = "/study",
+  returnLabel = "학습 묶음으로",
+}: {
+  initialCards: ReviewCard[];
+  returnHref?: string;
+  returnLabel?: string;
+}) {
   const router = useRouter();
   const [queue, setQueue] = useState<ReviewCard[]>(initialCards);
   const [flipped, setFlipped] = useState(false);
@@ -113,8 +121,8 @@ export function ReviewClient({ initialCards }: { initialCards: ReviewCard[] }) {
           >
             새로고침
           </button>
-          <Link href="/study" className="rounded-full bg-white px-5 py-2 text-sm font-medium text-ink">
-            학습 묶음으로
+          <Link href={returnHref} className="rounded-full bg-white px-5 py-2 text-sm font-medium text-ink">
+            {returnLabel}
           </Link>
         </div>
       </div>

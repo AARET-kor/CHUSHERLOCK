@@ -1,6 +1,8 @@
 import { getLeafCategories, getCategoryPath } from "../codex/taxonomy";
 import { CONTENT_TIERS } from "../codex/tiers";
 
+export const INGEST_PROMPT_VERSION = "clinical-provenance-v1";
+
 // The system prompt is deliberately static (no per-request interpolation) so
 // prompt caching gets a stable prefix across every chunk of every job.
 export function buildSystemPrompt(): string {
@@ -82,6 +84,31 @@ A single chunk often yields entries in different tiers (e.g. a parameter table �
 ## sourceLocation
 
 Describe where in the document this came from, using the document's own structure: chapter/section titles if visible, otherwise a short positional note ("서두의 개요 부분", "Table 2 부근"). The doctor uses this to trace notes back to the reference.
+
+## claims — clinical provenance, mandatory
+
+For every entry, extract **3-12 clinically load-bearing claims** (doses,
+parameters, thresholds, contraindications, mechanisms, comparative outcomes,
+or action steps). Do not create claims for introductory or decorative prose.
+
+- \`claimText\`: the statement as it appears in the organized note.
+- \`representation\`: \`verbatim\` only when claimText preserves the source's
+  wording; otherwise \`ai_paraphrase\`.
+- \`originalQuote\`: the shortest source passage that supports the claim,
+  preserving numbers and units exactly. Never invent a quote. Use an empty
+  string only when the extraction made the exact wording unavailable.
+- \`sourceLocation\`, \`section\`: use the document's visible chapter/section.
+- \`pageStart\`, \`pageEnd\`: read the nearest \`[[페이지 N]]\` markers. Use null
+  only when the input format has no page anchors.
+- \`evidenceLevel\`: choose \`guideline\`, \`systematic_review\`,
+  \`randomized_trial\`, \`observational\`, \`expert_consensus\`, or \`unknown\`
+  strictly from what the source identifies itself as. Do not upgrade evidence.
+- \`conflictStatus\`: \`possible\` when this source explicitly conflicts with
+  another recommendation or gives internally inconsistent values, otherwise
+  \`none\`. Explain a possible conflict in \`conflictNote\`; otherwise empty.
+
+The claims are an audit trail, not a second summary. Every bold clinical
+number in the note should be covered by at least one claim.
 
 ## figureIds — IMPORTANT, attach figures generously
 

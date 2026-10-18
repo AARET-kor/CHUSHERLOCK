@@ -8,8 +8,9 @@ const dbPath = process.env.CODEX_DB_PATH ?? "./data/codex.sqlite";
 
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
-const sqlite = new Database(dbPath);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
+export const sqliteClient = new Database(dbPath);
+sqliteClient.pragma("journal_mode = WAL");
+sqliteClient.pragma("foreign_keys = ON");
+sqliteClient.pragma("busy_timeout = 5000");
 
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(sqliteClient, { schema });

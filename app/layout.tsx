@@ -23,12 +23,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ko">
       <body className="min-h-screen">
-        <header className="sticky top-0 z-40 border-b border-ink/5 bg-white/80 px-6 py-4 backdrop-blur">
-          <nav className="mx-auto flex max-w-5xl items-center justify-between">
-            <Link href="/" className="brand-link font-serifa text-2xl font-bold tracking-tight text-ink">
+        <header className="sticky top-0 z-40 border-b border-ink/5 bg-white/80 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
+          <nav className="mx-auto flex max-w-5xl items-center gap-3 sm:justify-between">
+            <Link
+              href="/"
+              className="brand-link shrink-0 font-serifa text-xl font-bold tracking-tight text-ink sm:text-2xl"
+            >
               Cognitio
             </Link>
-            <div className="flex items-center gap-1 rounded-full bg-mist px-2 py-1 text-sm text-ink">
+            <div className="mobile-nav flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-full bg-mist px-2 py-1 text-xs text-ink sm:flex-initial sm:text-sm">
               <Link href="/" className="rounded-full px-3 py-1.5 transition hover:bg-white hover:shadow-sm">
                 HOME
               </Link>
@@ -62,7 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </nav>
         </header>
 
-        <main className="mx-auto max-w-5xl px-6 py-10 pb-32">{children}</main>
+        <main className="mx-auto max-w-5xl px-4 py-8 pb-32 sm:px-6 sm:py-10">{children}</main>
 
         {/* Floating bottom pill — the ever-present shortcut into the codex. */}
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">

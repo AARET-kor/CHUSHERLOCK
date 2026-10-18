@@ -8,6 +8,7 @@ import { CategoryBadge } from "../../../components/CategoryBadge";
 import { MarkdownContent } from "../../../components/MarkdownContent";
 import { CardActions } from "../../../components/CardActions";
 import { deleteEntryAction } from "../../../lib/actions/entryActions";
+import { ClaimReviewControls } from "../../../components/ClaimReviewControls";
 
 export default async function EntryDetailPage({
   params,
@@ -25,6 +26,12 @@ export default async function EntryDetailPage({
 
   const nav = await clusterNavForEntry(id);
   const cards = await listCardsForEntry(id);
+  const now = Date.now();
+  const reviewOverdue = entry.reviewDueAt ? Date.parse(entry.reviewDueAt) < now : false;
+  const expiredSources = entry.sources.filter(
+    (source) => source.validUntil && Date.parse(source.validUntil) < now
+  );
+  const conflictingClaims = entry.claims.filter((claim) => claim.conflictStatus !== "none");
 
   return (
     <div>
@@ -68,9 +75,37 @@ export default async function EntryDetailPage({
         <TierBadge tier={entry.tier} />
         <CategoryBadge categoryKey={entry.categoryKey} />
         <span className="text-xs text-ink/50">
-          최근 수정: {new Date(entry.updatedAt).toLocaleString("ko-KR")}
+          v{entry.contentVersion} · 최근 수정: {new Date(entry.updatedAt).toLocaleString("ko-KR")}
+        </span>
+        <span
+          className={`rounded-full px-2 py-1 text-[10px] ${
+            entry.status === "reviewed" && !reviewOverdue
+              ? "bg-emerald-100 text-emerald-800"
+              : "bg-amber-100 text-amber-800"
+          }`}
+        >
+          {reviewOverdue
+            ? "재검토 기한 경과"
+            : entry.status === "reviewed"
+              ? `검토 완료${entry.reviewedBy ? ` · ${entry.reviewedBy}` : ""}`
+              : "AI/사용자 초안"}
         </span>
       </div>
+
+      {(reviewOverdue || expiredSources.length > 0 || conflictingClaims.length > 0) && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">임상 적용 전 재확인이 필요합니다.</p>
+          <ul className="mt-1 list-inside list-disc">
+            {reviewOverdue && <li>노트의 재검토 기한이 지났습니다.</li>}
+            {expiredSources.length > 0 && (
+              <li>유효 기한이 지난 출처가 {expiredSources.length}개 있습니다.</li>
+            )}
+            {conflictingClaims.length > 0 && (
+              <li>상충 가능성이 표시된 claim이 {conflictingClaims.length}개 있습니다.</li>
+            )}
+          </ul>
+        </div>
+      )}
 
       <h1 className="mb-4 font-serifa text-2xl font-bold tracking-tight text-inkdeep md:text-3xl">{entry.title}</h1>
 
@@ -93,6 +128,11 @@ export default async function EntryDetailPage({
             {entry.sources.map((source) => (
               <li key={source.id}>
                 {source.citation}
+                {source.versionLabel && <span> · {source.versionLabel}</span>}
+                {source.evidenceLevel && source.evidenceLevel !== "unknown" && (
+                  <span> · {source.evidenceLevel}</span>
+                )}
+                {source.validUntil && <span> · 유효기한 {source.validUntil}</span>}
                 {source.url && (
                   <a href={source.url} className="ml-1 text-emerald-700 hover:underline">
                     link
@@ -101,6 +141,69 @@ export default async function EntryDetailPage({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {entry.claims.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-2 text-sm font-medium text-ink/80">
+            근거 추적 (Claim provenance)
+          </h2>
+          <div className="space-y-3">
+            {entry.claims.map((claim) => (
+              <article
+                key={claim.id}
+                className={`rounded-xl border p-4 text-sm ${
+                  claim.conflictStatus !== "none"
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-ink/10 bg-mist/30"
+                }`}
+              >
+                <div className="mb-1 flex flex-wrap gap-1.5 text-[10px]">
+                  <span className="rounded bg-white px-1.5 py-0.5">
+                    {claim.representation === "verbatim" ? "원문 보존" : "AI 재서술"}
+                  </span>
+                  <span className="rounded bg-white px-1.5 py-0.5">{claim.evidenceLevel}</span>
+                  {claim.conflictStatus !== "none" && (
+                    <span className="rounded bg-amber-200 px-1.5 py-0.5 font-semibold">
+                      상충 {claim.conflictStatus}
+                    </span>
+                  )}
+                </div>
+                <p className="font-medium text-inkdeep">{claim.claimText}</p>
+                <p className="mt-1 text-xs text-ink/55">
+                  {claim.sourceLocation}
+                  {claim.section ? ` · ${claim.section}` : ""}
+                  {claim.pageStart
+                    ? ` · p.${claim.pageStart}${claim.pageEnd && claim.pageEnd !== claim.pageStart ? `–${claim.pageEnd}` : ""}`
+                    : ""}
+                </p>
+                {claim.originalQuote && (
+                  <blockquote className="mt-2 border-l-2 border-ink/20 pl-3 text-xs text-ink/60">
+                    원문: {claim.originalQuote}
+                  </blockquote>
+                )}
+                {claim.conflictNote && (
+                  <p className="mt-2 text-xs font-medium text-amber-800">
+                    상충 메모: {claim.conflictNote}
+                  </p>
+                )}
+                {(claim.generatedByModel || claim.verifiedBy) && (
+                  <p className="mt-2 text-[10px] text-ink/40">
+                    {claim.generatedByModel ? `생성 모델 ${claim.generatedByModel}` : ""}
+                    {claim.promptVersion ? ` · prompt ${claim.promptVersion}` : ""}
+                    {claim.verifiedBy ? ` · 검증 ${claim.verifiedBy}` : ""}
+                  </p>
+                )}
+                <ClaimReviewControls
+                  claimId={claim.id}
+                  initialConflictStatus={claim.conflictStatus}
+                  initialConflictNote={claim.conflictNote}
+                  initiallyVerified={Boolean(claim.verifiedAt)}
+                />
+              </article>
+            ))}
+          </div>
         </section>
       )}
 

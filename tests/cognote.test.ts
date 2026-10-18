@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { cognoteFileSchema, COGNOTE_VERSION } from "../lib/share/cognote";
+import {
+  assertCognoteResources,
+  cognoteFileSchema,
+  COGNOTE_MAX_NOTES,
+  COGNOTE_VERSION,
+  decodeCognoteFigure,
+} from "../lib/share/cognote";
+
+const PNG_HEADER = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 function validFile() {
   return {
@@ -22,7 +30,7 @@ function validFile() {
             caption: "주입점 다이어그램",
             page: 3,
             ext: ".png",
-            dataBase64: Buffer.from("fake-image-bytes").toString("base64"),
+            dataBase64: PNG_HEADER.toString("base64"),
           },
         ],
       },
@@ -65,6 +73,30 @@ describe("cognoteFileSchema", () => {
     if (result.success) {
       expect(result.data.notes[0]!.figures).toEqual([]);
       expect(result.data.notes[0]!.sources).toEqual([]);
+      expect(result.data.notes[0]!.claims).toEqual([]);
     }
+  });
+
+  it("rejects a MIME/extension mismatch after decoding", () => {
+    const result = cognoteFileSchema.parse(validFile());
+    result.notes[0]!.figures[0]!.ext = ".jpg";
+    expect(() => decodeCognoteFigure(result.notes[0]!.figures[0]!)).toThrow(
+      "확장자가 일치하지 않습니다"
+    );
+  });
+
+  it("caps the total note count", () => {
+    const file = validFile();
+    file.notes = Array.from({ length: COGNOTE_MAX_NOTES + 1 }, (_, index) => ({
+      ...file.notes[0]!,
+      title: `note ${index}`,
+      figures: [],
+    }));
+    expect(cognoteFileSchema.safeParse(file).success).toBe(false);
+  });
+
+  it("accepts valid image signatures and disk resource checks", () => {
+    const result = cognoteFileSchema.parse(validFile());
+    expect(() => assertCognoteResources(result)).not.toThrow();
   });
 });

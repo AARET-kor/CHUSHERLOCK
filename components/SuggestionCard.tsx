@@ -10,6 +10,8 @@ interface SourceMeta {
   citation: string;
   type: string;
   url?: string | null;
+  aiModel?: string | null;
+  promptVersion?: string | null;
 }
 
 export interface FigureMeta {
@@ -74,6 +76,17 @@ export function SuggestionCard({
           ],
           relatedEntryIds: [],
           figureIds: attachedFigures.map((f) => f.id),
+          claims: draft.claims.map((claim) => ({
+            ...claim,
+            originalQuote: claim.originalQuote || undefined,
+            section: claim.section || undefined,
+            conflictNote: claim.conflictNote || undefined,
+            sourceIndex: 0,
+          })),
+          provenance: {
+            model: source.aiModel || undefined,
+            promptVersion: source.promptVersion || undefined,
+          },
           status: "draft",
         }),
       });
@@ -155,6 +168,26 @@ export function SuggestionCard({
         rows={Math.min(18, Math.max(6, draft.content.split("\n").length + 1))}
         className="w-full field font-mono !px-2 !py-1 text-xs leading-relaxed"
       />
+
+      {draft.claims.length > 0 && (
+        <details className="rounded-xl border border-ink/10 bg-mist/40 p-3">
+          <summary className="cursor-pointer text-xs font-medium text-ink/70">
+            근거 추적 claim {draft.claims.length}개
+          </summary>
+          <ul className="mt-2 space-y-2 text-xs text-ink/60">
+            {draft.claims.map((claim, index) => (
+              <li key={`${claim.sourceLocation}-${index}`}>
+                <span className="font-medium text-ink/80">{claim.claimText}</span>
+                <span className="ml-1">
+                  — {claim.sourceLocation}
+                  {claim.pageStart ? ` · p.${claim.pageStart}` : ""}
+                  {claim.evidenceLevel !== "unknown" ? ` · ${claim.evidenceLevel}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {attachedFigures.length > 0 && (
         <div>

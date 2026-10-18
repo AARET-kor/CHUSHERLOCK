@@ -68,16 +68,22 @@ async function saveFigure(
   ensureDir();
   const id = randomUUID();
   const filename = `${id}.${ext}`;
-  fs.writeFileSync(path.join(FIGURES_DIR, filename), buffer);
-  await db.insert(figures).values({
-    id,
-    jobId,
-    filename,
-    kind,
-    caption,
-    page,
-    createdAt: new Date().toISOString(),
-  });
+  const filePath = path.join(FIGURES_DIR, filename);
+  fs.writeFileSync(filePath, buffer, { flag: "wx" });
+  try {
+    await db.insert(figures).values({
+      id,
+      jobId,
+      filename,
+      kind,
+      caption,
+      page,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    fs.rmSync(filePath, { force: true });
+    throw error;
+  }
   return { id, filename, kind, caption, page };
 }
 

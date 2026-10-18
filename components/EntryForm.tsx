@@ -33,6 +33,9 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
     useState<(typeof SOURCE_TYPES)[number]["value"]>("personal_note");
   const [citation, setCitation] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceVersion, setSourceVersion] = useState("");
+  const [sourceValidUntil, setSourceValidUntil] = useState("");
+  const [evidenceLevel, setEvidenceLevel] = useState("unknown");
   const [overlaps, setOverlaps] = useState<Array<OverlapCandidate & { similarity: number }>>([]);
   const [isChecking, startCheck] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -102,6 +105,9 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
               type: sourceType,
               citation: citation.trim() || "진료 중 직접 메모",
               url: sourceUrl.trim() || undefined,
+              versionLabel: sourceVersion.trim() || undefined,
+              validUntil: sourceValidUntil || undefined,
+              evidenceLevel,
             },
           ],
           relatedEntryIds: [],
@@ -186,6 +192,7 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
         <div>
           <label className="mb-1 block text-sm font-medium">카테고리</label>
           <select
+            aria-label="노트 카테고리"
             value={categoryKey}
             onChange={(e) => {
               setCategoryKey(e.target.value);
@@ -239,6 +246,7 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
           </label>
           <div className="flex gap-2">
             <select
+              aria-label="출처 유형"
               value={sourceType}
               onChange={(e) => setSourceType(e.target.value as typeof sourceType)}
               className="field !w-36 shrink-0"
@@ -272,13 +280,47 @@ export function EntryForm({ leafCategories }: { leafCategories: CategoryDef[] })
       </div>
 
       <details className="text-sm">
-        <summary className="cursor-pointer text-ink/50 hover:text-ink">출처 URL 추가</summary>
-        <input
-          value={sourceUrl}
-          onChange={(e) => setSourceUrl(e.target.value)}
-          className="field mt-2"
-          placeholder="https://..."
-        />
+        <summary className="cursor-pointer text-ink/50 hover:text-ink">
+          출처 상세·근거 수준 추가
+        </summary>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          <input
+            value={sourceUrl}
+            onChange={(e) => setSourceUrl(e.target.value)}
+            className="field"
+            placeholder="https://..."
+          />
+          <input
+            value={sourceVersion}
+            onChange={(e) => setSourceVersion(e.target.value)}
+            className="field"
+            placeholder="버전 — 예: v3.1 / 2026 edition"
+          />
+          <label className="text-xs text-ink/60">
+            유효·재검토 기한
+            <input
+              type="date"
+              value={sourceValidUntil}
+              onChange={(e) => setSourceValidUntil(e.target.value)}
+              className="field mt-1"
+            />
+          </label>
+          <label className="text-xs text-ink/60">
+            근거 수준
+            <select
+              value={evidenceLevel}
+              onChange={(e) => setEvidenceLevel(e.target.value)}
+              className="field mt-1"
+            >
+              <option value="unknown">미분류</option>
+              <option value="expert_consensus">전문가 합의</option>
+              <option value="observational">관찰 연구</option>
+              <option value="randomized_trial">무작위 임상시험</option>
+              <option value="systematic_review">체계적 문헌고찰</option>
+              <option value="guideline">가이드라인</option>
+            </select>
+          </label>
+        </div>
       </details>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

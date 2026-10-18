@@ -24,13 +24,25 @@ interface JobView {
   sourceCitation: string;
   sourceType: string;
   sourceUrl: string | null;
-  status: "pending" | "extracting" | "processing" | "completed" | "failed";
+  status:
+    | "pending"
+    | "extracting"
+    | "processing"
+    | "retrying"
+    | "completed"
+    | "failed"
+    | "cancelled";
   totalChunks: number;
   processedChunks: number;
   suggestions: SuggestedEntry[] | null;
   figures?: FigureMeta[];
   figureNote?: string | null;
   error: string | null;
+  attempts?: number;
+  maxAttempts?: number;
+  nextRunAt?: string | null;
+  aiModel?: string | null;
+  promptVersion?: string | null;
 }
 
 /** The front-and-center intake surface: drop a file (or paste text), confirm
@@ -70,7 +82,11 @@ export function IngestDock({ leafCategories }: { leafCategories: CategoryDef[] }
       if (!response.ok) return;
       const data = await response.json();
       setJob(data.job);
-      if (data.job.status === "completed" || data.job.status === "failed") {
+      if (
+        data.job.status === "completed" ||
+        data.job.status === "failed" ||
+        data.job.status === "cancelled"
+      ) {
         if (pollRef.current) clearInterval(pollRef.current);
         pollRef.current = null;
       }
@@ -122,8 +138,33 @@ export function IngestDock({ leafCategories }: { leafCategories: CategoryDef[] }
   }
 
   const inProgress =
-    job && (job.status === "pending" || job.status === "extracting" || job.status === "processing");
+    job &&
+    (job.status === "pending" ||
+      job.status === "extracting" ||
+      job.status === "processing" ||
+      job.status === "retrying");
   const ready = Boolean(file) || text.trim().length > 0;
+
+  async function cancelJob() {
+    if (!job) return;
+    const response = await fetch(`/api/ingest/${job.id}`, { method: "DELETE" });
+    if (!response.ok) return;
+    const data = await response.json();
+    setJob((current) => (current ? { ...current, ...data.job } : current));
+  }
+
+  async function retryJob() {
+    if (!job) return;
+    const response = await fetch(`/api/ingest/${job.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "retry" }),
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    setJob((current) => (current ? { ...current, ...data.job } : current));
+    startPolling(job.id);
+  }
 
   return (
     <div className="space-y-6">
@@ -254,10 +295,19 @@ export function IngestDock({ leafCategories }: { leafCategories: CategoryDef[] }
             <p className="text-sm font-medium">
               {job.status === "pending"
                 ? "준비 중..."
+                : job.status === "retrying"
+                  ? `일시적 오류로 재시도 대기 중... (${job.attempts ?? 0}/${job.maxAttempts ?? 3})`
                 : job.status === "extracting"
                   ? "텍스트·그림 추출 중... (스캔본 OCR·figure crop — 수 분 걸릴 수 있습니다)"
                   : `문서를 순서대로 읽는 중... (${job.processedChunks}/${job.totalChunks} 구간)`}
             </p>
+            <button
+              type="button"
+              onClick={cancelJob}
+              className="ml-auto text-xs text-red-600 underline-offset-4 hover:underline"
+            >
+              취소
+            </button>
           </div>
           {job.totalChunks > 0 && (
             <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-mist">
@@ -273,6 +323,18 @@ export function IngestDock({ leafCategories }: { leafCategories: CategoryDef[] }
       {job?.status === "failed" && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           처리 실패: {job.error}
+          <button type="button" onClick={retryJob} className="ml-3 font-semibold underline">
+            다시 시도
+          </button>
+        </div>
+      )}
+
+      {job?.status === "cancelled" && (
+        <div className="rounded-2xl border border-ink/15 bg-mist p-4 text-sm text-ink/70">
+          작업이 취소되었습니다.
+          <button type="button" onClick={retryJob} className="ml-3 font-semibold underline">
+            다시 시작
+          </button>
         </div>
       )}
 
@@ -313,6 +375,8 @@ export function IngestDock({ leafCategories }: { leafCategories: CategoryDef[] }
                   citation: job.sourceCitation,
                   type: job.sourceType,
                   url: job.sourceUrl,
+                  aiModel: job.aiModel,
+                  promptVersion: job.promptVersion,
                 }}
               />
             </div>
