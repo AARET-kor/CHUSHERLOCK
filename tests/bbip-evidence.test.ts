@@ -73,6 +73,19 @@ describe("renderEvidenceHtml hardening", () => {
   });
 });
 
+describe("emphasis around markers", () => {
+  it.each([
+    ["**강조[1]**은", "<strong>"],
+    ["**강조 [1]**은 중요", "<strong>"],
+    ["*기울임 [AI]*입니다", "<em>"],
+  ])("keeps emphasis for %s", (source, tag) => {
+    const html = renderEvidenceHtml(source, notes);
+    expect(html).toContain(tag);
+    expect(html).not.toContain("*");
+    expect(html).toMatch(/ev-(note|ai)/);
+  });
+});
+
 describe("citedNoteNumbers / toPlainNoteText", () => {
   it("collects unique cited numbers", () => {
     expect(citedNoteNumbers("a [2] b [1][2] c [AI]")).toEqual([1, 2]);
@@ -80,6 +93,11 @@ describe("citedNoteNumbers / toPlainNoteText", () => {
 
   it("drops note markers and spells out AI markers", () => {
     expect(toPlainNoteText("- 저출력 [1]\n- 일반론 [AI]")).toBe("- 저출력\n- 일반론 (AI 보충)");
+  });
+
+  it("leaves no leading space before a line-start AI marker", () => {
+    expect(toPlainNoteText("[AI] b")).toBe("(AI 보충) b");
+    expect(toPlainNoteText("a\n[AI] b")).toBe("a\n(AI 보충) b");
   });
 
   it("preserves list indentation and blank lines", () => {

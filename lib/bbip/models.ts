@@ -20,7 +20,7 @@ export const FALLBACK_BETA = "server-side-fallback-2026-06-01";
 /** `output_config.effort` errors on Haiku 4.5 / Sonnet 4.5 and older, so env
  * overrides to those models must not send it. */
 export function supportsEffort(model: string): boolean {
-  return !/(?:^|[./])claude-(?:3[-.]|haiku-4|sonnet-4(?:-[05]|-\d{8}|$)|opus-4(?:-[01]|-\d{8}|$))/.test(model);
+  return !/(?:^|[./])claude-(?:3[-.]|haiku-4|sonnet-4(?:-[05]|-\d{8}|@|$)|opus-4(?:-[01]|-\d{8}|@|$))/.test(model);
 }
 
 export function isOpus(model: string): boolean {

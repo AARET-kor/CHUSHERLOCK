@@ -25,51 +25,65 @@ interface EvToken extends Tokens.Generic {
   token: string;
 }
 
-export function renderEvidenceHtml(markdown: string, notes: NoteRef[]): string {
-  const byN = new Map(notes.map((note) => [note.n, note]));
-  const marked = new Marked({
-    breaks: true,
-    async: false,
-    extensions: [
-      {
-        name: "ev",
-        level: "inline",
-        start: (src: string) => src.indexOf("["),
-        tokenizer(src: string) {
-          const match = /^\[(\d{1,2}|AI)\]/.exec(src);
-          if (!match) return undefined;
-          return { type: "ev", raw: match[0], token: match[1]! } as EvToken;
-        },
-        renderer(token) {
-          const { token: value, raw } = token as EvToken;
-          if (value === "AI") {
-            return '<span class="ev ev-ai" title="검증되지 않은 AI 보충">🤖AI</span>';
-          }
-          const note = byN.get(Number(value));
-          if (!note) return escapeAttr(raw);
-          return `<a class="ev ev-note" href="/entries/${encodeURIComponent(note.id)}" title="${escapeAttr(note.title)}">📚${note.n}</a>`;
-        },
+// Built once; the notes for the current call are passed through this
+// module-level map (parsing is synchronous, so calls cannot interleave).
+let currentNotes = new Map<number, NoteRef>();
+
+const marked = new Marked({
+  breaks: true,
+  async: false,
+  extensions: [
+    {
+      name: "ev",
+      level: "inline",
+      start: (src: string) => src.indexOf("["),
+      tokenizer(src: string) {
+        const match = /^\[(\d{1,2}|AI)\]/.exec(src);
+        if (!match) return undefined;
+        return { type: "ev", raw: match[0], token: match[1]! } as EvToken;
       },
-    ],
-    renderer: {
-      // Raw HTML from the model is shown as text, never emitted.
-      html({ text }: Tokens.HTML | Tokens.Tag) {
-        return escapeAttr(text);
-      },
-      link({ href, title, tokens }: Tokens.Link) {
-        const inner = this.parser.parseInline(tokens);
-        if (!SAFE_URL.test(href)) return inner;
-        const titleAttr = title ? ` title="${escapeAttr(title)}"` : "";
-        return `<a href="${escapeAttr(href)}"${titleAttr}>${inner}</a>`;
-      },
-      image({ href, title, text }: Tokens.Image) {
-        if (!SAFE_URL.test(href)) return escapeAttr(text);
-        const titleAttr = title ? ` title="${escapeAttr(title)}"` : "";
-        return `<img src="${escapeAttr(href)}" alt="${escapeAttr(text)}"${titleAttr}>`;
+      renderer(token) {
+        const { token: value, raw } = token as EvToken;
+        if (value === "AI") {
+          return '<span class="ev ev-ai" title="검증되지 않은 AI 보충">🤖AI</span>';
+        }
+        const note = currentNotes.get(Number(value));
+        if (!note) return escapeAttr(raw);
+        return `<a class="ev ev-note" href="/entries/${encodeURIComponent(note.id)}" title="${escapeAttr(note.title)}">📚${note.n}</a>`;
       },
     },
-  });
-  return marked.parse(markdown) as string;
+  ],
+  renderer: {
+    // Raw HTML from the model is shown as text, never emitted.
+    html({ text }: Tokens.HTML | Tokens.Tag) {
+      return escapeAttr(text);
+    },
+    link({ href, title, tokens }: Tokens.Link) {
+      const inner = this.parser.parseInline(tokens);
+      if (!SAFE_URL.test(href)) return inner;
+      const titleAttr = title ? ` title="${escapeAttr(title)}"` : "";
+      return `<a href="${escapeAttr(href)}"${titleAttr}>${inner}</a>`;
+    },
+    image({ href, title, text }: Tokens.Image) {
+      if (!SAFE_URL.test(href)) return escapeAttr(text);
+      const titleAttr = title ? ` title="${escapeAttr(title)}"` : "";
+      return `<img src="${escapeAttr(href)}" alt="${escapeAttr(text)}"${titleAttr}>`;
+    },
+  },
+});
+
+// "**강조[1]**은": marked treats "]" as punctuation, so a closing "**" right
+// after a marker followed by a letter is not right-flanking and emphasis
+// fails. Move trailing markers outside the closing delimiter first.
+const EMPH_FIX = /((?:\s*\[(?:\d{1,2}|AI)\])+)(\*{1,3}|_{1,3})(?=[^\s\p{P}])/gu;
+
+export function renderEvidenceHtml(markdown: string, notes: NoteRef[]): string {
+  currentNotes = new Map(notes.map((note) => [note.n, note]));
+  try {
+    return marked.parse(markdown.replace(EMPH_FIX, "$2$1")) as string;
+  } finally {
+    currentNotes = new Map();
+  }
 }
 
 export function citedNoteNumbers(markdown: string): number[] {
@@ -85,6 +99,7 @@ export function citedNoteNumbers(markdown: string): number[] {
  * runs are collapsed, so list indentation and blank lines survive. */
 export function toPlainNoteText(markdown: string): string {
   return markdown
+    .replace(/^([ \t]*)\[AI\]/gm, "$1(AI 보충)")
     .replace(/\[AI\]/g, " (AI 보충)")
     .replace(/^([ \t]*)\[(\d{1,2})\][ \t]?/gm, "$1")
     .replace(/[ \t]*\[(\d{1,2})\]/g, "")
