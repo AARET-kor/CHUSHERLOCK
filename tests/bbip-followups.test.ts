@@ -33,6 +33,14 @@ describe("parseFollowups", () => {
     expect(parseFollowups("- q1\n- q2")).toEqual(["q1", "q2"]);
   });
 
+  it("strips a code fence around the JSON", () => {
+    expect(parseFollowups('```json\n["a","b"]\n```')).toEqual(["a", "b"]);
+  });
+
+  it("recovers a truncated JSON array", () => {
+    expect(parseFollowups('["a","b"')).toEqual(["a", "b"]);
+  });
+
   it("caps at four and trims long items", () => {
     const items = parseFollowups(JSON.stringify(["1", "2", "3", "4", "5", "x".repeat(200)]));
     expect(items).toEqual(["1", "2", "3", "4"]);

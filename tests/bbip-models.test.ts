@@ -66,5 +66,11 @@ describe("modelForRequest", () => {
     expect(supportsEffort("claude-opus-5-5")).toBe(true);
     expect(supportsEffort("claude-haiku-4-5")).toBe(false);
     expect(supportsEffort("claude-sonnet-4-5")).toBe(false);
+    expect(supportsEffort("claude-sonnet-4-20250514")).toBe(false);
+    expect(supportsEffort("claude-opus-4-20250514")).toBe(false);
+    expect(supportsEffort("us.anthropic.claude-haiku-4-5-20251001-v1:0")).toBe(false);
+    expect(supportsEffort("claude-opus-4-8")).toBe(true);
+    expect(supportsEffort("claude-sonnet-4-6")).toBe(true);
+    expect(supportsEffort("claude-opus-5-5")).toBe(true);
   });
 });

@@ -37,6 +37,42 @@ describe("renderEvidenceHtml", () => {
   });
 });
 
+describe("renderEvidenceHtml hardening", () => {
+  it("drops unsafe link hrefs", () => {
+    const html = renderEvidenceHtml("[click](javascript:alert(1))", notes);
+    expect(html).not.toContain("javascript:");
+    expect(html).toContain("click");
+  });
+
+  it("keeps markers literal inside code spans", () => {
+    const html = renderEvidenceHtml("`code [1]`", notes);
+    expect(html).toContain("<code>code [1]</code>");
+    expect(html).not.toContain("ev-note");
+  });
+
+  it("does not badge markers inside link titles", () => {
+    const html = renderEvidenceHtml('[x](http://a "t [1]")', notes);
+    expect(html).toContain('<a href="http://a" title="t [1]">x</a>');
+    expect(html).not.toContain("ev-note");
+  });
+
+  it("encodes hostile note ids", () => {
+    const hostile: NoteRef[] = [{ n: 1, id: 'x"><img src=x onerror=alert(1)>', title: "t", categoryLabel: "c" }];
+    const html = renderEvidenceHtml("claim [1]", hostile);
+    expect(html).not.toContain("<img");
+    expect(html).toContain("/entries/x%22%3E%3Cimg");
+  });
+
+  it("does not double-escape code spans", () => {
+    expect(renderEvidenceHtml("`a & b`", notes)).toContain("<code>a &amp; b</code>");
+  });
+
+  it("escapes raw HTML but keeps blockquotes", () => {
+    expect(renderEvidenceHtml("<script>x</script>", notes)).not.toContain("<script>");
+    expect(renderEvidenceHtml("> 인용", notes)).toContain("<blockquote>");
+  });
+});
+
 describe("citedNoteNumbers / toPlainNoteText", () => {
   it("collects unique cited numbers", () => {
     expect(citedNoteNumbers("a [2] b [1][2] c [AI]")).toEqual([1, 2]);
@@ -44,5 +80,10 @@ describe("citedNoteNumbers / toPlainNoteText", () => {
 
   it("drops note markers and spells out AI markers", () => {
     expect(toPlainNoteText("- 저출력 [1]\n- 일반론 [AI]")).toBe("- 저출력\n- 일반론 (AI 보충)");
+  });
+
+  it("preserves list indentation and blank lines", () => {
+    expect(toPlainNoteText("- a\n  - nested [1]\n- b")).toBe("- a\n  - nested\n- b");
+    expect(toPlainNoteText("문단.\n\n[1] 다음 문단")).toBe("문단.\n\n다음 문단");
   });
 });

@@ -8,13 +8,37 @@ const CLOSE = "</followups>";
 const MAX_ITEMS = 4;
 const MAX_CHARS = 80;
 
-export function parseFollowups(body: string): string[] {
-  let items: string[] = [];
+function tryJsonArray(text: string): string[] | null {
   try {
-    const parsed: unknown = JSON.parse(body);
-    if (Array.isArray(parsed)) items = parsed.filter((x): x is string => typeof x === "string");
+    const parsed: unknown = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsed.filter((x): x is string => typeof x === "string");
   } catch {
-    items = body.split("\n").map((line) => line.replace(/^\s*(?:[-*]|\d+[.)])\s*/, ""));
+    // fall through
+  }
+  return null;
+}
+
+export function parseFollowups(rawBody: string): string[] {
+  const body = rawBody.replace(/^\s*```[a-z]*\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  let items = tryJsonArray(body);
+  if (!items) {
+    // Truncated output: grab from the first "[" and close the array.
+    const match = /\[[\s\S]*/.exec(body);
+    if (match) {
+      const text = match[0].trimEnd();
+      items = tryJsonArray(text.endsWith("]") ? text : `${text.replace(/,$/, "")}]`);
+    }
+  }
+  if (!items) {
+    items = body
+      .split("\n")
+      .filter((line) => !/^\s*[[\]`]*\s*$/.test(line))
+      .map((line) =>
+        line
+          .replace(/^\s*(?:[-*]|\d+[.)])\s*/, "")
+          .replace(/,\s*$/, "")
+          .replace(/^["'](.*)["']$/, "$1")
+      );
   }
   return items
     .map((item) => item.trim().slice(0, MAX_CHARS))
@@ -22,6 +46,7 @@ export function parseFollowups(body: string): string[] {
     .slice(0, MAX_ITEMS);
 }
 
+// Instances are single-use; any text after </followups> is discarded.
 export class FollowupExtractor {
   private pending = "";
   private captured: string | null = null;

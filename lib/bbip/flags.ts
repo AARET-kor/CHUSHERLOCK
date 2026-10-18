@@ -62,8 +62,11 @@ const RULES: FlagRule[] = [
   },
 ];
 
-export function ruleFlags(chips: ParsedCase): Flag[] {
-  const haystack = [...chips.patient, ...chips.conditions, ...chips.meds, ...chips.procedures]
+// Negations ("임신 아님") intentionally still flag: the texts say "확인 필요",
+// and a false alarm is cheaper than a missed one.
+// `extraText` (the raw memo) lets the net catch keywords the parser dropped.
+export function ruleFlags(chips: ParsedCase, extraText = ""): Flag[] {
+  const haystack = [...chips.patient, ...chips.conditions, ...chips.meds, ...chips.procedures, extraText]
     .join(" ")
     .toLowerCase();
   return RULES.filter((rule) => rule.keywords.some((k) => haystack.includes(k.toLowerCase()))).map(

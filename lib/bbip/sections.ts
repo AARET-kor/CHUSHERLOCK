@@ -79,6 +79,16 @@ export const SECTIONS: SectionDef[] = [
       "시술 후 홈케어를 환자에게 그대로 읽어줄 수 있는 문장으로: 당일 / 1~3일 / 1~2주 구간별로 해야 할 것과 피할 것.",
   },
   {
+    key: "notes",
+    label: "참고사항",
+    emoji: "📝",
+    group: "practice",
+    tier: "sonnet",
+    promoteTier: "procedure_tip",
+    instruction:
+      "그 밖의 참고사항: 환자 특성(나이·피부타입 등)에 따른 조정, 기대치 관리, 기록·사진 촬영 팁.",
+  },
+  {
     key: "marketing",
     label: "마케팅·업셀링",
     emoji: "💬",
@@ -97,16 +107,6 @@ export const SECTIONS: SectionDef[] = [
     promoteTier: "deep_study",
     instruction:
       "비슷한 치료·대안·병행 시술 비교 표: 시술 | 원리 | 장점 | 단점 | 이 환자에게 적합도.",
-  },
-  {
-    key: "notes",
-    label: "참고사항",
-    emoji: "📝",
-    group: "practice",
-    tier: "sonnet",
-    promoteTier: "procedure_tip",
-    instruction:
-      "그 밖의 참고사항: 환자 특성(나이·피부타입 등)에 따른 조정, 기대치 관리, 기록·사진 촬영 팁.",
   },
 ];
 

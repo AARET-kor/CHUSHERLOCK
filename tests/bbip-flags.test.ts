@@ -25,6 +25,12 @@ describe("ruleFlags", () => {
     expect(flags.map((f) => f.level)).toEqual(["contraindication", "caution"]);
   });
 
+  it("also scans the raw memo text", () => {
+    const flags = ruleFlags(chips(), "로아큐탄 먹는 중");
+    expect(flags).toHaveLength(1);
+    expect(flags[0]).toMatchObject({ level: "contraindication" });
+  });
+
   it("returns nothing for a clean case", () => {
     expect(ruleFlags(chips({ patient: ["30대 남성"], procedures: ["보톡스"] }))).toEqual([]);
   });
