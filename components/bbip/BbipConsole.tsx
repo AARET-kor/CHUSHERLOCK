@@ -31,69 +31,116 @@ export function BbipConsole({
   const [error, setError] = useState<string | null>(null);
   const [promoteTurnId, setPromoteTurnId] = useState<string | null>(null);
   const keySeq = useRef(0);
+  const openingRef = useRef(false);
+  const controllers = useRef(new Set<AbortController>());
 
-  const runTurn = useCallback(async (sessionId: string, request: TurnRequest) => {
-    const key = `local-${++keySeq.current}`;
-    dispatch({ type: "turn-start", key, request });
-    try {
-      const res = await fetch(`/api/bbip/sessions/${sessionId}/turns`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(request),
-      });
-      if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({}));
-        dispatch({
-          type: "turn-event",
-          key,
-          event: { type: "error", message: data.error ?? "생성 요청에 실패했습니다." },
-        });
-        return;
-      }
-      let terminal = false;
-      for await (const event of readNdjson(res.body)) {
-        if (event.type === "done" || event.type === "error") terminal = true;
-        dispatch({ type: "turn-event", key, event });
-      }
-      if (!terminal) {
-        dispatch({ type: "turn-event", key, event: { type: "error", message: "연결이 끊겼습니다." } });
-      }
-    } catch {
-      dispatch({ type: "turn-event", key, event: { type: "error", message: "네트워크 오류" } });
-    }
+  const newController = useCallback(() => {
+    const controller = new AbortController();
+    controllers.current.add(controller);
+    return controller;
   }, []);
 
+  const abortAll = useCallback(() => {
+    for (const controller of controllers.current) controller.abort();
+    controllers.current.clear();
+  }, []);
+
+  useEffect(() => abortAll, [abortAll]);
+
+  const runTurn = useCallback(
+    async (sessionId: string, request: TurnRequest) => {
+      const key = `local-${++keySeq.current}`;
+      const controller = newController();
+      dispatch({ type: "turn-start", key, request });
+      try {
+        const res = await fetch(`/api/bbip/sessions/${sessionId}/turns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) {
+          const data = await res.json().catch(() => ({}));
+          dispatch({
+            type: "turn-event",
+            key,
+            event: { type: "error", message: data.error ?? "생성 요청에 실패했습니다." },
+          });
+          return;
+        }
+        let terminal = false;
+        for await (const event of readNdjson(res.body)) {
+          if (event.type === "done" || event.type === "error") terminal = true;
+          dispatch({ type: "turn-event", key, event });
+        }
+        if (!terminal) {
+          dispatch({ type: "turn-event", key, event: { type: "error", message: "연결이 끊겼습니다." } });
+        }
+      } catch (err) {
+        if (controller.signal.aborted || (err instanceof DOMException && err.name === "AbortError")) return;
+        dispatch({ type: "turn-event", key, event: { type: "error", message: "네트워크 오류" } });
+      } finally {
+        controllers.current.delete(controller);
+      }
+    },
+    [newController]
+  );
+
   // Reloaded mid-generation: the server keeps streaming into the DB, so poll
-  // the session until those cards settle.
+  // the session until those cards settle. Chained timeouts with one request
+  // in flight at a time.
   const detached = hasDetachedStreaming(state);
   const sessionId = state.session?.id;
   useEffect(() => {
     if (!detached || !sessionId) return;
-    const timer = setInterval(async () => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let inflight: AbortController | null = null;
+    const tick = async () => {
+      const controller = newController();
+      inflight = controller;
       try {
-        const res = await fetch(`/api/bbip/sessions/${sessionId}`);
-        if (res.ok) dispatch({ type: "sync", turns: (await res.json()).turns });
+        const res = await fetch(`/api/bbip/sessions/${sessionId}`, { signal: controller.signal });
+        if (res.ok && !stopped) {
+          const data = await res.json().catch(() => ({}));
+          if (Array.isArray(data.turns)) dispatch({ type: "sync", turns: data.turns });
+        }
       } catch {
-        /* next tick retries */
+        /* next tick retries (aborts end the loop below) */
+      } finally {
+        controllers.current.delete(controller);
+        inflight = null;
       }
-    }, 2000);
-    return () => clearInterval(timer);
-  }, [detached, sessionId]);
+      if (!stopped && !controller.signal.aborted) timer = setTimeout(tick, 2000);
+    };
+    timer = setTimeout(tick, 2000);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      inflight?.abort();
+    };
+  }, [detached, sessionId, newController]);
 
   async function openSession(body: { input: string } | { chips: ParsedCase }) {
+    if (openingRef.current) return;
+    openingRef.current = true;
     setOpening(true);
     setError(null);
+    const controller = newController();
     try {
       const res = await fetch("/api/bbip/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
-      const data = await res.json();
-      if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.session) {
         setError(data.error ?? "케이스를 열지 못했습니다.");
         return;
       }
+      // Stop the previous session's streams/polls before switching.
+      abortAll();
       dispatch({
         type: "reset",
         view: { session: data.session, turns: [], notes: data.notes },
@@ -102,9 +149,12 @@ export function BbipConsole({
       // Shareable URL without a server round trip (keeps this component mounted).
       window.history.replaceState(null, "", `/?s=${data.session.id}`);
       void runTurn(data.session.id, { kind: "brief" });
-    } catch {
+    } catch (err) {
+      if (controller.signal.aborted || (err instanceof DOMException && err.name === "AbortError")) return;
       setError("네트워크 오류로 케이스를 열지 못했습니다.");
     } finally {
+      controllers.current.delete(controller);
+      openingRef.current = false;
       setOpening(false);
     }
   }
@@ -116,11 +166,16 @@ export function BbipConsole({
   }
 
   const session = state.session;
-  const brief = state.turns.find((t) => t.kind === "brief");
+  const briefs = state.turns.filter((t) => t.kind === "brief");
+  // Prefer the latest brief that did not fail (a retry may sit after a failure).
+  const brief = [...briefs].reverse().find((t) => t.status !== "failed") ?? briefs[briefs.length - 1];
   const others = state.turns.filter((t) => t !== brief);
   const openedSections = new Set(
     state.turns.flatMap((t) => (t.kind === "section" && t.sectionKey ? [t.sectionKey] : []))
   ) as Set<SectionKey>;
+  const openedQuestions = new Set(
+    state.turns.flatMap((t) => (t.kind === "followup" && t.question ? [t.question] : []))
+  );
 
   return (
     <div className="flex gap-6">
@@ -167,6 +222,7 @@ export function BbipConsole({
               <MoreMenu
                 followups={brief.followups}
                 openedSections={openedSections}
+                openedQuestions={openedQuestions}
                 onRequest={(request) => void runTurn(session.id, request)}
               />
             )}

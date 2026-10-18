@@ -69,6 +69,22 @@ describe("consoleReducer", () => {
     expect(hasDetachedStreaming(state)).toBe(false);
   });
 
+  it("drops failed turns superseded by a later turn of the same request", () => {
+    const failed = { ...view.turns[0]!, id: "t-bad", status: "failed" as const, output: "", error: "x" };
+    const superseded: SessionView = { ...view, turns: [failed, { ...view.turns[0]!, id: "t-ok" }] };
+    const state = initialConsoleState(superseded);
+    expect(state.turns.map((t) => t.id)).toEqual(["t-ok"]);
+    // A failed turn with no later retry is kept so the user can retry it.
+    expect(initialConsoleState({ ...view, turns: [failed] }).turns).toHaveLength(1);
+  });
+
+  it("ignores events for an unknown key after reset", () => {
+    let state = initialConsoleState(view);
+    state = consoleReducer(state, { type: "reset", view, degraded: false });
+    const next = consoleReducer(state, { type: "turn-event", key: "gone", event: { type: "delta", text: "x" } });
+    expect(next.turns).toEqual(state.turns);
+  });
+
   it("resets to a new session", () => {
     const state = consoleReducer(initialConsoleState(null), { type: "reset", view, degraded: true });
     expect(state).toMatchObject({ degraded: true, session: { id: "s" } });

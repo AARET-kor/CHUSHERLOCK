@@ -58,7 +58,14 @@ function fromServer(turn: BbipTurn): ClientTurn {
 
 export function initialConsoleState(view: SessionView | null): ConsoleState {
   if (!view) return { session: null, notes: [], turns: [], degraded: false };
-  return { session: view.session, notes: view.notes, turns: view.turns.map(fromServer), degraded: false };
+  const sameRequest = (a: BbipTurn, b: BbipTurn) =>
+    a.kind === b.kind && a.sectionKey === b.sectionKey && a.question === b.question;
+  // A failed turn is dropped once a later turn repeated the same request
+  // (a retry); otherwise it stays so the user can retry it.
+  const turns = view.turns
+    .filter((t, i) => t.status !== "failed" || !view.turns.slice(i + 1).some((later) => sameRequest(t, later)))
+    .map(fromServer);
+  return { session: view.session, notes: view.notes, turns, degraded: false };
 }
 
 export function requestOf(turn: ClientTurn): TurnRequest {

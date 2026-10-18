@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PromoteDefaults } from "../../lib/bbip/promote";
 import type { CategoryDef, ContentTier } from "../../lib/codex/types";
 import { CONTENT_TIERS } from "../../lib/codex/tiers";
@@ -22,6 +22,18 @@ export function PromoteDialog({
   const [tier, setTier] = useState<ContentTier>("procedure_tip");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  // Native modal dialog: top layer, focus trap; Escape fires "close".
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, []);
+
+  useEffect(() => {
+    if (loaded) titleRef.current?.focus();
+  }, [loaded]);
 
   useEffect(() => {
     fetch(`/api/bbip/turns/${turnId}/promote`)
@@ -29,7 +41,11 @@ export function PromoteDialog({
         if (!res.ok) throw new Error();
         const defaults = (await res.json()) as PromoteDefaults;
         setTitle(defaults.title);
-        setCategoryKey(defaults.categoryKey);
+        setCategoryKey(
+          leafCategories.some((c) => c.key === defaults.categoryKey)
+            ? defaults.categoryKey
+            : (leafCategories[0]?.key ?? defaults.categoryKey)
+        );
         setTier(defaults.tier);
         setLoaded(true);
       })
@@ -45,7 +61,7 @@ export function PromoteDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, categoryKey, tier }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) onSaved(data.entryId);
       else if (res.status === 409 && data.entryId) onSaved(data.entryId);
       else setError(data.error ?? "저장에 실패했습니다.");
@@ -57,13 +73,13 @@ export function PromoteDialog({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
       aria-labelledby="promote-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      onClose={onClose}
+      className="card m-auto w-[calc(100%-2rem)] max-w-md bg-white p-6 backdrop:bg-black/30"
     >
-      <div className="card w-full max-w-md bg-white p-6">
+      <div>
         <h2 id="promote-title" className="mb-1 text-base font-bold text-ink">
           노트로 저장
         </h2>
@@ -77,7 +93,7 @@ export function PromoteDialog({
           <div className="space-y-3">
             <label className="block text-xs font-medium text-ink">
               제목
-              <input className="field mt-1" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <input ref={titleRef} className="field mt-1" value={title} onChange={(e) => setTitle(e.target.value)} />
             </label>
             <label className="block text-xs font-medium text-ink">
               카테고리
@@ -130,6 +146,6 @@ export function PromoteDialog({
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

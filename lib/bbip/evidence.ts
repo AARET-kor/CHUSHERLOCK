@@ -9,7 +9,7 @@ import type { NoteRef } from "./types";
 // (components/MarkdownContent) is not modified.
 
 const MARKER = /\[(\d{1,2}|AI)\]/g;
-const SAFE_URL = /^(https?:|mailto:|\/(?!\/)|#)/i;
+const SAFE_URL = /^(https?:|mailto:|\/(?![\/\\])|#)/i;
 
 function escapeAttr(value: string): string {
   return value
@@ -64,10 +64,9 @@ const marked = new Marked({
       const titleAttr = title ? ` title="${escapeAttr(title)}"` : "";
       return `<a href="${escapeAttr(href)}"${titleAttr}>${inner}</a>`;
     },
-    image({ href, title, text }: Tokens.Image) {
-      if (!SAFE_URL.test(href)) return escapeAttr(text);
-      const titleAttr = title ? ` title="${escapeAttr(title)}"` : "";
-      return `<img src="${escapeAttr(href)}" alt="${escapeAttr(text)}"${titleAttr}>`;
+    // Images are never loaded (tracking/exfiltration); show the alt text.
+    image({ text }: Tokens.Image) {
+      return escapeAttr(text);
     },
   },
 });

@@ -28,9 +28,14 @@ export function ChipBar({
     onChange({ ...chips, [key]: chips[key].filter((_, i) => i !== index) });
   }
 
+  function cancel() {
+    setDraft("");
+    setGroup(null);
+  }
+
   function add() {
     const value = draft.trim();
-    if (!group || !value) return;
+    if (!group || !value || disabled) return;
     onChange({ ...chips, [group]: [...chips[group], value] });
     setDraft("");
     setGroup(null);
@@ -41,7 +46,7 @@ export function ChipBar({
       {GROUPS.flatMap((g) =>
         chips[g.key].map((item, index) => (
           <span
-            key={`${g.key}-${item}`}
+            key={`${g.key}-${index}`}
             className="inline-flex items-center gap-1 rounded-full border border-ink/15 bg-white py-1 pl-3 pr-1 text-xs text-ink"
           >
             <span aria-hidden="true">{g.emoji}</span>
@@ -51,7 +56,7 @@ export function ChipBar({
               aria-label={`${item} 삭제`}
               disabled={disabled || total <= 1}
               onClick={() => remove(g.key, index)}
-              className="flex h-5 w-5 items-center justify-center rounded-full text-ink/50 hover:bg-mist hover:text-ink disabled:opacity-30"
+              className="flex h-5 w-5 items-center justify-center rounded-full text-ink/70 hover:bg-mist hover:text-ink disabled:opacity-30"
             >
               ✕
             </button>
@@ -64,6 +69,9 @@ export function ChipBar({
           onSubmit={(e) => {
             e.preventDefault();
             add();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") cancel();
           }}
         >
           <label htmlFor="chip-group" className="sr-only">
@@ -88,11 +96,15 @@ export function ChipBar({
             id="chip-draft"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter confirming an IME composition must not submit the form.
+              if (e.key === "Enter" && (e.nativeEvent.isComposing || e.keyCode === 229)) e.preventDefault();
+            }}
             maxLength={40}
             autoFocus
             className="field !w-36 !py-1 text-xs"
           />
-          <button type="submit" className="btn-secondary !px-3 !py-1 text-xs" disabled={!draft.trim()}>
+          <button type="submit" className="btn-secondary !px-3 !py-1 text-xs" disabled={disabled || !draft.trim()}>
             추가
           </button>
         </form>

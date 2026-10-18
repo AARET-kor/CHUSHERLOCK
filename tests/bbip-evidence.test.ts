@@ -63,6 +63,20 @@ describe("renderEvidenceHtml hardening", () => {
     expect(html).toContain("/entries/x%22%3E%3Cimg");
   });
 
+  it("never emits <img>; images degrade to alt text", () => {
+    const html = renderEvidenceHtml("![축소 사진](https://evil.example/p.png)", notes);
+    expect(html).not.toContain("<img");
+    expect(html).toContain("축소 사진");
+    expect(renderEvidenceHtml("![a](/local.png)", notes)).not.toContain("<img");
+  });
+
+  it("rejects backslash-prefixed protocol-relative hrefs", () => {
+    const html = renderEvidenceHtml("[x](/\\evil.com)", notes);
+    expect(html).not.toContain("<a ");
+    expect(renderEvidenceHtml("[x](/entries/1)", notes)).toContain('href="/entries/1"');
+    expect(renderEvidenceHtml("[x](//evil.com)", notes)).not.toContain("<a ");
+  });
+
   it("does not double-escape code spans", () => {
     expect(renderEvidenceHtml("`a & b`", notes)).toContain("<code>a &amp; b</code>");
   });

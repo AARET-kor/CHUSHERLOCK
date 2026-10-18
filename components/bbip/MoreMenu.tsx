@@ -7,10 +7,12 @@ import type { SectionKey, TurnRequest } from "../../lib/bbip/types";
 export function MoreMenu({
   followups,
   openedSections,
+  openedQuestions,
   onRequest,
 }: {
   followups: string[];
   openedSections: Set<SectionKey>;
+  openedQuestions: Set<string>;
   onRequest: (request: TurnRequest) => void;
 }) {
   const [question, setQuestion] = useState("");
@@ -27,8 +29,9 @@ export function MoreMenu({
             <button
               key={q}
               type="button"
+              disabled={openedQuestions.has(q)}
               onClick={() => onRequest({ kind: "followup", question: q })}
-              className="rounded-full bg-ink px-3 py-1.5 text-xs text-white transition hover:bg-inkdeep"
+              className="rounded-full bg-ink px-3 py-1.5 text-xs text-white transition hover:bg-inkdeep disabled:opacity-40"
             >
               🔍 {q}
             </button>
@@ -71,6 +74,10 @@ export function MoreMenu({
           id="bbip-custom"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter confirming an IME composition must not submit the form.
+            if (e.key === "Enter" && (e.nativeEvent.isComposing || e.keyCode === 229)) e.preventDefault();
+          }}
           maxLength={500}
           placeholder="💬 직접 물어보기…"
           className="field"

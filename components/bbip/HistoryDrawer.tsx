@@ -1,13 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { chipSummary, formatSessionTime } from "../../lib/bbip/format";
 import type { BbipSession } from "../../lib/bbip/types";
 
 export function HistoryDrawer({ activeId }: { activeId: string | null }) {
   const [sessions, setSessions] = useState<BbipSession[]>([]);
   const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  // Native modal dialog: top layer, focus trap and Escape come for free.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (open && dialog && !dialog.open) dialog.showModal();
+  }, [open]);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +48,7 @@ export function HistoryDrawer({ activeId }: { activeId: string | null }) {
               }`}
             >
               <span className="block truncate">{chipSummary(session.chips) || "케이스"}</span>
-              <span className="text-[10px] text-ink/60">{formatSessionTime(session.createdAt)}</span>
+              <span className="text-[10px] text-ink/70">{formatSessionTime(session.createdAt)}</span>
             </Link>
           </li>
         ))}
@@ -60,20 +67,31 @@ export function HistoryDrawer({ activeId }: { activeId: string | null }) {
         🕘 히스토리
       </button>
       {open && (
-        <div
-          role="dialog"
-          aria-modal="true"
+        <dialog
+          ref={dialogRef}
           aria-label="최근 케이스"
-          className="fixed inset-0 z-50 bg-black/30 lg:hidden"
-          onClick={() => setOpen(false)}
+          onClose={() => setOpen(false)}
+          onClick={(e) => {
+            // Backdrop click (the dialog element itself) closes the drawer.
+            if (e.target === e.currentTarget) setOpen(false);
+          }}
+          className="fixed inset-y-0 left-0 m-0 h-full max-h-none w-72 max-w-none overflow-y-auto bg-white p-4 pb-24 backdrop:bg-black/30 lg:hidden"
         >
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="btn-secondary mb-3 !px-4 !py-1.5 text-xs"
+          >
+            닫기
+          </button>
           <div
-            className="absolute inset-y-0 left-0 w-72 overflow-y-auto bg-white p-4"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest("a")) setOpen(false);
+            }}
           >
             {list}
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

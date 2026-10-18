@@ -34,6 +34,8 @@ export function CaseInput({
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
+              // Enter that confirms an IME composition (Korean) must not submit.
+              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
               e.preventDefault();
               submit();
             }
