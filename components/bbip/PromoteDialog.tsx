@@ -1,5 +1,6 @@
 "use client";
 
+import { NotebookPen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { PromoteDefaults } from "../../lib/bbip/promote";
 import type { CategoryDef, ContentTier } from "../../lib/codex/types";
@@ -52,6 +53,18 @@ export function PromoteDialog({
       .catch(() => setError("기본값을 불러오지 못했습니다."));
   }, [turnId]);
 
+  // Close through the element first so the browser returns focus to the
+  // button that opened the dialog, then let the parent unmount it.
+  function cancel() {
+    if (dialogRef.current?.open) dialogRef.current.close();
+    else onClose();
+  }
+
+  function finish(entryId: string) {
+    dialogRef.current?.close();
+    onSaved(entryId);
+  }
+
   async function save() {
     setSaving(true);
     setError(null);
@@ -62,8 +75,8 @@ export function PromoteDialog({
         body: JSON.stringify({ title, categoryKey, tier }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.ok) onSaved(data.entryId);
-      else if (res.status === 409 && data.entryId) onSaved(data.entryId);
+      if (res.ok) finish(data.entryId);
+      else if (res.status === 409 && data.entryId) finish(data.entryId);
       else setError(data.error ?? "저장에 실패했습니다.");
     } catch {
       setError("네트워크 오류로 저장하지 못했습니다.");
@@ -77,18 +90,26 @@ export function PromoteDialog({
       ref={dialogRef}
       aria-labelledby="promote-title"
       onClose={onClose}
-      className="card m-auto w-[calc(100%-2rem)] max-w-md bg-white p-6 backdrop:bg-black/30"
+      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-[24px] border border-ink/10 bg-white p-0 shadow-[0_24px_70px_rgba(5,26,36,0.2)] backdrop:bg-inkdeep/40"
     >
-      <div>
-        <h2 id="promote-title" className="mb-1 text-base font-bold text-ink">
-          노트로 저장
-        </h2>
-        <p className="mb-4 text-xs text-ink/60">
-          초안(draft)으로 저장되고 “검토 필요”로 표시됩니다. 검토 전에는 BBIP가 이 노트를 🤖AI 보충으로
-          취급합니다.
+      <div className="p-6">
+        <div className="mb-4 flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-white">
+            <NotebookPen aria-hidden="true" className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/65">[ Promote ]</p>
+            <h2 id="promote-title" className="font-serifa text-xl font-bold text-inkdeep">
+              노트로 <span className="italic">저장</span>
+            </h2>
+          </div>
+        </div>
+        <p className="mb-5 rounded-2xl bg-mist/70 px-4 py-3 text-xs leading-relaxed text-ink/70">
+          초안(draft)으로 저장되고 “검토 필요”로 표시됩니다. 검토 전에는 BBIP가 이 노트를{" "}
+          <span className="ev ev-ai">🤖AI</span> 보충으로 취급합니다.
         </p>
 
-        {!loaded && !error && <p className="text-sm text-ink/60">불러오는 중…</p>}
+        {!loaded && !error && <p className="text-sm text-ink/65">불러오는 중…</p>}
         {loaded && (
           <div className="space-y-3">
             <label className="block text-xs font-medium text-ink">
@@ -132,8 +153,8 @@ export function PromoteDialog({
           </p>
         )}
 
-        <div className="mt-5 flex justify-end gap-2">
-          <button type="button" className="btn-secondary !px-4 !py-2" onClick={onClose}>
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" className="btn-secondary !px-4 !py-2" onClick={cancel}>
             취소
           </button>
           <button
