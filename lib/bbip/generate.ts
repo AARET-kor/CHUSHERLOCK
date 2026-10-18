@@ -1,7 +1,7 @@
 import { getAnthropicClient, isFakeMode } from "../ai/client";
 import type { CodexEntry } from "../codex/types";
 import { buildTurnContext } from "./context";
-import { FALLBACK_BETA, FALLBACK_MODEL, isOpus, modelForRequest, supportsEffort } from "./models";
+import { FALLBACK_BETA, FALLBACK_MODEL, modelForRequest, supportsEffort } from "./models";
 import { turnTitle } from "./sections";
 import type { BbipSession, BbipTurn, TurnRequest } from "./types";
 
@@ -14,6 +14,15 @@ export interface GenerateArgs {
 
 const REFUSAL_NOTE =
   "\n\n> **주의** 이 요청은 안전 정책으로 답변이 중단되었습니다. 질문을 바꿔 다시 시도해 주세요.";
+
+/** Thrown after the refusal note was streamed, so the turn is stored as
+ * failed rather than as a normal answer. */
+export class RefusalError extends Error {
+  constructor(message = "refusal") {
+    super(message);
+    this.name = "RefusalError";
+  }
+}
 
 /** Deterministic text for CODEX_AI_MODE=fake — exercises markers and the
  * followups tag so the whole pipeline runs offline. */
@@ -43,6 +52,8 @@ export function fakeTurnText(args: GenerateArgs): string {
 
 export async function* generateTurnText(args: GenerateArgs): AsyncGenerator<string> {
   if (isFakeMode()) {
+    // Exercise prompt/context assembly offline; the result is not sent.
+    buildTurnContext(args);
     const text = fakeTurnText(args);
     for (let i = 0; i < text.length; i += 24) yield text.slice(i, i + 24);
     return;
@@ -50,7 +61,7 @@ export async function* generateTurnText(args: GenerateArgs): AsyncGenerator<stri
 
   const { model, effort } = modelForRequest(args.request);
   const context = buildTurnContext(args);
-  const withFallback = isOpus(model) && model !== FALLBACK_MODEL;
+  const withFallback = /^claude-opus-5/.test(model) && model !== FALLBACK_MODEL;
   const stream = getAnthropicClient().beta.messages.stream({
     model,
     max_tokens: args.request.kind === "brief" ? 8000 : 32000,
@@ -66,5 +77,8 @@ export async function* generateTurnText(args: GenerateArgs): AsyncGenerator<stri
     }
   }
   const final = await stream.finalMessage();
-  if (final.stop_reason === "refusal") yield REFUSAL_NOTE;
+  if (final.stop_reason === "refusal") {
+    yield REFUSAL_NOTE;
+    throw new RefusalError("refusal");
+  }
 }

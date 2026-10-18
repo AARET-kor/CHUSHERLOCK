@@ -83,7 +83,7 @@ describe("bbipService", () => {
     const fresh = service.startTurn(session.id, { kind: "brief" }, "fake");
     env.sqliteClient
       .prepare("UPDATE bbip_turns SET created_at = ? WHERE id = ?")
-      .run(new Date(Date.now() - 20 * 60_000).toISOString(), stale.id);
+      .run(new Date(Date.now() - 40 * 60_000).toISOString(), stale.id);
     expect(service.failStaleTurns()).toBeGreaterThanOrEqual(1);
     expect(service.getTurn(stale.id)).toMatchObject({ status: "failed", error: "interrupted" });
     expect(service.getTurn(fresh.id)?.status).toBe("streaming");

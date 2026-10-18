@@ -143,7 +143,7 @@ export function markPromoted(turnId: string, entryId: string): boolean {
 }
 
 /** Marks turns stuck in "streaming" (e.g. the server died mid-stream) as failed. */
-export function failStaleTurns(olderThanMs = 10 * 60_000): number {
+export function failStaleTurns(olderThanMs = 30 * 60_000): number {
   const cutoff = new Date(Date.now() - olderThanMs).toISOString();
   return db
     .update(bbipTurns)

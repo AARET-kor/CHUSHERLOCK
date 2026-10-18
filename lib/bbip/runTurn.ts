@@ -9,8 +9,9 @@ import {
   startTurn,
 } from "../services/bbipService";
 import { FollowupExtractor } from "./followups";
-import { generateTurnText, type GenerateArgs } from "./generate";
+import { generateTurnText, RefusalError, type GenerateArgs } from "./generate";
 import { modelForRequest } from "./models";
+import { sanitizeInput } from "./parse";
 import type { StreamEvent, TurnRequest } from "./types";
 
 export interface RunTurnDeps {
@@ -33,17 +34,34 @@ export async function* runTurn(
     yield { type: "error", message: "세션을 찾을 수 없습니다." };
     return;
   }
-  const wanted = new Set(session.sourceNoteIds);
-  const entries = (await deps.listEntries()).filter((e) => wanted.has(e.id));
-  const priorTurns = listTurns(sessionId).filter((t) => t.status === "done");
-  const model = isFakeMode() ? "fake" : modelForRequest(request).model;
-  const turn = startTurn(sessionId, request, model);
-  yield { type: "start", turnId: turn.id };
-
-  const extractor = request.kind === "brief" ? new FollowupExtractor() : null;
-  let output = "";
+  let turn: ReturnType<typeof startTurn>;
+  let entries: CodexEntry[];
+  let priorTurns: ReturnType<typeof listTurns>;
+  let safeRequest: TurnRequest;
   try {
-    for await (const chunk of deps.generate({ session, entries, priorTurns, request })) {
+    safeRequest =
+      request.question === undefined
+        ? request
+        : { ...request, question: sanitizeInput(request.question) };
+    const wanted = new Set(session.sourceNoteIds);
+    entries = (await deps.listEntries()).filter((e) => wanted.has(e.id));
+    priorTurns = listTurns(sessionId).filter((t) => t.status === "done");
+    const model = isFakeMode() ? "fake" : modelForRequest(safeRequest).model;
+    turn = startTurn(sessionId, safeRequest, model);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    yield { type: "error", message: `생성 실패: ${message}` };
+    return;
+  }
+
+  const extractor = safeRequest.kind === "brief" ? new FollowupExtractor() : null;
+  let output = "";
+  // If the consumer stops iterating (client disconnect), the generator is
+  // closed at a yield and only `finally` runs — close the turn there.
+  let settled = false;
+  try {
+    yield { type: "start", turnId: turn.id };
+    for await (const chunk of deps.generate({ session, entries, priorTurns, request: safeRequest })) {
       const visible = extractor ? extractor.push(chunk) : chunk;
       if (visible) {
         output += visible;
@@ -56,11 +74,21 @@ export async function* runTurn(
       yield { type: "delta", text: finished.tail };
     }
     finishTurn(turn.id, output.trimEnd(), finished.followups);
+    settled = true;
     if (finished.followups.length) yield { type: "followups", items: finished.followups };
     yield { type: "done", turnId: turn.id };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    failTurn(turn.id, output, message);
-    yield { type: "error", message: `생성 실패: ${message}` };
+    if (error instanceof RefusalError) {
+      failTurn(turn.id, output, "refusal");
+      settled = true;
+      yield { type: "error", message: "안전 정책으로 답변이 중단되었습니다." };
+    } else {
+      const message = error instanceof Error ? error.message : "알 수 없는 오류";
+      failTurn(turn.id, output, message);
+      settled = true;
+      yield { type: "error", message: `생성 실패: ${message}` };
+    }
+  } finally {
+    if (!settled) failTurn(turn.id, output, "aborted");
   }
 }

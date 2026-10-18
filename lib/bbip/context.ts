@@ -50,7 +50,11 @@ export function noteRefsFor(notes: PromptNote[]): NoteRef[] {
 /** Prompt layout, most-stable first:
  *  ① system (static)                         — cache breakpoint
  *  ② case + flags + session notes (per session) — cache breakpoint
- *  ③ previous cards + this turn's instruction (volatile) */
+ *  ③ previous cards + this turn's instruction (volatile)
+ *
+ * Cache note: the brief (Opus, low effort), Opus sections (medium effort) and
+ * Sonnet sections differ in model/effort, so they are separate cache
+ * namespaces — accepted in exchange for brief latency. */
 export function buildTurnContext(args: {
   session: BbipSession;
   entries: CodexEntry[];

@@ -26,12 +26,16 @@ const MED_HINT =
 const PATIENT_HINT =
   /\d+\s*대|\d+\s*세|남성|여성|^남$|^여$|남자|여자|피부\s*타입|fitzpatrick|지성|건성|민감성|흡연|임신|수유/i;
 
-/** Drops Korean mobile numbers and resident registration numbers before
- * the memo goes anywhere, and bounds its length. */
+const MAX_MODEL_FLAGS = 6;
+const MAX_FLAG_CHARS = 120;
+
+/** Drops resident/foreigner registration numbers and Korean mobile numbers
+ * before the memo goes anywhere, and bounds its length. Patient names are
+ * not detectable by pattern; the doctor is expected not to type them. */
 export function sanitizeInput(input: string): string {
   return input
-    .replace(/01[016789][-\s.]?\d{3,4}[-\s.]?\d{4}/g, "")
-    .replace(/\d{6}[-\s]?[1-4]\d{6}/g, "")
+    .replace(/(?<!\d)\d{6}[-\s]?[1-8]\d{6}(?!\d)/g, "")
+    .replace(/(?<!\d)(?:\+?82[-\s.]?)?0?1[016789][-\s.]?\d{3,4}[-\s.]?\d{4}(?!\d)/g, "")
     .slice(0, 500)
     .trim();
 }
@@ -40,7 +44,7 @@ function normalize(items: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of items) {
-    const item = raw.trim().slice(0, MAX_CHIP_CHARS);
+    const item = sanitizeInput(raw).slice(0, MAX_CHIP_CHARS);
     if (!item || seen.has(item)) continue;
     seen.add(item);
     out.push(item);
@@ -121,7 +125,7 @@ export const anthropicParseCaller: ParseCaller = async (input) => {
       format: { type: "json_schema", schema: PARSE_SCHEMA },
     },
     messages: [{ role: "user", content: buildParsePrompt(input) }],
-  });
+  }, { timeout: PARSE_TIMEOUT_MS, maxRetries: 0 });
   if (response.stop_reason === "refusal") throw new Error("parse refused");
   const block = response.content.find((b) => b.type === "text");
   if (!block || block.type !== "text") throw new Error("parse returned no text");
@@ -150,9 +154,15 @@ export async function parseCase(input: string, caller?: ParseCaller): Promise<Pa
   try {
     const result = await withTimeout(call(clean), PARSE_TIMEOUT_MS);
     const chips = normalizeChips(result.chips);
-    const modelFlags: Flag[] = result.flags.map((f) => ({ ...f, source: "model" }));
+    const modelFlags: Flag[] = result.flags
+      .map((f) => ({ ...f, text: f.text.trim().slice(0, MAX_FLAG_CHARS) }))
+      .filter((f) => f.text)
+      .slice(0, MAX_MODEL_FLAGS)
+      .map((f) => ({ ...f, source: "model" as const }));
     return { chips, flags: mergeFlags(ruleFlags(chips, clean), modelFlags), degraded: false };
-  } catch {
+  } catch (error) {
+    // Never log the memo itself — only the error class.
+    console.warn("[bbip] parse fallback:", error instanceof Error ? error.name : "unknown");
     const chips = fallbackParse(clean);
     return { chips, flags: mergeFlags(ruleFlags(chips, clean), []), degraded: true };
   }
