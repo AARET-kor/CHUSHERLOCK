@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
+import type { Flag, ParsedCase } from "../bbip/types";
 
 // Categories are seeded from lib/codex/taxonomy.ts at migrate time, but kept
 // as a real table (not just the static list) so future user-added leaf
@@ -284,5 +285,48 @@ export const entryRelations = sqliteTable(
   (table) => ({
     pk: primaryKey({ columns: [table.entryId, table.relatedEntryId] }),
     relatedIdx: index("entry_relations_related_idx").on(table.relatedEntryId),
+  })
+);
+
+// BBIP — one row per chairside case. Only parsed chips are stored; the raw
+// one-line memo is never persisted (no patient identifiers at rest).
+export const bbipSessions = sqliteTable(
+  "bbip_sessions",
+  {
+    id: text("id").primaryKey(),
+    chips: text("chips", { mode: "json" }).notNull().$type<ParsedCase>(),
+    flags: text("flags", { mode: "json" }).notNull().$type<Flag[]>(),
+    /** Retrieved once per session, relevance order; index+1 = citation [n]. */
+    sourceNoteIds: text("source_note_ids", { mode: "json" }).notNull().$type<string[]>(),
+    promptVersion: text("prompt_version").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    createdIdx: index("bbip_sessions_created_idx").on(table.createdAt),
+  })
+);
+
+// One generated card per row: the brief, a section, a follow-up, or a
+// custom question.
+export const bbipTurns = sqliteTable(
+  "bbip_turns",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => bbipSessions.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // TurnKind
+    sectionKey: text("section_key"),
+    question: text("question"),
+    output: text("output").notNull().default(""),
+    followups: text("followups", { mode: "json" }).notNull().$type<string[]>(),
+    model: text("model").notNull(),
+    status: text("status").notNull().default("streaming"), // TurnStatus
+    error: text("error"),
+    promotedEntryId: text("promoted_entry_id"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    sessionIdx: index("bbip_turns_session_idx").on(table.sessionId, table.createdAt),
   })
 );

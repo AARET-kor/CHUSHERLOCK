@@ -71,6 +71,13 @@
       "when": 1784855147622,
       "tag": "0009_yummy_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792318110358,
+      "tag": "0010_perfect_black_bolt",
+      "breakpoints": true
     }
   ]
 }
