@@ -72,6 +72,8 @@ export interface NoteRef {
   id: string;
   title: string;
   categoryLabel: string;
+  /** false for unreviewed BBIP drafts — rendered and promoted as AI, never as "my note". */
+  verified: boolean;
 }
 
 export interface SessionView {

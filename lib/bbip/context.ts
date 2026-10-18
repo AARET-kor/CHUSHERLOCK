@@ -15,7 +15,6 @@ import type { BbipSession, BbipTurn, NoteRef, TurnRequest } from "./types";
 export interface TurnContext {
   system: Anthropic.Beta.BetaTextBlockParam[];
   messages: Anthropic.Beta.BetaMessageParam[];
-  noteRefs: NoteRef[];
 }
 
 /** Session notes in citation order. A note deleted since the session was
@@ -39,11 +38,12 @@ function categoryLabel(key: string): string {
 }
 
 export function noteRefsFor(notes: PromptNote[]): NoteRef[] {
-  return notes.map(({ n, entry }) => ({
+  return notes.map(({ n, entry, verified }) => ({
     n,
     id: entry.id,
     title: entry.title,
     categoryLabel: categoryLabel(entry.categoryKey),
+    verified,
   }));
 }
 
@@ -77,6 +77,5 @@ export function buildTurnContext(args: {
         ],
       },
     ],
-    noteRefs: noteRefsFor(notes),
   };
 }

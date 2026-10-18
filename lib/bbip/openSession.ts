@@ -48,7 +48,11 @@ export async function openSession(
     // Edited chips skip the parser, so scrub them the same way (PII, caps).
     const chips = normalizeChips(body.chips);
     if (!hasChips(chips)) throw new EmptyCaseError();
-    parsed = { chips, flags: mergeFlags(ruleFlags(chips), []), degraded: false };
+    // Flags of the edited session came from the raw memo and the parser too;
+    // keep them (they all say "확인 필요") rather than silently dropping a
+    // safety flag because its chip was removed or never extracted.
+    const previous = body.baseSessionId ? (getSession(body.baseSessionId)?.flags ?? []) : [];
+    parsed = { chips, flags: mergeFlags(ruleFlags(chips), previous), degraded: false };
   } else {
     parsed = await deps.parse(body.input);
     if (!hasChips(parsed.chips)) throw new EmptyCaseError();

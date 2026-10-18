@@ -127,7 +127,7 @@ export function BbipConsole({
     };
   }, [detached, sessionId, newController]);
 
-  async function openSession(body: { input: string } | { chips: ParsedCase }) {
+  async function openSession(body: { input: string } | { chips: ParsedCase; baseSessionId?: string }) {
     if (openingRef.current) return;
     openingRef.current = true;
     setOpening(true);
@@ -183,6 +183,9 @@ export function BbipConsole({
     state.turns.flatMap((t) => (t.kind === "followup" && t.question ? [t.question] : []))
   );
 
+  // Unreviewed BBIP drafts are AI content, not "my notes".
+  const verifiedNotes = state.notes.filter((n) => n.verified).length;
+
   const sessions = useRecentSessions(session?.id ?? null);
 
   return (
@@ -228,7 +231,7 @@ export function BbipConsole({
                 <ChipBar
                   chips={session.chips}
                   disabled={opening}
-                  onChange={(chips) => void openSession({ chips })}
+                  onChange={(chips) => void openSession({ chips, baseSessionId: session.id })}
                 />
                 {state.degraded && (
                   <p className="mt-2 text-xs text-amber-200">
@@ -265,8 +268,8 @@ export function BbipConsole({
                 meta={
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-mist px-3 py-1.5 text-[11px] font-medium text-ink/70">
                     <Info aria-hidden="true" className="h-3.5 w-3.5" />
-                    {state.notes.length > 0
-                      ? `내 노트 ${state.notes.length}개를 근거로`
+                    {verifiedNotes > 0
+                      ? `내 노트 ${verifiedNotes}개를 근거로`
                       : "내 노트에 관련 자료 없음 — AI 보충 위주"}
                   </span>
                 }

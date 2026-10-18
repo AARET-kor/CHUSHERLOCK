@@ -67,7 +67,9 @@ export function buildPromoteInput(args: {
 }): CreateEntryInput {
   const raw = (args.selection ?? args.turn.output).trim();
   const cited = new Set(citedNoteNumbers(raw));
-  const content = toPlainNoteText(raw);
+  // Unreviewed BBIP drafts are AI content: spelled out, never related.
+  const unverified = new Set(args.notes.filter((n) => !n.verified).map((n) => n.n));
+  const content = toPlainNoteText(raw, unverified);
   const date = args.today ?? new Date().toISOString().slice(0, 10);
   const location = `BBIP 세션 ${args.session.id.slice(0, 8)} · ${turnTitle(args.turn)}`;
   const claims = content
@@ -92,7 +94,7 @@ export function buildPromoteInput(args: {
     tier: args.tier,
     tags: Array.from(new Set(["bbip", ...args.session.chips.procedures])).slice(0, 10),
     sources: [{ type: "other", citation: `${BBIP_SOURCE_PREFIX} · ${args.turn.model} · ${date}` }],
-    relatedEntryIds: args.notes.filter((n) => cited.has(n.n)).map((n) => n.id),
+    relatedEntryIds: args.notes.filter((n) => n.verified && cited.has(n.n)).map((n) => n.id),
     figureIds: [],
     claims,
     provenance: { model: args.turn.model, promptVersion: args.session.promptVersion },

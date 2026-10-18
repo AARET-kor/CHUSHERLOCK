@@ -74,6 +74,31 @@ describe("BBIP API", () => {
     expect(data.session.flags.map((f: { source: string }) => f.source)).toEqual(["rule"]);
   });
 
+  it("keeps the previous session's flags when chips are edited", async () => {
+    const first = await (
+      await sessionsRoute.POST(post({ input: "40대 여성, 기미 레이저토닝 희망, 로아큐탄 먹는중" }))
+    ).json();
+    const isotretinoin = first.session.flags.find((f: { text: string }) => f.text.includes("이소트레티노인"));
+    expect(isotretinoin).toBeTruthy();
+
+    // The doctor removes the med chip; the safety flag must not silently vanish.
+    const edited = { ...first.session.chips, meds: [] };
+    const res = await sessionsRoute.POST(post({ chips: edited, baseSessionId: first.session.id }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.session.id).not.toBe(first.session.id);
+    expect(data.session.flags).toContainEqual(isotretinoin);
+  });
+
+  it("maps a too-many-chips error to a Korean message", async () => {
+    const many = Array.from({ length: 9 }, (_, i) => `칩${i}`);
+    const res = await sessionsRoute.POST(
+      post({ chips: { patient: [], conditions: many, meds: [], procedures: [] } })
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("칩은 그룹당 최대 8개입니다.");
+  });
+
   it("rejects bad input and unknown sessions", async () => {
     expect((await sessionsRoute.POST(post({ input: "" }))).status).toBe(400);
     expect(

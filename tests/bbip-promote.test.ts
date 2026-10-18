@@ -60,7 +60,7 @@ describe("promote helpers", () => {
     const input = promote.buildPromoteInput({
       session,
       turn,
-      notes: [{ n: 1, id: sourceEntryId, title: "t", categoryLabel: "c" }],
+      notes: [{ n: 1, id: sourceEntryId, title: "t", categoryLabel: "c", verified: true }],
       title: "기미 감별",
       categoryKey: "melasma",
       tier: "deep_study",
@@ -74,6 +74,24 @@ describe("promote helpers", () => {
     expect(input.claims.every((c) => c.representation === "ai_paraphrase")).toBe(true);
     expect(input.claims.some((c) => /^[\s|:-]+$/.test(c.claimText))).toBe(false);
     expect(input.tags).toEqual(["bbip", "피코토닝"]);
+  });
+
+  it("does not relate or cite unverified BBIP drafts as notes", () => {
+    const { session, turn } = makeDoneTurn("- 확인된 노트 내용입니다 [1]\n- 초안에서 온 내용입니다 [2]");
+    const input = promote.buildPromoteInput({
+      session,
+      turn,
+      notes: [
+        { n: 1, id: sourceEntryId, title: "t", categoryLabel: "c", verified: true },
+        { n: 2, id: "draft-id", title: "초안", categoryLabel: "c", verified: false },
+      ],
+      title: "기미 감별",
+      categoryKey: "melasma",
+      tier: "deep_study",
+      today: "2026-10-18",
+    });
+    expect(input.relatedEntryIds).toEqual([sourceEntryId]);
+    expect(input.content).toBe("- 확인된 노트 내용입니다\n- 초안에서 온 내용입니다 (AI 보충)");
   });
 
   it("suggests defaults from the session", async () => {

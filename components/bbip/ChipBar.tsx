@@ -5,6 +5,9 @@ import { useState } from "react";
 import type { ParsedCase } from "../../lib/bbip/types";
 import { CHIP_ICONS } from "./icons";
 
+/** Mirrors the per-group cap in createSessionSchema. */
+const MAX_PER_GROUP = 8;
+
 const GROUPS: Array<{ key: keyof ParsedCase; label: string }> = [
   { key: "patient", label: "환자" },
   { key: "conditions", label: "질환·고민" },
@@ -26,6 +29,8 @@ export function ChipBar({
   const [group, setGroup] = useState<keyof ParsedCase | null>(null);
   const [draft, setDraft] = useState("");
   const total = GROUPS.reduce((sum, g) => sum + chips[g.key].length, 0);
+  const groupFull = group !== null && chips[group].length >= MAX_PER_GROUP;
+  const firstOpen = GROUPS.find((g) => chips[g.key].length < MAX_PER_GROUP)?.key ?? null;
 
   function remove(key: keyof ParsedCase, index: number) {
     onChange({ ...chips, [key]: chips[key].filter((_, i) => i !== index) });
@@ -38,7 +43,7 @@ export function ChipBar({
 
   function add() {
     const value = draft.trim();
-    if (!group || !value || disabled) return;
+    if (!group || !value || disabled || groupFull) return;
     onChange({ ...chips, [group]: [...chips[group], value] });
     setDraft("");
     setGroup(null);
@@ -114,10 +119,15 @@ export function ChipBar({
             <button
               type="submit"
               className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink transition hover:bg-[#bfe7d1] disabled:opacity-50"
-              disabled={disabled || !draft.trim()}
+              disabled={disabled || groupFull || !draft.trim()}
             >
               추가
             </button>
+            {groupFull && (
+              <span role="status" className="text-xs text-amber-200">
+                칩은 그룹당 최대 {MAX_PER_GROUP}개입니다.
+              </span>
+            )}
             <button
               type="button"
               onClick={cancel}
@@ -129,8 +139,11 @@ export function ChipBar({
         ) : (
           <button
             type="button"
-            disabled={disabled}
-            onClick={() => setGroup("conditions")}
+            disabled={disabled || firstOpen === null}
+            title={firstOpen === null ? `칩은 그룹당 최대 ${MAX_PER_GROUP}개입니다.` : undefined}
+            onClick={() =>
+              setGroup(chips.conditions.length < MAX_PER_GROUP ? "conditions" : firstOpen)
+            }
             className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/30 px-3 py-1 text-xs text-white/70 transition hover:border-white/60 hover:text-white disabled:opacity-40"
           >
             <Plus aria-hidden="true" className="h-3 w-3" />칩 추가

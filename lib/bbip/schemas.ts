@@ -2,7 +2,7 @@ import { z } from "zod";
 import { getLeafCategories } from "../codex/taxonomy";
 import { contentTierSchema } from "../schemas/entrySchemas";
 
-const chipList = z.array(z.string().trim().min(1).max(40)).max(8);
+const chipList = z.array(z.string().trim().min(1).max(40)).max(8, "칩은 그룹당 최대 8개입니다.");
 
 export const parsedCaseSchema = z
   .object({ patient: chipList, conditions: chipList, meds: chipList, procedures: chipList })
@@ -13,7 +13,8 @@ export const parsedCaseSchema = z
 
 export const createSessionSchema = z.union([
   z.object({ input: z.string().trim().min(2, "케이스를 입력해 주세요.").max(500) }),
-  z.object({ chips: parsedCaseSchema }),
+  // baseSessionId: the session whose chips were edited — its flags are kept.
+  z.object({ chips: parsedCaseSchema, baseSessionId: z.string().min(1).max(100).optional() }),
 ]);
 export type CreateSessionBody = z.infer<typeof createSessionSchema>;
 

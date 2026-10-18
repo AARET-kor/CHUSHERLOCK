@@ -3,7 +3,8 @@ import type { Tokens } from "marked";
 import type { NoteRef } from "./types";
 
 // The model ends claims with evidence markers: [n] for the doctor's own note
-// n, [AI] for unverified model knowledge. Markers are handled by an inline
+// n, [AI] for unverified model knowledge. A [n] that points at an unreviewed
+// BBIP draft is shown (and promoted) as AI, never as "my note". Markers are handled by an inline
 // marked extension, so they are never touched inside code spans/fences, link
 // titles or alt text. A local Marked instance is used so the global `marked`
 // (components/MarkdownContent) is not modified.
@@ -49,7 +50,11 @@ const marked = new Marked({
         }
         const note = currentNotes.get(Number(value));
         if (!note) return escapeAttr(raw);
-        return `<a class="ev ev-note" href="/entries/${encodeURIComponent(note.id)}" title="${escapeAttr(note.title)}">📚${note.n}</a>`;
+        const href = `/entries/${encodeURIComponent(note.id)}`;
+        if (!note.verified) {
+          return `<a class="ev ev-ai" href="${href}" title="검토 전 BBIP 초안 — 노트 링크">🤖AI</a>`;
+        }
+        return `<a class="ev ev-note" href="${href}" title="${escapeAttr(note.title)}">📚${note.n}</a>`;
       },
     },
   ],
@@ -94,10 +99,16 @@ export function citedNoteNumbers(markdown: string): number[] {
 }
 
 /** Plain note body for promotion: note markers become relations (dropped
- * from text), AI markers stay visible as "(AI 보충)". Only inter-word space
- * runs are collapsed, so list indentation and blank lines survive. */
-export function toPlainNoteText(markdown: string): string {
+ * from text), AI markers — and markers of `unverified` notes (BBIP drafts) —
+ * stay visible as "(AI 보충)". Only inter-word space runs are collapsed, so
+ * list indentation and blank lines survive. */
+export function toPlainNoteText(
+  markdown: string,
+  unverified: ReadonlySet<number> = new Set()
+): string {
   return markdown
+    .replace(/\[(\d{1,2})\]/g, (marker, n: string) => (unverified.has(Number(n)) ? "[AI]" : marker))
+    .replace(/\[AI\](?:[ \t]*\[AI\])+/g, "[AI]")
     .replace(/^([ \t]*)\[AI\]/gm, "$1(AI 보충)")
     .replace(/\[AI\]/g, " (AI 보충)")
     .replace(/^([ \t]*)\[(\d{1,2})\][ \t]?/gm, "$1")

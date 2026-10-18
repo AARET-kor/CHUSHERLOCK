@@ -1,5 +1,6 @@
 import type { CodexEntry } from "../codex/types";
 import { getCategory } from "../codex/taxonomy";
+import { isUnverifiedBbipNote } from "../bbip/prompts";
 import type { RetrievedNote } from "./retrieval";
 
 // "Ask Cognitio" — retrieval-augmented answering over the doctor's own notes.
@@ -33,7 +34,9 @@ FORMAT:
 - Keep it tight and scannable — this is read mid-consult, not a textbook chapter.
 - End with a "근거 노트" line listing the citation numbers you used.
 
-You may reason across multiple notes and reconcile them, but if two notes conflict, surface the conflict rather than silently picking one.`;
+You may reason across multiple notes and reconcile them, but if two notes conflict, surface the conflict rather than silently picking one.
+
+UNREVIEWED DRAFTS: a note tagged verified="false" is an AI-generated draft (saved from BBIP) that the doctor has not reviewed yet. Never present it as the doctor's own verified note. Prefer verified notes; if you use a claim from such a draft, still cite it but mark the claim "(검토 전 AI 초안)", and never let it override a verified note.`;
 }
 
 /** ~1400 chars of a note for the prompt: its 한눈에 보기 summary if present,
@@ -54,7 +57,8 @@ export function buildAskUserPrompt(
   const blocks = retrieved
     .map(({ note }, i) => {
       const cat = getCategory(note.categoryKey);
-      return `<note n="${i + 1}" title="${note.title}" category="${cat.labelKo}">\n${noteExcerpt(note.content)}\n</note>`;
+      const verified = isUnverifiedBbipNote(note) ? ' verified="false"' : "";
+      return `<note n="${i + 1}" title="${note.title}" category="${cat.labelKo}"${verified}>\n${noteExcerpt(note.content)}\n</note>`;
     })
     .join("\n\n");
 

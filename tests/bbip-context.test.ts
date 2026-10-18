@@ -1,7 +1,7 @@
 // tests/bbip-context.test.ts
 import { describe, expect, it } from "vitest";
 import type { CodexEntry } from "../lib/codex/types";
-import { buildTurnContext, selectPromptNotes } from "../lib/bbip/context";
+import { buildTurnContext, noteRefsFor, selectPromptNotes } from "../lib/bbip/context";
 import {
   BBIP_SOURCE_PREFIX,
   buildCaseBlock,
@@ -86,7 +86,16 @@ describe("buildTurnContext", () => {
     const stable = textOf((ctx.messages[0]!.content as unknown[])[0]);
     expect(stable).toContain("[주의] 항응고 주의");
     expect(stable).toContain('<note n="3" title="BBIP 초안" verified="false">');
-    expect(ctx.noteRefs.map((r) => r.n)).toEqual([1, 3]);
+  });
+});
+
+describe("noteRefsFor", () => {
+  it("carries the verified flag so the client can badge BBIP drafts as AI", () => {
+    const refs = noteRefsFor(selectPromptNotes(session, entries));
+    expect(refs.map((r) => [r.n, r.verified])).toEqual([
+      [1, true],
+      [3, false],
+    ]);
   });
 });
 
