@@ -2731,3 +2731,12 @@ git commit -m "test(bbip): literature E2E flow; docs for NCBI_API_KEY / BBIP_WEB
 - Spec §4: button-only (Task 11), Haiku MeSH-first + web query (Task 6), esearch relevance retmax 8 → efetch abstract xml, fields + publicationType levels, NCBI_API_KEY + 3/s (Task 4), web tool with allowed_domains default list + BBIP_WEB_DOMAINS, tool version decided (Task 5), streamed literature turn with P/W + level badges (Tasks 7, 10, 11), later turns see the block (Task 7 context), cache provider:normalized query 30 days (Task 3).
 - §6.2 `literature` column + `literature_cache` in a new migration (Task 1). §7 promotion (Task 9). §9 "문헌을 찾지 못함 + 쿼리", one-provider failure (Task 10). §10 pubmed fixtures, cache TTL/key tests (Tasks 3–4).
 - Names used across tasks: `LiteratureBlock`, `PaperHit`, `WebHit`, `LitLevel`, `setSessionLiterature`, `cachedSearch`, `searchPubMed`, `searchWeb`, `buildLiteratureQuery`, `buildLiteratureBlock`, `citedLiterature`, `literatureSources`, `runLiterature`, `LiteratureDeps` — consistent.
+
+---
+
+## Post-merge adjustment (editorial redesign, main@5ea1821)
+
+The console was redesigned on `main` while this plan ran (consult sheet, footnote superscripts, no emoji). After merging it:
+- `[P#]`/`[W#]` render as superscripts `P1`/`W1` (`.ev-paper`/`.ev-web`, PubMed link / source URL); a textbook-backed `[n]` stays the numeral `1`, linked to `#claim-<id>`, and the footnote list shows *책명* p.x.
+- `components/bbip/LiteratureRefs.tsx` was replaced by `components/bbip/LiteratureFootnotes.tsx` (`LiteratureFootnoteItems`, `LiteratureSearchNote`, `LiteratureIndexItem`, `turnEndpoint`). TurnCard, MoreMenu and BbipConsole only mount these at `{/* literature hook */}` points; the trigger is one more row ("문헌") in MoreMenu's index.
+- The fake literature heading is `## 문헌 근거 (FAKE)`; the E2E clicks the `P1`/`W1` links.
