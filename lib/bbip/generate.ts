@@ -62,6 +62,16 @@ export function fakeTurnText(args: GenerateArgs): string {
       `<followups>${followups}</followups>`,
     ].join("\n");
   }
+  if (request.kind === "literature") {
+    const paper = session.literature?.papers.length ? "[P1]" : "[AI]";
+    const web = session.literature?.web.length ? "[W1]" : "[AI]";
+    return [
+      "## 🔬 문헌 근거 (FAKE)",
+      `- ${proc} 관련 예시 문헌 요약입니다 ${paper}`,
+      `- 허가사항·가이드라인 예시입니다 ${web}`,
+      "- 실제 모드에서는 근거수준 순으로 정리됩니다 [AI]",
+    ].join("\n");
+  }
   return [
     `## ${turnTitle(request)} (FAKE)`,
     `- ${proc} 관련 예시 내용입니다 ${cite}`,
