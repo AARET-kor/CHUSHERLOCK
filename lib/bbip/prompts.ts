@@ -12,7 +12,7 @@ const PRIOR_LIMIT = 3000;
 /** Defangs the tags this prompt uses as structure, so note text, chips or
  * questions cannot close a block early or open a fake one. */
 export function neutralizeTags(s: string): string {
-  return s.replace(/<(\/?)(notes?|case|flags|previous|followups|memo)\b/gi, "‹$1$2");
+  return s.replace(/<(\/?)(notes?|case|flags|previous|followups|memo|atlas)\b/gi, "‹$1$2");
 }
 
 /** Static — no per-request text, so it caches across every BBIP call. */

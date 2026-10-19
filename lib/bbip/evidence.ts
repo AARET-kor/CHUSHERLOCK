@@ -1,10 +1,13 @@
 import { Marked } from "marked";
 import type { Tokens } from "marked";
+import { ATLAS_TOKEN_START, atlasChipHtml, atlasTokensToText } from "./anatomy/tokens";
 import type { NoteRef } from "./types";
 
 // The model ends claims with evidence markers: [n] for the doctor's own note
 // n, [AI] for unverified model knowledge. A [n] that points at an unreviewed
-// BBIP draft is shown (and promoted) as AI, never as "my note". Markers are handled by an inline
+// BBIP draft is shown (and promoted) as AI, never as "my note". {{atlas:id}}
+// becomes a chip that focuses the anatomy map (unknown ids → plain text).
+// Markers are handled by an inline
 // marked extension, so they are never touched inside code spans/fences, link
 // titles or alt text. A local Marked instance is used so the global `marked`
 // (components/MarkdownContent) is not modified.
@@ -24,6 +27,11 @@ function escapeAttr(value: string): string {
 interface EvToken extends Tokens.Generic {
   type: "ev";
   token: string;
+}
+
+interface AtlasToken extends Tokens.Generic {
+  type: "atlas";
+  id: string;
 }
 
 // Built once; the notes for the current call are passed through this
@@ -55,6 +63,22 @@ const marked = new Marked({
           return `<a class="ev ev-ai" href="${href}" title="검토 전 BBIP 초안 — 노트 링크">🤖AI</a>`;
         }
         return `<a class="ev ev-note" href="${href}" title="${escapeAttr(note.title)}">📚${note.n}</a>`;
+      },
+    },
+    {
+      name: "atlas",
+      level: "inline",
+      start: (src: string) => {
+        const index = src.indexOf("{{atlas:");
+        return index < 0 ? undefined : index;
+      },
+      tokenizer(src: string) {
+        const match = ATLAS_TOKEN_START.exec(src);
+        if (!match) return undefined;
+        return { type: "atlas", raw: match[0], id: match[1]! } as AtlasToken;
+      },
+      renderer(token) {
+        return atlasChipHtml((token as AtlasToken).id);
       },
     },
   ],
@@ -98,15 +122,15 @@ export function citedNoteNumbers(markdown: string): number[] {
   return Array.from(numbers).sort((a, b) => a - b);
 }
 
-/** Plain note body for promotion: note markers become relations (dropped
- * from text), AI markers — and markers of `unverified` notes (BBIP drafts) —
+/** Plain note body for promotion: atlas tokens are spelled out, note
+ * markers become relations (dropped from text), AI markers — and markers of `unverified` notes (BBIP drafts) —
  * stay visible as "(AI 보충)". Only inter-word space runs are collapsed, so
  * list indentation and blank lines survive. */
 export function toPlainNoteText(
   markdown: string,
   unverified: ReadonlySet<number> = new Set()
 ): string {
-  return markdown
+  return atlasTokensToText(markdown)
     .replace(/\[(\d{1,2})\]/g, (marker, n: string) => (unverified.has(Number(n)) ? "[AI]" : marker))
     .replace(/\[AI\](?:[ \t]*\[AI\])+/g, "[AI]")
     .replace(/^([ \t]*)\[AI\]/gm, "$1(AI 보충)")

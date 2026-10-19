@@ -1,6 +1,8 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { CodexEntry } from "../codex/types";
 import { getCategory } from "../codex/taxonomy";
+import { buildAtlasBlock } from "./anatomy/prompt";
+import { anatomyPlanFor } from "./anatomy/regions";
 import {
   buildBbipSystemPrompt,
   buildCaseBlock,
@@ -49,7 +51,7 @@ export function noteRefsFor(notes: PromptNote[]): NoteRef[] {
 
 /** Prompt layout, most-stable first:
  *  ① system (static)                         — cache breakpoint
- *  ② case + flags + session notes (per session) — cache breakpoint
+ *  ② case + flags + session notes + atlas structures (per session) — cache breakpoint
  *  ③ previous cards + this turn's instruction (volatile)
  *
  * Cache note: the brief (Opus, low effort), Opus sections (medium effort) and
@@ -62,7 +64,15 @@ export function buildTurnContext(args: {
   request: TurnRequest;
 }): TurnContext {
   const notes = selectPromptNotes(args.session, args.entries);
-  const stable = `${buildCaseBlock(args.session.chips, args.session.flags)}\n\n${buildNotesBlock(notes)}`;
+  // The atlas block is derived from the chips alone, so it is as stable as
+  // the case block.
+  const stable = [
+    buildCaseBlock(args.session.chips, args.session.flags),
+    buildNotesBlock(notes),
+    buildAtlasBlock(anatomyPlanFor(args.session.chips)),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
   const volatile = [buildPriorTurnsBlock(args.priorTurns), buildTurnInstruction(args.request)]
     .filter(Boolean)
     .join("\n\n");

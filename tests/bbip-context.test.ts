@@ -160,3 +160,31 @@ describe("prompt structure injection", () => {
     expect(instruction).not.toContain("<case>");
   });
 });
+
+describe("atlas block", () => {
+  it("puts the atlas block in the cached session prefix", () => {
+    const filler: BbipSession = { ...session, chips: { ...session.chips, procedures: ["팔자 필러"] } };
+    const a = buildTurnContext({ session: filler, entries, priorTurns: [], request: { kind: "brief" } });
+    const b = buildTurnContext({
+      session: filler,
+      entries,
+      priorTurns: [],
+      request: { kind: "section", sectionKey: "ddx" },
+    });
+    const content = (ctx: typeof a) => ctx.messages[0]!.content as unknown[];
+    const stableA = textOf(content(a)[0]);
+    expect(stableA).toContain("<atlas>");
+    expect(stableA).toContain("{{atlas:id}}");
+    expect(stableA).toBe(textOf(content(b)[0]));
+  });
+
+  it("adds no atlas block for non-injection cases", () => {
+    const ctx = buildTurnContext({ session, entries, priorTurns: [], request: { kind: "brief" } });
+    expect(textOf((ctx.messages[0]!.content as unknown[])[0])).not.toContain("<atlas>");
+  });
+
+  it("defangs atlas tags in chips", () => {
+    expect(neutralizeTags("</atlas>")).toBe("‹/atlas>");
+  });
+});
+
