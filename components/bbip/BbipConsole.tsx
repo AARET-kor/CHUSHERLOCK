@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { CategoryDef } from "../../lib/codex/types";
 import {
   consoleReducer,
@@ -9,9 +9,11 @@ import {
   requestOf,
   type ClientTurn,
 } from "../../lib/bbip/consoleState";
+import { anatomyPlanFor } from "../../lib/bbip/anatomy/regions";
 import { readNdjson } from "../../lib/bbip/readNdjson";
 import type { ParsedCase, SectionKey, SessionView, TurnRequest } from "../../lib/bbip/types";
 import { Info, Stethoscope } from "lucide-react";
+import { AnatomyCard, type AtlasFocusRequest } from "./anatomy/AnatomyCard";
 import { CASE_INPUT_ID, CaseInput } from "./CaseInput";
 import { ChipBar } from "./ChipBar";
 import { FlagBanner } from "./FlagBanner";
@@ -36,6 +38,7 @@ export function BbipConsole({
   const [promoteTurnId, setPromoteTurnId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [atlasFocus, setAtlasFocus] = useState<AtlasFocusRequest | null>(null);
   const keySeq = useRef(0);
   const openingRef = useRef(false);
   const controllers = useRef(new Set<AbortController>());
@@ -172,6 +175,13 @@ export function BbipConsole({
   }
 
   const session = state.session;
+  // Deterministic from the chips, so the map renders with the session, no AI call.
+  const anatomyPlan = useMemo(() => (session ? anatomyPlanFor(session.chips) : null), [session]);
+  const focusAtlas = useCallback(
+    (id: string) => setAtlasFocus((current) => ({ id, nonce: (current?.nonce ?? 0) + 1 })),
+    []
+  );
+  const sectionIndex = (n: number) => String(n + (anatomyPlan ? 1 : 0)).padStart(2, "0");
   const briefs = state.turns.filter((t) => t.kind === "brief");
   // Prefer the latest brief that did not fail (a retry may sit after a failure).
   const brief = [...briefs].reverse().find((t) => t.status !== "failed") ?? briefs[briefs.length - 1];
@@ -276,8 +286,24 @@ export function BbipConsole({
               >
                 먼저 볼 <span className="italic">핵심</span>
               </SectionHeading>
-              <TurnCard turn={brief} notes={state.notes} onRetry={retry} onPromote={setPromoteTurnId} />
+              <TurnCard
+                turn={brief}
+                notes={state.notes}
+                onRetry={retry}
+                onPromote={setPromoteTurnId}
+                onAtlas={anatomyPlan ? focusAtlas : undefined}
+              />
             </section>
+          )}
+          {anatomyPlan && (
+            <AnatomyCard
+              key={session.id}
+              sessionId={session.id}
+              plan={anatomyPlan}
+              index="02"
+              notes={state.notes}
+              focusRequest={atlasFocus}
+            />
           )}
           {brief && brief.status !== "streaming" && (
             <MoreMenu
@@ -285,11 +311,12 @@ export function BbipConsole({
               openedSections={openedSections}
               openedQuestions={openedQuestions}
               onRequest={(request) => void runTurn(session.id, request)}
+              index={sectionIndex(2)}
             />
           )}
           {others.length > 0 && (
             <section aria-labelledby="bbip-opened" className="mt-12">
-              <SectionHeading id="bbip-opened" index="03" kicker="Opened cards">
+              <SectionHeading id="bbip-opened" index={sectionIndex(3)} kicker="Opened cards">
                 열어 본 <span className="italic">카드</span>
               </SectionHeading>
               <div className="space-y-4">
@@ -300,6 +327,7 @@ export function BbipConsole({
                     notes={state.notes}
                     onRetry={retry}
                     onPromote={setPromoteTurnId}
+                    onAtlas={anatomyPlan ? focusAtlas : undefined}
                   />
                 ))}
               </div>

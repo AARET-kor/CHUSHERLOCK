@@ -14,17 +14,19 @@ export function MoreMenu({
   openedSections,
   openedQuestions,
   onRequest,
+  index = "02",
 }: {
   followups: string[];
   openedSections: Set<SectionKey>;
   openedQuestions: Set<string>;
   onRequest: (request: TurnRequest) => void;
+  index?: string;
 }) {
   const [question, setQuestion] = useState("");
 
   return (
     <section aria-labelledby="bbip-more" className="mt-12">
-      <SectionHeading id="bbip-more" index="02" kicker="Dig deeper">
+      <SectionHeading id="bbip-more" index={index} kicker="Dig deeper">
         더 <span className="italic">파고들기</span>
       </SectionHeading>
 

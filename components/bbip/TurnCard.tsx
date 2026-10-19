@@ -25,11 +25,13 @@ export function TurnCard({
   notes,
   onRetry,
   onPromote,
+  onAtlas,
 }: {
   turn: ClientTurn;
   notes: NoteRef[];
   onRetry: (turn: ClientTurn) => void;
   onPromote: (turnId: string) => void;
+  onAtlas?: (id: string) => void;
 }) {
   const streaming = turn.status === "streaming";
   const brief = turn.kind === "brief";
@@ -75,7 +77,7 @@ export function TurnCard({
 
       <div className={`px-5 py-5 md:px-6 ${brief ? "md:py-6" : ""}`}>
         {turn.output ? (
-          <EvidenceMarkdown markdown={turn.output} notes={notes} />
+          <EvidenceMarkdown markdown={turn.output} notes={notes} onAtlas={onAtlas} />
         ) : streaming ? (
           <div className="dot-pulse flex items-center gap-1.5 text-sm text-ink/65">
             근거를 모으는 중 <span /> <span /> <span />
