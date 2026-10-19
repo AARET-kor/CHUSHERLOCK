@@ -1627,46 +1627,47 @@ describe("literature in the prompt", () => {
     expect(refs[0]!.book).toEqual({ title: "Cosmetic Dermatology 3rd ed.", page: 212, claimId: "c1" });
     expect(refs[1]!.book).toBeUndefined();
     expect(noteRefsFor(selectPromptNotes(session, [entry({ id: "e1", sources: [{ id: "p", type: "paper", citation: "p" }] })]))[0]!.book).toBeUndefined();
+    // A book source without claims still badges the book (no page).
+    expect(noteRefsFor(selectPromptNotes(session, [entry({ id: "e1" })]))[0]!.book).toEqual({ title: "교과서" });
   });
 });
 ```
 
-Also change the existing neutralizeTags expectation test to additionally assert `expect(neutralizeTags("<literature><paper><web>")).toBe("‹literature>‹paper>‹web>");`.
+Also change the existing neutralizeTags expectation test to additionally assert `expect(neutralizeTags("<literature><paper></web>")).toBe("‹literature>‹paper>‹/web>");`.
 
-`tests/bbip-models.test.ts` — add:
+`tests/bbip-models.test.ts` — in "routes brief to low-effort Opus, safety sections to Opus, others to Sonnet" (env reset, dynamic import) add:
 
 ```ts
-  it("sends the literature card to the mid model", () => {
-    expect(modelForRequest({ kind: "literature" })).toEqual({ model: MID_MODEL, effort: "medium" });
-  });
+    expect(modelForRequest({ kind: "literature" })).toEqual({ model: "claude-sonnet-5-5", effort: "medium" });
 ```
 
-(import `MID_MODEL` from `../lib/ai/client` if the file does not already.)
-
-`tests/bbip-sections.test.ts` — add:
+`tests/bbip-sections.test.ts` — in "titles turns by kind" add:
 
 ```ts
-  it("titles the literature card", () => {
     expect(turnTitle({ kind: "literature" })).toBe("🔬 문헌 근거");
-  });
 ```
 
-`tests/bbip-generate.test.ts` — add (reusing that file's `session` fixture):
+`tests/bbip-generate.test.ts` — import `fakeTurnText` and append (reusing that file's `session` fixture and `args()` helper):
 
 ```ts
+describe("fakeTurnText", () => {
   it("fake literature text cites P1/W1 only when the session has them", () => {
     const lit = {
-      pubmedQuery: "q", webQuery: "w", errors: {}, fetchedAt: "",
+      pubmedQuery: "q",
+      webQuery: "w",
+      errors: {},
+      fetchedAt: "",
       papers: [{ pmid: "1", title: "t", authors: [], journal: "", abstract: "", publicationTypes: [], level: "rct" as const }],
       web: [{ url: "https://fda.gov/", title: "t", snippet: "" }],
     };
-    const withLit = fakeTurnText({ session: { ...session, literature: lit }, entries: [], priorTurns: [], request: { kind: "literature" } });
+    const withLit = fakeTurnText(args({ session: { ...session, literature: lit }, request: { kind: "literature" } }));
     expect(withLit).toContain("문헌 근거 (FAKE)");
     expect(withLit).toContain("[P1]");
     expect(withLit).toContain("[W1]");
-    const without = fakeTurnText({ session, entries: [], priorTurns: [], request: { kind: "literature" } });
+    const without = fakeTurnText(args({ request: { kind: "literature" } }));
     expect(without).not.toContain("[P1]");
   });
+});
 ```
 
 - [ ] **Step 2: Run to verify they fail**
