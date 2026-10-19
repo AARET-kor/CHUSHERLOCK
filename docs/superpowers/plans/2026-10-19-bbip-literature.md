@@ -1320,10 +1320,10 @@ describe("fallbackQuery", () => {
 
   it("uses meds when there is no condition, keeps ASCII chips, drops unknown Korean", () => {
     expect(
-      fallbackQuery({ patient: [], conditions: ["알수없음"], meds: ["isotretinoin"], procedures: ["필러", "보톡스"] })
+      fallbackQuery({ patient: [], conditions: ["알수없음"], meds: ["tretinoin"], procedures: ["필러", "보톡스"] })
     ).toEqual({
-      pubmed: '("Dermal Fillers" OR "Botulinum Toxins, Type A") AND "isotretinoin"',
-      web: "Dermal Fillers Botulinum Toxins, Type A isotretinoin",
+      pubmed: '("Dermal Fillers" OR "Botulinum Toxins, Type A") AND "tretinoin"',
+      web: "Dermal Fillers Botulinum Toxins, Type A tretinoin",
     });
     expect(fallbackQuery({ patient: [], conditions: ["알수없음"], meds: [], procedures: [] })).toEqual({
       pubmed: "",
