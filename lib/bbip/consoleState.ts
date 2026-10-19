@@ -80,6 +80,8 @@ function applyEvent(turn: ClientTurn, event: StreamEvent): ClientTurn {
       return { ...turn, output: turn.output + event.text };
     case "followups":
       return { ...turn, followups: event.items };
+    case "literature":
+      return turn;
     case "done":
       return { ...turn, id: event.turnId, status: "done" };
     case "error":

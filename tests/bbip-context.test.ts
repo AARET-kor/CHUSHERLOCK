@@ -36,7 +36,7 @@ const session: BbipSession = {
   chips: { patient: ["40대 여성"], conditions: ["기미"], meds: ["아스피린"], procedures: ["피코토닝"] },
   flags: [{ level: "caution", text: "항응고 주의", source: "rule" }],
   sourceNoteIds: ["e1", "gone", "e2"],
-  promptVersion: "bbip-v1",
+  promptVersion: "bbip-v2",
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 

@@ -16,7 +16,7 @@ const session: BbipSession = {
   chips: { patient: [], conditions: ["기미"], meds: [], procedures: ["피코토닝"] },
   flags: [],
   sourceNoteIds: [],
-  promptVersion: "bbip-v1",
+  promptVersion: "bbip-v2",
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 

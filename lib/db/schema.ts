@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
-import type { Flag, ParsedCase } from "../bbip/types";
+import type { Flag, LiteratureBlock, ParsedCase } from "../bbip/types";
 
 // Categories are seeded from lib/codex/taxonomy.ts at migrate time, but kept
 // as a real table (not just the static list) so future user-added leaf
@@ -299,6 +299,8 @@ export const bbipSessions = sqliteTable(
     flags: text("flags", { mode: "json" }).notNull().$type<Flag[]>(),
     /** Retrieved once per session, relevance order; index+1 = citation [n]. */
     sourceNoteIds: text("source_note_ids", { mode: "json" }).notNull().$type<string[]>(),
+    /** 🔬 literature block (null until searched); [P#]/[W#] index into it. */
+    literature: text("literature", { mode: "json" }).$type<LiteratureBlock>(),
     promptVersion: text("prompt_version").notNull(),
     createdAt: text("created_at").notNull(),
   },
@@ -331,3 +333,12 @@ export const bbipTurns = sqliteTable(
     sessionIdx: index("bbip_turns_session_idx").on(table.sessionId, table.createdAt),
   })
 );
+
+// Literature search results keyed by "provider:normalized query". The
+// 30-day TTL is enforced on read (lib/bbip/literature/cache.ts).
+export const literatureCache = sqliteTable("literature_cache", {
+  key: text("key").primaryKey(),
+  provider: text("provider").notNull(), // "pubmed" | "web"
+  results: text("results", { mode: "json" }).notNull().$type<unknown[]>(),
+  fetchedAt: text("fetched_at").notNull(),
+});
