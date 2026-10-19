@@ -10,7 +10,7 @@ const COLD = { timeout: 20_000 };
 
 test("case → flags → brief → section → promote to draft note", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "미용 GP 진료 비서" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /핵심부터/ })).toBeVisible();
 
   await page.getByLabel("케이스 입력").fill(CASE);
   await expect(page.getByRole("button", { name: "BBIP", exact: true })).toBeEnabled();
@@ -26,12 +26,12 @@ test("case → flags → brief → section → promote to draft note", async ({ 
   const card = page.locator("article").filter({ hasText: "감별질환 (FAKE)" });
   await expect(card).toBeVisible();
 
-  await card.getByRole("button", { name: "＋ 노트로 저장" }).click();
+  await card.getByRole("button", { name: "노트로 저장" }).click();
   const dialog = page.getByRole("dialog", { name: "노트로 저장" });
   await expect(dialog.getByLabel("제목")).not.toHaveValue("");
   await dialog.getByRole("button", { name: "저장", exact: true }).click();
 
-  await card.getByRole("link", { name: "✓ 노트에 저장됨" }).click();
+  await card.getByRole("link", { name: /노트에 저장됨/ }).click();
   await expect(page).toHaveURL(/\/entries\/[0-9a-f-]{36}$/);
   await expect(page.getByText("AI/사용자 초안")).toBeVisible();
 });

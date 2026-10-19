@@ -46,15 +46,15 @@ const marked = new Marked({
       renderer(token) {
         const { token: value, raw } = token as EvToken;
         if (value === "AI") {
-          return '<span class="ev ev-ai" title="검증되지 않은 AI 보충">🤖AI</span>';
+          return '<span class="ev ev-ai" title="내 노트에 없는 AI 보충 — 검토 필요">AI</span>';
         }
         const note = currentNotes.get(Number(value));
         if (!note) return escapeAttr(raw);
         const href = `/entries/${encodeURIComponent(note.id)}`;
         if (!note.verified) {
-          return `<a class="ev ev-ai" href="${href}" title="검토 전 BBIP 초안 — 노트 링크">🤖AI</a>`;
+          return `<a class="ev ev-ai" href="${href}" title="검토 전 BBIP 초안 — 노트 링크">AI</a>`;
         }
-        return `<a class="ev ev-note" href="${href}" title="${escapeAttr(note.title)}">📚${note.n}</a>`;
+        return `<a class="ev ev-note" href="${href}" title="${escapeAttr(note.title)}">${note.n}</a>`;
       },
     },
   ],

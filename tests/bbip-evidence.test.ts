@@ -13,24 +13,24 @@ describe("renderEvidenceHtml", () => {
   it("turns [n] into a note badge link", () => {
     const html = renderEvidenceHtml("저출력 반복 [1][2]", notes);
     expect(html).toContain('<a class="ev ev-note" href="/entries/id-1"');
-    expect(html).toContain("📚1</a>");
-    expect(html).toContain("📚2</a>");
+    expect(html).toContain(">1</a>");
+    expect(html).toContain(">2</a>");
     expect(html).toContain('title="피코토닝 &quot;기미&quot; 프로토콜"');
   });
 
   it("turns [AI] into an AI badge", () => {
     expect(renderEvidenceHtml("일반 원칙 [AI]", notes)).toContain(
-      '<span class="ev ev-ai" title="검증되지 않은 AI 보충">🤖AI</span>'
+      '<span class="ev ev-ai" title="내 노트에 없는 AI 보충 — 검토 필요">AI</span>'
     );
   });
 
   it("badges an unverified BBIP draft as AI but still links to it", () => {
     const html = renderEvidenceHtml("초안 내용 [3]", notes);
     expect(html).toContain(
-      '<a class="ev ev-ai" href="/entries/draft-3" title="검토 전 BBIP 초안 — 노트 링크">🤖AI</a>'
+      '<a class="ev ev-ai" href="/entries/draft-3" title="검토 전 BBIP 초안 — 노트 링크">AI</a>'
     );
     expect(html).not.toContain("ev-note");
-    expect(html).not.toContain("📚");
+    expect(html).not.toContain('class="ev ev-note"');
   });
 
   it("leaves unknown note numbers as literal text", () => {

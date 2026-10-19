@@ -1,6 +1,5 @@
 "use client";
 
-import { NotebookPen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { PromoteDefaults } from "../../lib/bbip/promote";
 import type { CategoryDef, ContentTier } from "../../lib/codex/types";
@@ -85,44 +84,35 @@ export function PromoteDialog({
     }
   }
 
+  const fieldLabel = "block text-[11.5px] font-medium text-ink/65";
+  const field = "bbip-line mt-1.5 pb-1.5 text-[15px] text-ink";
+
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby="promote-title"
       onClose={onClose}
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-[24px] border border-ink/10 bg-white p-0 shadow-[0_24px_70px_rgba(5,26,36,0.2)] backdrop:bg-inkdeep/40"
+      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-[20px] bg-white p-0 shadow-[0_30px_80px_rgba(5,26,36,0.22)] backdrop:bg-inkdeep/30 backdrop:backdrop-blur-[2px]"
     >
-      <div className="p-6">
-        <div className="mb-4 flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-white">
-            <NotebookPen aria-hidden="true" className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/65">[ Promote ]</p>
-            <h2 id="promote-title" className="font-serifa text-xl font-bold text-inkdeep">
-              노트로 <span className="italic">저장</span>
-            </h2>
-          </div>
-        </div>
-        <p className="mb-5 rounded-2xl bg-mist/70 px-4 py-3 text-xs leading-relaxed text-ink/70">
-          초안(draft)으로 저장되고 “검토 필요”로 표시됩니다. 검토 전에는 BBIP가 이 노트를{" "}
-          <span className="ev ev-ai">🤖AI</span> 보충으로 취급합니다.
+      <div className="px-7 pb-6 pt-7">
+        <h2 id="promote-title" className="font-serifa text-[22px] font-bold text-inkdeep">
+          노트로 저장
+        </h2>
+        <p className="mt-2 text-[12.5px] leading-relaxed text-ink/60">
+          초안으로 저장되어 “검토 필요”로 표시됩니다. 검토 전까지 BBIP는 이 노트를{" "}
+          <span className="italic text-[#8a5a00]">AI</span> 보충으로 취급합니다.
         </p>
 
-        {!loaded && !error && <p className="text-sm text-ink/65">불러오는 중…</p>}
+        {!loaded && !error && <p className="mt-6 text-[13px] text-ink/65">불러오는 중…</p>}
         {loaded && (
-          <div className="space-y-3">
-            <label className="block text-xs font-medium text-ink">
+          <div className="mt-6 space-y-5">
+            <label className={fieldLabel}>
               제목
-              <input ref={titleRef} className="field mt-1" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <input ref={titleRef} className={field} value={title} onChange={(e) => setTitle(e.target.value)} />
             </label>
-            <label className="block text-xs font-medium text-ink">
+            <label className={fieldLabel}>
               카테고리
-              <select
-                className="field mt-1"
-                value={categoryKey}
-                onChange={(e) => setCategoryKey(e.target.value)}
-              >
+              <select className={field} value={categoryKey} onChange={(e) => setCategoryKey(e.target.value)}>
                 {leafCategories.map((c) => (
                   <option key={c.key} value={c.key}>
                     {c.labelKo}
@@ -130,10 +120,10 @@ export function PromoteDialog({
                 ))}
               </select>
             </label>
-            <label className="block text-xs font-medium text-ink">
+            <label className={fieldLabel}>
               분류
               <select
-                className="field mt-1"
+                className={field}
                 value={tier}
                 onChange={(e) => setTier(e.target.value as ContentTier)}
               >
@@ -148,18 +138,18 @@ export function PromoteDialog({
         )}
 
         {error && (
-          <p role="alert" className="mt-3 text-sm text-red-700">
+          <p role="alert" className="mt-4 text-[13px] text-red-800">
             {error}
           </p>
         )}
 
-        <div className="mt-6 flex justify-end gap-2">
-          <button type="button" className="btn-secondary !px-4 !py-2" onClick={cancel}>
+        <div className="mt-8 flex items-center justify-end gap-5">
+          <button type="button" className="text-[13px] text-ink/60 transition hover:text-ink" onClick={cancel}>
             취소
           </button>
           <button
             type="button"
-            className="btn-primary !px-5 !py-2"
+            className="inline-flex h-10 items-center rounded-full bg-ink px-6 text-[13px] font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(5,26,36,0.22)] disabled:translate-y-0 disabled:bg-ink/25 disabled:shadow-none"
             disabled={!loaded || saving || title.trim().length < 2}
             onClick={() => void save()}
           >

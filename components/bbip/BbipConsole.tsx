@@ -11,17 +11,36 @@ import {
 } from "../../lib/bbip/consoleState";
 import { readNdjson } from "../../lib/bbip/readNdjson";
 import type { ParsedCase, SectionKey, SessionView, TurnRequest } from "../../lib/bbip/types";
-import { Info, Stethoscope } from "lucide-react";
+import { getSection } from "../../lib/bbip/sections";
 import { CASE_INPUT_ID, CaseInput } from "./CaseInput";
 import { ChipBar } from "./ChipBar";
 import { FlagBanner } from "./FlagBanner";
-import { HistoryDrawer } from "./HistoryDrawer";
 import { MoreMenu } from "./MoreMenu";
 import { PromoteDialog } from "./PromoteDialog";
 import { RecentCases } from "./RecentCases";
-import { SectionHeading } from "./SectionHeading";
+import { SheetSection } from "./SheetSection";
 import { TurnCard } from "./TurnCard";
 import { useRecentSessions } from "./useRecentSessions";
+
+const EXAMPLES = [
+  "20대 여성, 여드름 흉터, 이소트레티노인 복용, 레이저 상담",
+  "30대 남성, 사각턱, 보톡스 처음",
+  "50대 여성, 팔자주름, 와파린 복용, 필러 상담",
+];
+
+const GROUP_LABELS = { safety: "안전", practice: "실무", business: "비즈니스" } as const;
+
+/** Margin label for an opened card. */
+function marginFor(turn: ClientTurn): { label: string; note?: string; title?: string } {
+  if (turn.kind === "section" && turn.sectionKey) {
+    const section = getSection(turn.sectionKey);
+    return { label: section.label, note: GROUP_LABELS[section.group] };
+  }
+  return {
+    label: turn.kind === "followup" ? "이어서 묻기" : "직접 질문",
+    title: turn.question,
+  };
+}
 
 export function BbipConsole({
   initialView,
@@ -35,7 +54,6 @@ export function BbipConsole({
   const [error, setError] = useState<string | null>(null);
   const [promoteTurnId, setPromoteTurnId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [historyOpen, setHistoryOpen] = useState(false);
   const keySeq = useRef(0);
   const openingRef = useRef(false);
   const controllers = useRef(new Set<AbortController>());
@@ -190,130 +208,139 @@ export function BbipConsole({
 
   return (
     <div>
+      {/* Masthead — the case line, with recent cases in the right column. */}
       <section
         aria-labelledby="bbip-title"
-        className="mb-8 overflow-hidden rounded-[28px] bg-inkdeep text-white shadow-[0_24px_70px_rgba(5,26,36,0.16)]"
+        className="grid gap-x-14 gap-y-10 pb-12 pt-2 md:grid-cols-[minmax(0,1fr)_210px] md:pt-6"
       >
-        <div className="grid gap-8 px-6 py-7 md:grid-cols-[1.3fr_0.7fr] md:px-8 md:py-9">
-          <div className="min-w-0">
-            <div className="mb-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/55">
-              <Stethoscope aria-hidden="true" className="h-3.5 w-3.5" />
-              <span>BBIP · Chairside brief</span>
-            </div>
-            <h1
-              id="bbip-title"
-              className="max-w-2xl font-serifa text-3xl font-bold leading-tight tracking-tight md:text-[38px]"
-            >
-              미용 GP 진료 비서
-              <br />
-              <span className="text-2xl text-white/80 md:text-[28px]">
-                케이스를 넣으면, <span className="italic text-[#bfe7d1]">핵심부터.</span>
-              </span>
-            </h1>
-            <p className="mb-6 mt-4 max-w-xl text-sm leading-relaxed text-white/65">
-              한 줄 케이스 메모로 금기·주의를 먼저 짚고, 내 노트를 근거로 진료 전에 볼 핵심을 정리합니다.
+        <div className="min-w-0">
+          <div className="mb-7 flex items-center gap-3 text-[12px] text-ink/60">
+            BBIP
+            <span className="h-px w-12 bg-ink/25" />
+            미용 GP 진료 비서
+          </div>
+          <h1
+            id="bbip-title"
+            className={`break-keep leading-[1.08] tracking-tight text-ink transition-[font-size] duration-500 ${
+              session ? "text-[2rem] md:text-[2.6rem]" : "text-[2.6rem] md:text-[4rem]"
+            }`}
+          >
+            케이스를 적으면,
+            <br />
+            <span className="font-serifa font-bold italic">핵심부터.</span>
+          </h1>
+          {!session && (
+            <p className="mt-5 max-w-[430px] text-[13.5px] leading-[1.75] text-ink/60">
+              한 줄 메모에서 금기와 주의를 먼저 짚고, 내 노트를 근거로 진료 전에 볼 것만 추려 드립니다.
             </p>
+          )}
 
+          <div className="mt-10">
             <CaseInput
               value={draft}
               onValueChange={setDraft}
               disabled={opening}
               onSubmit={(input) => void openSession({ input })}
             />
-            {error && (
-              <p role="alert" className="mt-3 rounded-xl bg-red-500/15 px-3 py-2 text-sm text-red-100 ring-1 ring-red-300/30">
-                {error}
-              </p>
-            )}
-
-            {session && (
-              <>
-                <ChipBar
-                  chips={session.chips}
-                  disabled={opening}
-                  onChange={(chips) => void openSession({ chips, baseSessionId: session.id })}
-                />
-                {state.degraded && (
-                  <p className="mt-2 text-xs text-amber-200">
-                    자동 분류에 실패해 단순 분리했습니다 — 칩을 확인하세요.
-                  </p>
-                )}
-              </>
-            )}
           </div>
+          {error && (
+            <p role="alert" className="mt-4 border-l-2 border-red-700 pl-3 text-[13.5px] text-red-800">
+              {error}
+            </p>
+          )}
 
-          <RecentCases
-            sessions={sessions}
-            activeId={session?.id ?? null}
-            showExamples={!session}
-            onExample={(example) => {
-              setDraft(example);
-              document.getElementById(CASE_INPUT_ID)?.focus();
-            }}
-            onOpenHistory={() => setHistoryOpen(true)}
-          />
+          {!session && (
+            <div className="mt-8 flex flex-wrap items-baseline gap-x-2 gap-y-2 text-[13px]">
+              <span className="mr-2 text-[11.5px] font-medium text-ink/65">예시</span>
+              {EXAMPLES.map((example, i) => (
+                <span key={example} className="inline-flex items-baseline gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraft(example);
+                      document.getElementById(CASE_INPUT_ID)?.focus();
+                    }}
+                    className="text-ink/70 underline decoration-ink/20 underline-offset-4 transition hover:text-ink hover:decoration-ink"
+                  >
+                    {example}
+                  </button>
+                  {i < EXAMPLES.length - 1 && <span className="text-ink/25">/</span>}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* On phones an open case owns the screen; history is one tap away in 기록. */}
+        <div className={session ? "hidden md:block" : ""}>
+          <RecentCases sessions={sessions} activeId={session?.id ?? null} />
         </div>
       </section>
 
       {session && (
         <>
-          <FlagBanner flags={session.flags} />
+          <SheetSection
+            id="bbip-case"
+            index="01"
+            label="케이스"
+            note={state.degraded ? <span className="text-amber-800">자동 분류에 실패해 쉼표로만 나눴습니다. 확인해 주세요.</span> : "항목을 지우거나 더하면 다시 작성합니다."}
+          >
+            <ChipBar
+              chips={session.chips}
+              disabled={opening}
+              onChange={(chips) => void openSession({ chips, baseSessionId: session.id })}
+            />
+            <FlagBanner flags={session.flags} />
+          </SheetSection>
 
           {brief && (
-            <section aria-labelledby="bbip-brief">
-              <SectionHeading
-                id="bbip-brief"
-                index="01"
-                kicker="Core brief"
-                meta={
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-mist px-3 py-1.5 text-[11px] font-medium text-ink/70">
-                    <Info aria-hidden="true" className="h-3.5 w-3.5" />
-                    {verifiedNotes > 0
-                      ? `내 노트 ${verifiedNotes}개를 근거로`
-                      : "내 노트에 관련 자료 없음 — AI 보충 위주"}
-                  </span>
-                }
-              >
-                먼저 볼 <span className="italic">핵심</span>
-              </SectionHeading>
+            <SheetSection
+              id="bbip-brief"
+              index="02"
+              label="핵심"
+              note={
+                verifiedNotes > 0
+                  ? `내 노트 ${verifiedNotes}개를 근거로 작성`
+                  : "관련 노트가 없어 일반 지식(AI) 위주로 작성"
+              }
+            >
               <TurnCard turn={brief} notes={state.notes} onRetry={retry} onPromote={setPromoteTurnId} />
-            </section>
+            </SheetSection>
           )}
+
           {brief && brief.status !== "streaming" && (
-            <MoreMenu
-              followups={brief.followups}
-              openedSections={openedSections}
-              openedQuestions={openedQuestions}
-              onRequest={(request) => void runTurn(session.id, request)}
-            />
+            <SheetSection id="bbip-more" index="03" label="더 보기" note="필요한 것만 펼쳐 보세요.">
+              <MoreMenu
+                followups={brief.followups}
+                openedSections={openedSections}
+                openedQuestions={openedQuestions}
+                onRequest={(request) => void runTurn(session.id, request)}
+              />
+            </SheetSection>
           )}
-          {others.length > 0 && (
-            <section aria-labelledby="bbip-opened" className="mt-12">
-              <SectionHeading id="bbip-opened" index="03" kicker="Opened cards">
-                열어 본 <span className="italic">카드</span>
-              </SectionHeading>
-              <div className="space-y-4">
-                {others.map((turn) => (
-                  <TurnCard
-                    key={turn.key}
-                    turn={turn}
-                    notes={state.notes}
-                    onRetry={retry}
-                    onPromote={setPromoteTurnId}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+
+          {others.map((turn, i) => {
+            const margin = marginFor(turn);
+            return (
+              <SheetSection
+                key={turn.key}
+                id={`bbip-turn-${turn.key}`}
+                index={String(i + 4).padStart(2, "0")}
+                label={margin.label}
+                note={margin.note}
+              >
+                <TurnCard
+                  turn={turn}
+                  title={margin.title}
+                  notes={state.notes}
+                  onRetry={retry}
+                  onPromote={setPromoteTurnId}
+                />
+              </SheetSection>
+            );
+          })}
         </>
       )}
-
-      <HistoryDrawer
-        sessions={sessions}
-        activeId={session?.id ?? null}
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-      />
 
       {promoteTurnId && (
         <PromoteDialog
