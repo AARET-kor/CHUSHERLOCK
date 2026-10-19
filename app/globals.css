@@ -617,3 +617,52 @@ a.ev-ai {
     animation: none;
   }
 }
+
+/* Atlas-style focus: the structure under the pointer stays sharp and glows;
+   everything else fades and blurs back so it can be followed on its own. */
+.atlas-svg .atlas-structure,
+.atlas-svg .atlas-offregion,
+.atlas-svg .atlas-backdrop {
+  transition: opacity 0.28s ease, filter 0.28s ease;
+}
+.atlas-svg .atlas-offregion {
+  opacity: 0.16;
+}
+.atlas-svg[data-focusing] .atlas-off {
+  opacity: 0.13;
+  filter: blur(1.4px);
+}
+.atlas-svg[data-focusing] .atlas-offregion {
+  opacity: 0.05;
+  filter: blur(1.8px);
+}
+.atlas-svg[data-focusing] .atlas-backdrop {
+  opacity: 0.5;
+}
+.atlas-on .atlas-shape {
+  filter: drop-shadow(0 0 2.2px var(--atlas-glow)) drop-shadow(0 0 0.6px var(--atlas-glow));
+}
+/* Flow along the focused vessel/nerve, in its anatomical direction. */
+@keyframes atlasFlow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+.atlas-flow {
+  stroke-dasharray: 1.6 6.4;
+  animation: atlasFlow 0.9s linear infinite;
+  pointer-events: none;
+}
+.atlas-flow-reverse {
+  animation-direction: reverse;
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-flow {
+    animation: none;
+  }
+  .atlas-svg .atlas-structure,
+  .atlas-svg .atlas-offregion,
+  .atlas-svg .atlas-backdrop {
+    transition: none;
+  }
+}

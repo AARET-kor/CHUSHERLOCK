@@ -28,7 +28,7 @@ test("case → flags → brief → section → promote to draft note", async ({ 
 
   await card.getByRole("button", { name: "노트로 저장" }).click();
   const dialog = page.getByRole("dialog", { name: "노트로 저장" });
-  await expect(dialog.getByLabel("제목")).not.toHaveValue("");
+  await expect(dialog.getByLabel("제목")).not.toHaveValue("", COLD);
   await dialog.getByRole("button", { name: "저장", exact: true }).click();
 
   await card.getByRole("link", { name: /노트에 저장됨/ }).click();

@@ -85,3 +85,22 @@ describe("regions", () => {
     }
   });
 });
+
+describe("map conventions", () => {
+  it("colors arteries red, veins blue and nerves yellow, all distinct", async () => {
+    const { LAYERS } = await import("../lib/bbip/anatomy/layers");
+    const color = (key: string) => LAYERS.find((l) => l.key === key)!.color;
+    expect(color("arteries")).toBe("#e0262c");
+    expect(color("veins")).toBe("#2563eb");
+    expect(color("nerves")).toBe("#f5b800");
+    expect(new Set([color("arteries"), color("veins"), color("nerves")]).size).toBe(3);
+    // Yellow needs a dark casing to read on white.
+    expect(LAYERS.find((l) => l.key === "nerves")!.casing).not.toBe("#ffffff");
+  });
+
+  it("animates flow along vessels in authored order, except where marked", async () => {
+    const { ATLAS_BY_ID: byId, flowDirection } = await import("../lib/bbip/anatomy/atlas");
+    expect(flowDirection(byId.get("facial-artery")!)).toBe("forward");
+    expect(flowDirection(byId.get("middle-temporal-vein")!)).toBe("reverse");
+  });
+});

@@ -181,7 +181,7 @@ function AnatomyMap({
           {regionDef.ko} <span className="font-sans text-[13px] font-normal text-ink/65">{regionDef.en}</span>
         </h3>
 
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="space-y-12">
           <FaceMap
             plan={plan}
             region={region}

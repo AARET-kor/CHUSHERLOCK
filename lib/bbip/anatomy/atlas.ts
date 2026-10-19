@@ -38,6 +38,9 @@ export interface AtlasStructure {
   /** Terms used to match the doctor's notes and figure captions. */
   keywords: string[];
   shapes: Partial<Record<ViewKey, Shape[]>>;
+  /** Line points are authored in flow order (origin → where it goes). Set
+   * "reverse" when a line was drawn against its flow. */
+  flow?: "reverse";
   /** Entry points only: the procedures this entry applies to. */
   entryFor?: ProcedureCategory[];
   source: string;
@@ -283,6 +286,8 @@ export const ATLAS: AtlasStructure[] = [
     safeTechnique: "관자 중간 깊이(지방패드) 주입 피함 — 골막 위 깊게 또는 피하 얕게",
     keywords: ["middle temporal vein", "중측두정맥"],
     shapes: { front: [line([207, 132], [199, 130], [190, 131])] },
+    // Drawn front → back; it drains backwards toward the superficial temporal vein.
+    flow: "reverse",
     source: DRAFT,
   },
 
@@ -914,6 +919,11 @@ export const ATLAS_BY_ID: ReadonlyMap<string, AtlasStructure> = new Map(ATLAS.ma
 
 export function getStructure(id: string): AtlasStructure | undefined {
   return ATLAS_BY_ID.get(id);
+}
+
+/** Direction to animate along the structure's lines. */
+export function flowDirection(s: Pick<AtlasStructure, "flow">): "forward" | "reverse" {
+  return s.flow ?? "forward";
 }
 
 export function isReviewed(s: Pick<AtlasStructure, "reviewedBy" | "reviewedAt">): boolean {

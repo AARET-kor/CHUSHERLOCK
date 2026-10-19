@@ -11,22 +11,39 @@ export const VIEWS: { key: ViewKey; ko: string; en: string }[] = [
 export type LayerKey =
   | "arteries" | "veins" | "nerves" | "ducts" | "muscles" | "fat" | "ligaments" | "danger" | "entry";
 
-export interface LayerDef { key: LayerKey; ko: string; en: string; color: string }
+export interface LayerDef {
+  key: LayerKey;
+  ko: string;
+  en: string;
+  /** Anatomical convention — red arteries, blue veins, yellow nerves. */
+  color: string;
+  /** Outline drawn under lines so light colors (yellow) stay legible on white. */
+  casing: string;
+}
 
-// Ink line work on white; one red (arteries, danger zones), a muted slate
-// for veins and the sheet's ochre for nerves — the anatomical convention,
-// desaturated to sit on the consult sheet.
 export const LAYERS: LayerDef[] = [
-  { key: "arteries", ko: "동맥", en: "Arteries", color: "#b42318" },
-  { key: "veins", ko: "정맥", en: "Veins", color: "#3a5675" },
-  { key: "nerves", ko: "신경", en: "Nerves", color: "#8a5a00" },
-  { key: "ducts", ko: "관", en: "Ducts", color: "#33454e" },
-  { key: "muscles", ko: "근육", en: "Muscles", color: "#5b4a52" },
-  { key: "fat", ko: "지방구획", en: "Fat compartments", color: "#7a6a4f" },
-  { key: "ligaments", ko: "인대", en: "Ligaments", color: "#33454e" },
-  { key: "danger", ko: "위험구역", en: "Danger zones", color: "#b42318" },
-  { key: "entry", ko: "진입점·벡터", en: "Entry points", color: "#051a24" },
+  { key: "arteries", ko: "동맥", en: "Arteries", color: "#e0262c", casing: "#ffffff" },
+  { key: "veins", ko: "정맥", en: "Veins", color: "#2563eb", casing: "#ffffff" },
+  { key: "nerves", ko: "신경", en: "Nerves", color: "#f5b800", casing: "#7a5600" },
+  { key: "ducts", ko: "관", en: "Ducts", color: "#0e9384", casing: "#ffffff" },
+  { key: "muscles", ko: "근육", en: "Muscles", color: "#c0605c", casing: "#ffffff" },
+  { key: "fat", ko: "지방구획", en: "Fat compartments", color: "#c99a4f", casing: "#ffffff" },
+  { key: "ligaments", ko: "인대", en: "Ligaments", color: "#6b7c86", casing: "#ffffff" },
+  { key: "danger", ko: "위험구역", en: "Danger zones", color: "#e0262c", casing: "#ffffff" },
+  { key: "entry", ko: "진입점·벡터", en: "Entry points", color: "#051a24", casing: "#ffffff" },
 ];
+
+/** Layers whose lines carry something along them (blood, signal, saliva) —
+ * these animate a flow when focused. */
+export const FLOWING_LAYERS: ReadonlySet<LayerKey> = new Set(["arteries", "veins", "nerves", "ducts"]);
+
+/** What "흐름" means per layer, for the detail panel. */
+export const FLOW_LABELS: Partial<Record<LayerKey, string>> = {
+  arteries: "혈류 방향",
+  veins: "배액 방향",
+  nerves: "분포 방향",
+  ducts: "분비 방향",
+};
 
 /** Superficial → deep. */
 export type DepthKey = "skin" | "subcutaneous" | "smas" | "deep-fat" | "periosteum";
