@@ -1,7 +1,7 @@
 // tests/bbip-evidence.test.ts
 import { describe, expect, it } from "vitest";
-import { citedNoteNumbers, renderEvidenceHtml, toPlainNoteText } from "../lib/bbip/evidence";
-import type { NoteRef } from "../lib/bbip/types";
+import { citedLiterature, citedNoteNumbers, renderEvidenceHtml, toPlainNoteText } from "../lib/bbip/evidence";
+import type { LiteratureBlock, NoteRef } from "../lib/bbip/types";
 
 const notes: NoteRef[] = [
   { n: 1, id: "id-1", title: "피코토닝 \"기미\" 프로토콜", categoryLabel: "피코토닝", verified: true },
@@ -136,5 +136,67 @@ describe("citedNoteNumbers / toPlainNoteText", () => {
   it("preserves list indentation and blank lines", () => {
     expect(toPlainNoteText("- a\n  - nested [1]\n- b")).toBe("- a\n  - nested\n- b");
     expect(toPlainNoteText("문단.\n\n[1] 다음 문단")).toBe("문단.\n\n다음 문단");
+  });
+});
+
+const literature: LiteratureBlock = {
+  pubmedQuery: "q",
+  webQuery: "w",
+  papers: [
+    {
+      pmid: "38000001",
+      title: "Pico \"meta\"",
+      authors: ["Kim J"],
+      year: 2024,
+      journal: "JAAD",
+      abstract: "",
+      publicationTypes: ["Meta-Analysis"],
+      level: "meta",
+    },
+  ],
+  web: [
+    { url: "https://www.fda.gov/label", title: "FDA label", snippet: "" },
+    { url: "javascript:alert(1)", title: "bad", snippet: "" },
+  ],
+  errors: {},
+  fetchedAt: "",
+};
+
+describe("literature badges", () => {
+  it("links [P#] to PubMed and [W#] to the page", () => {
+    const html = renderEvidenceHtml("효과 [P1], 허가 [W1]", notes, literature);
+    expect(html).toContain(
+      '<a class="ev ev-paper" href="https://pubmed.ncbi.nlm.nih.gov/38000001/" target="_blank" rel="noopener noreferrer" title="Pico &quot;meta&quot; — JAAD · 2024 · 메타분석·SR">🔬P1</a>'
+    );
+    expect(html).toContain(
+      '<a class="ev ev-web" href="https://www.fda.gov/label" target="_blank" rel="noopener noreferrer" title="FDA label">🌐W1</a>'
+    );
+  });
+
+  it("leaves unknown or unsafe literature markers as text", () => {
+    const html = renderEvidenceHtml("x [P9] y [W2] z [P1]", notes);
+    expect(html).toContain("[P9]");
+    expect(html).toContain("[W2]");
+    expect(html).toContain("[P1]");
+    expect(renderEvidenceHtml("[W2]", notes, literature)).not.toContain("javascript");
+  });
+
+  it("shows a textbook badge for notes backed by a book", () => {
+    const withBook = [{ ...notes[0]!, book: { title: "Cosmetic Dermatology Principles", page: 212, claimId: "c 1" } }];
+    const html = renderEvidenceHtml("교과서 [1]", withBook);
+    expect(html).toContain(
+      '<a class="ev ev-book" href="/entries/id-1#claim-c%201" title="📚1 피코토닝 &quot;기미&quot; 프로토콜">📖<i>Cosmetic Dermatology Pr…</i> p.212</a>'
+    );
+    const draft = [{ ...notes[2]!, book: { title: "Book" } }];
+    expect(renderEvidenceHtml("[3]", draft)).toContain("🤖AI");
+  });
+
+  it("collects cited literature numbers", () => {
+    expect(citedLiterature("a [P2][P1] b [W1] [P2] [1] [AI]")).toEqual({ papers: [1, 2], web: [1] });
+  });
+
+  it("spells literature markers out in note text", () => {
+    expect(toPlainNoteText("효과 있음 [P1][W1]", new Set(), literature)).toBe("효과 있음 (PMID 38000001) (fda.gov)");
+    expect(toPlainNoteText("모름 [P7]", new Set(), literature)).toBe("모름");
   });
 });

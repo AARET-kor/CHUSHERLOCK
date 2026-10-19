@@ -1867,7 +1867,7 @@ describe("literature badges", () => {
     const withBook = [{ ...notes[0]!, book: { title: "Cosmetic Dermatology Principles", page: 212, claimId: "c 1" } }];
     const html = renderEvidenceHtml("교과서 [1]", withBook);
     expect(html).toContain(
-      '<a class="ev ev-book" href="/entries/id-1#claim-c%201" title="📚1 피코토닝 &quot;기미&quot; 프로토콜">📖<i>Cosmetic Dermatology P…</i> p.212</a>'
+      '<a class="ev ev-book" href="/entries/id-1#claim-c%201" title="📚1 피코토닝 &quot;기미&quot; 프로토콜">📖<i>Cosmetic Dermatology Pr…</i> p.212</a>'
     );
     const draft = [{ ...notes[2]!, book: { title: "Book" } }];
     expect(renderEvidenceHtml("[3]", draft)).toContain("🤖AI");
