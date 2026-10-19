@@ -34,6 +34,30 @@ and 목차, not just local text — then proposes one note per topic with
 category, tier, tags, and source location. You review/edit each suggestion
 before it's saved; nothing enters the knowledge base unreviewed.
 
+### 🧭 Anatomy map (injection / cannula cases)
+
+When a case's procedures are fillers, filler dissolving, collagen
+stimulators (쥬베룩 볼륨 · 엘란쎄 · 스컬트라 …), thread lifts or injectable
+skin boosters, BBIP shows a 🧭 해부 지도 card right away — no AI call. The
+procedure and region words in the chips pick one of eight regions
+(이마·미간, 관자, 코, 눈밑·눈물고랑, 중안면·볼, 팔자, 입술·입가, 턱·턱선).
+The card has a face map with 정면 / 45° / 측면 tabs and toggleable layers,
+a depth cross-section with the recommended plane, a risk-sorted structure
+table and anatomy figures from your own notes. Botox cases show the muscle
+layer only. The model never draws positions. Coordinates come from the
+curated atlas in `lib/bbip/anatomy/atlas.ts`: the front view is
+hand-authored and the 45°/lateral views are projected from it. The prompt
+only gets each structure's id, name, depth and risk. A model mention like
+`{{atlas:angular-artery}}` becomes a chip that highlights that structure,
+and unknown ids stay plain text.
+
+**Reviewing the atlas:** every structure ships as a draft and shows
+"원장 검토 전 초안". After you check a structure's course, depth, risk and
+safe-technique text (and its front-view position), set `reviewedBy` and
+`reviewedAt` on that entry in `lib/bbip/anatomy/atlas.ts`. The badge then
+disappears. `npm test` checks the atlas's integrity (ids, depths, risks,
+region references).
+
 This is a **separate project** from `TIKIDOC_platform` (the clinic
 booking/consultation-prep app) — no code or infra is shared.
 
@@ -365,6 +389,7 @@ lib/
     classify.ts               chunk-by-chunk AI classification (implemented)
   bbip/                    BBIP chairside assistant (parse, flags, prompts,
                            context, generate, runTurn, evidence, promote)
+    anatomy/               curated atlas, regions, view projection, tokens
 tests/                       Vitest: taxonomy, entrySchemas, overlap, markdown-export
 ```
 
