@@ -30,7 +30,7 @@ export function LiteratureFootnoteItems({
     <>
       {papers.map(({ n, paper }) => (
         <li key={`P${n}`} className="flex gap-2.5">
-          <span className="w-5 shrink-0 text-right font-mono text-[11px] text-[#1d4e89]">P{n}</span>
+          <span className="w-5 shrink-0 text-right font-mono text-[12.5px] text-[#1d4e89]">P{n}</span>
           <span className="min-w-0">
             <a
               href={pubmedUrl(paper.pmid)}
@@ -51,7 +51,7 @@ export function LiteratureFootnoteItems({
       ))}
       {web.map(({ n, hit }) => (
         <li key={`W${n}`} className="flex gap-2.5">
-          <span className="w-5 shrink-0 text-right font-mono text-[11px] text-[#5b3a8c]">W{n}</span>
+          <span className="w-5 shrink-0 text-right font-mono text-[12.5px] text-[#5b3a8c]">W{n}</span>
           <span className="min-w-0">
             <a href={hit.url} target="_blank" rel="noopener noreferrer" className="text-ink underline-offset-4 hover:underline">
               {hit.title}
@@ -68,9 +68,9 @@ export function LiteratureFootnoteItems({
 export function LiteratureSearchNote({ block }: { block: LiteratureBlock }) {
   const failed = [block.errors.pubmed, block.errors.web].filter(Boolean);
   return (
-    <p className="mt-4 break-words text-[12px] leading-relaxed text-ink/65">
-      검색어 — PubMed: <span className="font-mono text-[11px]">{block.pubmedQuery || "없음"}</span> · 웹:{" "}
-      <span className="font-mono text-[11px]">{block.webQuery || "없음"}</span>
+    <p className="mt-4 break-words text-[14px] leading-relaxed text-ink/65">
+      검색어 — PubMed: <span className="font-mono text-[12.5px]">{block.pubmedQuery || "없음"}</span> · 웹:{" "}
+      <span className="font-mono text-[12.5px]">{block.webQuery || "없음"}</span>
       {failed.length > 0 && (
         <span className="text-[#8a5a00]"> · {failed.join(" ")} 다른 출처 결과로 정리했습니다.</span>
       )}
@@ -88,18 +88,18 @@ export function LiteratureIndexItem({
 }) {
   return (
     <div className="mt-7">
-      <p className="mb-1 text-[11.5px] font-medium text-ink/65">문헌</p>
+      <p className="mb-1 text-[13px] font-medium text-ink/65">문헌</p>
       <button
         type="button"
         disabled={opened}
         onClick={() => onRequest({ kind: "literature" })}
         className="group flex w-full items-baseline justify-between gap-3 border-b border-ink/[0.08] py-2.5 text-left transition disabled:cursor-default"
       >
-        <span className="text-[14.5px] text-ink underline-offset-4 group-hover:underline group-disabled:text-ink/35 group-disabled:no-underline">
+        <span className="text-[16.5px] text-ink underline-offset-4 group-hover:underline group-disabled:text-ink/35 group-disabled:no-underline">
           문헌 근거 찾기
-          <span className="ml-2 text-[12px] text-ink/65 group-disabled:text-ink/35">PubMed · 의학 웹, 누를 때만 검색</span>
+          <span className="ml-2 text-[14px] text-ink/65 group-disabled:text-ink/35">PubMed · 의학 웹, 누를 때만 검색</span>
         </span>
-        <span aria-hidden="true" className="font-mono text-[11px] text-ink/30 transition group-hover:text-ink">
+        <span aria-hidden="true" className="font-mono text-[12.5px] text-ink/30 transition group-hover:text-ink">
           {opened ? "열림" : "→"}
         </span>
       </button>

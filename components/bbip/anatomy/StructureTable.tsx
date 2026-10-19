@@ -68,23 +68,23 @@ export function StructureTable({
                       <span className="block font-semibold text-inkdeep underline-offset-4 group-hover:underline">
                         {s.ko}
                       </span>
-                      <span className="block text-[12px] text-ink/65">{s.en}</span>
+                      <span className="block text-[14px] text-ink/65">{s.en}</span>
                     </span>
                   </button>
                 </td>
                 <td className="max-w-[200px] text-ink/80">{s.course}</td>
                 <td className="max-w-[180px]">
                   {depthText(s)}
-                  <span className="block text-[12px] text-ink/65">{s.depthNote}</span>
+                  <span className="block text-[14px] text-ink/65">{s.depthNote}</span>
                 </td>
                 <td className="max-w-[170px]">
                   <RiskText risk={s.risk} />
-                  <span className="block text-[12px] text-ink/70">{s.riskNote}</span>
+                  <span className="block text-[14px] text-ink/70">{s.riskNote}</span>
                 </td>
                 <td className="max-w-[210px] text-ink/80">{s.safeTechnique}</td>
                 <td>
                   <ReviewBadge structure={s} />
-                  <span className="block text-[12px] text-ink/65">
+                  <span className="block text-[14px] text-ink/65">
                     BBIP 아틀라스
                     {related.map((note) => (
                       <Link key={note.id} href={`/entries/${note.id}`} title={note.title} className="ev ev-note">

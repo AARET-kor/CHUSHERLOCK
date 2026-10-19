@@ -143,7 +143,7 @@ function AnatomyMap({
       <div ref={bodyRef} className="scroll-mt-6">
         <div className="mb-5 space-y-2 border-b border-ink/10 pb-4">
           <div role="group" aria-label="부위" className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
-            <span className="w-8 shrink-0 text-[12px] text-ink/65">부위</span>
+            <span className="w-8 shrink-0 text-[14px] text-ink/65">부위</span>
             {plan.regions.map((key) => (
               <button
                 key={key}
@@ -161,7 +161,7 @@ function AnatomyMap({
           </div>
           {plan.categories.length > 1 && (
             <div role="group" aria-label="시술" className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
-              <span className="w-8 shrink-0 text-[12px] text-ink/65">시술</span>
+              <span className="w-8 shrink-0 text-[14px] text-ink/65">시술</span>
               {plan.categories.map((c) => (
                 <button
                   key={c}
@@ -177,8 +177,8 @@ function AnatomyMap({
           )}
         </div>
 
-        <h3 className="mb-4 font-serifa text-[20px] font-bold leading-snug text-inkdeep">
-          {regionDef.ko} <span className="font-sans text-[13px] font-normal text-ink/65">{regionDef.en}</span>
+        <h3 className="mb-4 font-serifa text-[23px] font-bold leading-snug text-inkdeep">
+          {regionDef.ko} <span className="font-sans text-[15px] font-normal text-ink/65">{regionDef.en}</span>
         </h3>
 
         <div className="space-y-12">

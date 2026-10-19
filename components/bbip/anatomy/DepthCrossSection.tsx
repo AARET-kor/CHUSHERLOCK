@@ -57,8 +57,8 @@ export function DepthCrossSection({
   return (
     <figure className="min-w-0">
       <figcaption className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-serifa text-[15px] font-bold text-inkdeep">깊이 단면 · {regionLabel}</span>
-        <span className="text-[12px] text-[#0f5132]">
+        <span className="font-serifa text-[17px] font-bold text-inkdeep">깊이 단면 · {regionLabel}</span>
+        <span className="text-[14px] text-[#0f5132]">
           {CATEGORY_LABELS[category]} 권장 평면: {plane.depths.length ? planeLabel : "없음"}
         </span>
       </figcaption>
@@ -67,7 +67,7 @@ export function DepthCrossSection({
           viewBox={`0 0 ${W} ${H}`}
           role="group"
           aria-label={`${regionLabel} 깊이 단면도 — 권장 평면 ${planeLabel || "없음"}`}
-          className="block h-auto w-full"
+          className="mx-auto block h-auto w-full max-w-[760px]"
         >
           {bands.map((b) => (
             <g key={b.key}>
@@ -159,17 +159,17 @@ export function DepthCrossSection({
             );
           })}
         </svg>
-        <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[12px] text-ink/80">
+        <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[14px] text-ink/80">
           {cols.map((s, i) => (
             <li key={s.id} className="flex min-w-0 items-center gap-1.5">
-              <span className="w-4 text-right font-mono text-[11px] text-ink/65">{i + 1}</span>
+              <span className="w-4 text-right font-mono text-[12.5px] text-ink/65">{i + 1}</span>
               <span aria-hidden="true" className="h-2 w-2 shrink-0" style={{ background: layerColor(s.layer) }} />
               <span className="truncate">{s.ko}</span>
             </li>
           ))}
         </ol>
       </div>
-      <p className="mt-2 text-[12px] leading-relaxed text-ink/70">
+      <p className="mt-2 text-[14px] leading-relaxed text-ink/70">
         <span className="text-[#0f5132]">초록 띠</span>는 권장 주입·삽입 평면입니다. {plane.note}
       </p>
     </figure>

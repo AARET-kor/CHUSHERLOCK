@@ -18,14 +18,14 @@ export function SheetSection({
   return (
     <section
       aria-labelledby={id}
-      className={`animate-fade-in-up grid gap-x-10 gap-y-4 border-t border-ink/10 pb-10 pt-7 md:grid-cols-[160px_minmax(0,1fr)] ${className}`}
+      className={`animate-fade-in-up grid gap-x-14 gap-y-4 border-t border-ink/10 pb-12 pt-8 md:grid-cols-[190px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)] ${className}`}
     >
       <header className="md:pt-0.5">
-        <p className="font-mono text-[11px] tabular-nums text-ink/45">{index}</p>
-        <h2 id={id} className="mt-1 break-keep font-serifa text-[17px] font-bold leading-snug text-inkdeep">
+        <p className="font-mono text-[12.5px] tabular-nums text-ink/45">{index}</p>
+        <h2 id={id} className="mt-1 break-keep font-serifa text-[19.5px] font-bold leading-snug text-inkdeep">
           {label}
         </h2>
-        {note && <div className="mt-2 text-[11.5px] leading-relaxed text-ink/60">{note}</div>}
+        {note && <div className="mt-2 text-[13px] leading-relaxed text-ink/60">{note}</div>}
       </header>
       <div className="min-w-0">{children}</div>
     </section>

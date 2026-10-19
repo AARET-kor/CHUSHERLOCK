@@ -60,12 +60,12 @@ export function CaseInput({
           rows={1}
           autoFocus
           placeholder="40대 여성, 기미, 아스피린 복용, 피코토닝 희망"
-          className="bbip-line block resize-none overflow-hidden pb-3 font-serifa text-[21px] leading-[1.45] text-ink sm:text-[25px]"
+          className="bbip-line block resize-none overflow-hidden pb-3 font-serifa text-[24px] leading-[1.45] text-ink sm:text-[28.5px]"
         />
         <button
           type="submit"
           disabled={disabled || value.trim().length < 2}
-          className="mb-2 inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-ink px-5 text-[13px] font-semibold tracking-wide text-white transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(5,26,36,0.22)] disabled:translate-y-0 disabled:bg-ink/25 disabled:shadow-none"
+          className="mb-2 inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-ink px-5 text-[15px] font-semibold tracking-wide text-white transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(5,26,36,0.22)] disabled:translate-y-0 disabled:bg-ink/25 disabled:shadow-none"
         >
           {disabled ? "분석 중…" : "BBIP"}
           {disabled ? (
@@ -75,7 +75,7 @@ export function CaseInput({
           )}
         </button>
       </div>
-      <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11.5px] text-ink/65">
+      <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-ink/65">
         <span>Enter 보내기 · Shift+Enter 줄바꿈</span>
         <span>이름·연락처는 쓰지 마세요 — 원문은 저장되지 않습니다</span>
       </p>

@@ -34,7 +34,7 @@ export function sortByRisk<T extends Pick<AtlasStructure, "risk">>(items: T[]): 
 
 /** Text toggle in the sheet's language: underlined when on. */
 export function textToggleClass(on: boolean): string {
-  return `whitespace-nowrap text-[13px] underline-offset-[6px] transition ${
+  return `whitespace-nowrap text-[15px] underline-offset-[6px] transition ${
     on
       ? "font-semibold text-inkdeep underline decoration-inkdeep decoration-[1.5px]"
       : "text-ink/65 hover:text-ink hover:underline hover:decoration-ink/30"

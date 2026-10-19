@@ -39,7 +39,7 @@ export function TurnCard({
   return (
     <article aria-busy={streaming} className="min-w-0">
       {title && (
-        <h3 className="mb-4 break-keep font-serifa text-[20px] font-bold leading-snug text-inkdeep sm:text-[22px]">
+        <h3 className="mb-4 break-keep font-serifa text-[23px] font-bold leading-snug text-inkdeep sm:text-[25.5px]">
           {title}
         </h3>
       )}
@@ -48,13 +48,13 @@ export function TurnCard({
       {/* literature hook */}
       {turn.kind === "literature" && turn.status === "done" && literature && <LiteratureSearchNote block={literature} />}
       {streaming && (
-        <p className="bbip-caret mt-1 text-[12px] text-ink/50">
+        <p className="bbip-caret mt-1 text-[14px] text-ink/50">
           {turn.output ? "작성 중" : "근거를 모으는 중"}
         </p>
       )}
 
       {turn.status === "failed" && (
-        <p role="alert" className="mt-3 text-[13.5px] leading-relaxed text-red-800">
+        <p role="alert" className="mt-3 text-[15.5px] leading-relaxed text-red-800">
           {turn.error ?? "생성에 실패했습니다."}{" "}
           <button
             type="button"
@@ -68,11 +68,11 @@ export function TurnCard({
 
       {done && (
         <footer className="mt-6 flex flex-col gap-4 border-t border-ink/10 pt-4 sm:flex-row sm:items-start sm:justify-between">
-          <ol className="min-w-0 space-y-1.5 text-[12.5px] leading-snug text-ink/70">
+          <ol className="min-w-0 space-y-1.5 text-[14.5px] leading-snug text-ink/70">
             {cited.map((note) => (
               <li key={note.id} className="flex gap-2.5">
                 <span
-                  className={`w-5 shrink-0 text-right font-mono text-[11px] ${
+                  className={`w-5 shrink-0 text-right font-mono text-[12.5px] ${
                     note.verified ? "text-[#0f5132]" : "italic text-[#8a5a00]"
                   }`}
                 >
@@ -98,7 +98,7 @@ export function TurnCard({
             <LiteratureFootnoteItems markdown={turn.output} literature={literature} />
             {hasAi && (
               <li className="flex gap-2.5">
-                <span className="w-5 shrink-0 text-right font-mono text-[11px] italic text-[#8a5a00]">AI</span>
+                <span className="w-5 shrink-0 text-right font-mono text-[12.5px] italic text-[#8a5a00]">AI</span>
                 <span>내 노트에 없는 일반 지식 — 수치·용량은 IFU와 허가사항으로 확인하세요.</span>
               </li>
             )}
@@ -107,7 +107,7 @@ export function TurnCard({
             {turn.promotedEntryId ? (
               <Link
                 href={`/entries/${turn.promotedEntryId}`}
-                className="whitespace-nowrap text-[12.5px] font-medium text-[#0f5132] underline decoration-[#0f5132]/30 underline-offset-4 hover:decoration-[#0f5132]"
+                className="whitespace-nowrap text-[14.5px] font-medium text-[#0f5132] underline decoration-[#0f5132]/30 underline-offset-4 hover:decoration-[#0f5132]"
               >
                 노트에 저장됨 →
               </Link>
@@ -115,7 +115,7 @@ export function TurnCard({
               <button
                 type="button"
                 onClick={() => onPromote(turn.id!)}
-                className="whitespace-nowrap text-[12.5px] font-medium text-ink underline decoration-ink/30 underline-offset-4 transition hover:decoration-ink"
+                className="whitespace-nowrap text-[14.5px] font-medium text-ink underline decoration-ink/30 underline-offset-4 transition hover:decoration-ink"
               >
                 노트로 저장
               </button>

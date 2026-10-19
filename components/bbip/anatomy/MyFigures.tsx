@@ -32,8 +32,8 @@ export function MyFigures({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="mt-8 border-t border-ink/10 pt-5">
-      <p className="mb-3 font-serifa text-[15px] font-bold text-inkdeep">
-        내 자료 그림 <span className="font-sans text-[12px] font-normal text-ink/65">{figures.length}점</span>
+      <p className="mb-3 font-serifa text-[17px] font-bold text-inkdeep">
+        내 자료 그림 <span className="font-sans text-[14px] font-normal text-ink/65">{figures.length}점</span>
       </p>
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {figures.map((figure) => (
@@ -49,7 +49,7 @@ export function MyFigures({ sessionId }: { sessionId: string }) {
                 loading="lazy"
                 className="aspect-[4/3] w-full border border-ink/10 bg-white object-contain transition group-hover:border-ink/30"
               />
-              <span className="mt-1.5 line-clamp-2 block text-[12px] leading-snug text-ink/75">
+              <span className="mt-1.5 line-clamp-2 block text-[14px] leading-snug text-ink/75">
                 {figure.caption}
               </span>
             </button>
@@ -69,11 +69,11 @@ export function MyFigures({ sessionId }: { sessionId: string }) {
         {open && (
           <div className="p-5">
             <div className="mb-3 flex items-start justify-between gap-3">
-              <p className="font-serifa text-[15px] font-bold text-inkdeep">{open.caption}</p>
+              <p className="font-serifa text-[17px] font-bold text-inkdeep">{open.caption}</p>
               <button
                 type="button"
                 onClick={() => setOpen(null)}
-                className="shrink-0 text-[12.5px] text-ink/70 underline decoration-ink/30 underline-offset-4 hover:text-ink"
+                className="shrink-0 text-[14.5px] text-ink/70 underline decoration-ink/30 underline-offset-4 hover:text-ink"
               >
                 닫기
               </button>
@@ -81,7 +81,7 @@ export function MyFigures({ sessionId }: { sessionId: string }) {
             <img src={`/api/figures/${open.id}`} alt={open.caption} className="max-h-[70vh] w-full object-contain" />
             <Link
               href={`/entries/${open.entryId}`}
-              className="mt-4 inline-block text-[12.5px] font-medium text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
+              className="mt-4 inline-block text-[14.5px] font-medium text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
             >
               원 노트 열기: {open.entryTitle}
             </Link>

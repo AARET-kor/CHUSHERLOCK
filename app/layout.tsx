@@ -25,7 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen">
         <AppNav due={due} />
 
-        <main className="mx-auto max-w-5xl px-4 py-8 pb-32 sm:px-6 sm:py-10">{children}</main>
+        <main className="mx-auto max-w-[1360px] px-5 py-8 pb-32 sm:px-8 sm:py-12 lg:px-12">{children}</main>
 
         <KnowledgePill />
       </body>

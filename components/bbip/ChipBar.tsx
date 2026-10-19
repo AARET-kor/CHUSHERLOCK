@@ -51,18 +51,18 @@ export function ChipBar({
       <dl className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
         {CHIP_GROUPS.map((g) => (
           <div key={g.key} className="min-w-0">
-            <dt className="mb-2 text-[11.5px] font-medium text-ink/65">{g.label}</dt>
+            <dt className="mb-2 text-[13px] font-medium text-ink/65">{g.label}</dt>
             <dd className="flex flex-col items-start gap-1">
-              {chips[g.key].length === 0 && <span className="text-[15px] text-ink/25">—</span>}
+              {chips[g.key].length === 0 && <span className="text-[17px] text-ink/25">—</span>}
               {chips[g.key].map((item, index) => (
                 <span key={`${g.key}-${index}`} className="group inline-flex max-w-full items-baseline gap-1.5">
-                  <span className="break-words text-[15px] leading-snug text-ink">{item}</span>
+                  <span className="break-words text-[17px] leading-snug text-ink">{item}</span>
                   <button
                     type="button"
                     aria-label={`${item} 삭제`}
                     disabled={disabled || total <= 1}
                     onClick={() => remove(g.key, index)}
-                    className="text-[13px] leading-none text-ink/25 transition hover:text-red-700 focus-visible:text-red-700 disabled:opacity-0"
+                    className="text-[15px] leading-none text-ink/25 transition hover:text-red-700 focus-visible:text-red-700 disabled:opacity-0"
                   >
                     ×
                   </button>
@@ -91,7 +91,7 @@ export function ChipBar({
             id="chip-group"
             value={group}
             onChange={(e) => setGroup(e.target.value as keyof ParsedCase)}
-            className="bbip-line !w-auto pb-1.5 text-[13px] text-ink"
+            className="bbip-line !w-auto pb-1.5 text-[15px] text-ink"
           >
             {CHIP_GROUPS.map((g) => (
               <option key={g.key} value={g.key}>
@@ -113,20 +113,20 @@ export function ChipBar({
             maxLength={40}
             autoFocus
             placeholder="추가할 항목"
-            className="bbip-line !w-48 pb-1.5 text-[14px] text-ink"
+            className="bbip-line !w-48 pb-1.5 text-[16px] text-ink"
           />
           <button
             type="submit"
             disabled={disabled || groupFull || !draft.trim()}
-            className="pb-1.5 text-[13px] font-semibold text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink disabled:text-ink/30 disabled:no-underline"
+            className="pb-1.5 text-[15px] font-semibold text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink disabled:text-ink/30 disabled:no-underline"
           >
             추가
           </button>
-          <button type="button" onClick={cancel} className="pb-1.5 text-[13px] text-ink/65 hover:text-ink">
+          <button type="button" onClick={cancel} className="pb-1.5 text-[15px] text-ink/65 hover:text-ink">
             취소
           </button>
           {groupFull && (
-            <span role="status" className="pb-1.5 text-[12px] text-amber-800">
+            <span role="status" className="pb-1.5 text-[14px] text-amber-800">
               칩은 그룹당 최대 {MAX_PER_GROUP}개입니다.
             </span>
           )}
@@ -136,7 +136,7 @@ export function ChipBar({
           type="button"
           disabled={disabled || firstOpen === null}
           onClick={() => setGroup(chips.conditions.length < MAX_PER_GROUP ? "conditions" : firstOpen)}
-          className="mt-5 text-[12.5px] text-ink/60 underline decoration-ink/20 underline-offset-4 transition hover:text-ink hover:decoration-ink disabled:opacity-40"
+          className="mt-5 text-[14.5px] text-ink/60 underline decoration-ink/20 underline-offset-4 transition hover:text-ink hover:decoration-ink disabled:opacity-40"
         >
           + 칩 추가
         </button>

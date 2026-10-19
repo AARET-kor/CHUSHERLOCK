@@ -15,15 +15,15 @@ export function RecentCases({
   return (
     <aside aria-labelledby="bbip-recent" className="md:pt-1">
       <div className="flex items-baseline justify-between border-b border-ink/20 pb-2">
-        <h2 id="bbip-recent" className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink">
+        <h2 id="bbip-recent" className="font-mono text-[11.5px] font-bold uppercase tracking-[0.2em] text-ink">
           Recent
         </h2>
-        <Link href="/" className="text-[12px] text-ink underline-offset-4 hover:underline">
+        <Link href="/" className="text-[14px] text-ink underline-offset-4 hover:underline">
           ＋ 새 케이스
         </Link>
       </div>
       {sessions.length === 0 ? (
-        <p className="py-3 text-[12px] text-ink/65">아직 기록이 없습니다.</p>
+        <p className="py-3 text-[14px] text-ink/65">아직 기록이 없습니다.</p>
       ) : (
         <ul>
           {sessions.slice(0, 5).map((session) => {
@@ -37,13 +37,13 @@ export function RecentCases({
                   className="group block py-2.5"
                 >
                   <span
-                    className={`block truncate text-[13px] underline-offset-4 group-hover:underline ${
+                    className={`block truncate text-[15px] underline-offset-4 group-hover:underline ${
                       active ? "font-semibold text-inkdeep" : "text-ink/80"
                     }`}
                   >
                     {chipSummary(session.chips) || "케이스"}
                   </span>
-                  <span className="font-mono text-[10px] text-ink/50">
+                  <span className="font-mono text-[11.5px] text-ink/50">
                     {formatSessionTime(session.createdAt)}
                     {contra && <span className="text-red-800"> · 금기</span>}
                   </span>
@@ -55,7 +55,7 @@ export function RecentCases({
       )}
       <Link
         href="/cases"
-        className="mt-3 inline-block text-[12px] text-ink/60 transition hover:text-ink"
+        className="mt-3 inline-block text-[14px] text-ink/60 transition hover:text-ink"
       >
         전체 기록 →
       </Link>

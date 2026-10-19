@@ -155,7 +155,7 @@ function DepthStrip({ structure }: { structure: AtlasStructure }) {
       {DEPTHS.map((depth, i) => (
         <li
           key={depth.key}
-          className="px-1 py-1.5 text-center text-[10px] leading-tight"
+          className="px-1 py-1.5 text-center text-[11.5px] leading-tight"
           style={
             on.has(i)
               ? { background: color, color: structure.layer === "nerves" ? "#3d2a00" : "#ffffff", fontWeight: 600 }
@@ -183,7 +183,7 @@ function StructureDetail({
   return (
     <div className="animate-fade-in-up">
       <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 text-[12px] text-ink/70">
+        <p className="flex items-center gap-2 text-[14px] text-ink/70">
           <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: layer?.color }} />
           {layer?.ko}
           <span className="text-ink/30">·</span>
@@ -193,33 +193,33 @@ function StructureDetail({
           <button
             type="button"
             onClick={onClose}
-            className="text-[12px] text-ink/65 underline decoration-ink/30 underline-offset-4 hover:text-ink"
+            className="text-[14px] text-ink/65 underline decoration-ink/30 underline-offset-4 hover:text-ink"
           >
             닫기
           </button>
         )}
       </div>
-      <h4 className="mt-2 font-serifa text-[23px] font-bold leading-tight text-inkdeep">{structure.ko}</h4>
-      <p className="text-[12.5px] italic text-ink/60">{structure.en}</p>
+      <h4 className="mt-2 font-serifa text-[26.5px] font-bold leading-tight text-inkdeep">{structure.ko}</h4>
+      <p className="text-[14.5px] italic text-ink/60">{structure.en}</p>
 
-      <dl className="mt-5 space-y-4 text-[13.5px] leading-relaxed text-ink/85">
+      <dl className="mt-5 space-y-4 text-[15.5px] leading-relaxed text-ink/85">
         <div>
-          <dt className="text-[11.5px] font-semibold text-ink/65">{flowLabel ? `주행 · ${flowLabel}` : "위치"}</dt>
+          <dt className="text-[13px] font-semibold text-ink/65">{flowLabel ? `주행 · ${flowLabel}` : "위치"}</dt>
           <dd className="mt-0.5">{structure.course}</dd>
         </div>
         <div>
-          <dt className="text-[11.5px] font-semibold text-ink/65">깊이</dt>
+          <dt className="text-[13px] font-semibold text-ink/65">깊이</dt>
           <dd>
             <DepthStrip structure={structure} />
-            <p className="mt-1.5 text-[12.5px] text-ink/70">{structure.depthNote}</p>
+            <p className="mt-1.5 text-[14.5px] text-ink/70">{structure.depthNote}</p>
           </dd>
         </div>
         <div className="border-l-2 border-[#e0262c] pl-3">
-          <dt className="text-[11.5px] font-semibold text-[#b42318]">잘못되면</dt>
+          <dt className="text-[13px] font-semibold text-[#b42318]">잘못되면</dt>
           <dd className="mt-0.5 text-inkdeep">{structure.riskNote}</dd>
         </div>
         <div>
-          <dt className="text-[11.5px] font-semibold text-ink/65">안전 술기</dt>
+          <dt className="text-[13px] font-semibold text-ink/65">안전 술기</dt>
           <dd className="mt-0.5">{structure.safeTechnique}</dd>
         </div>
       </dl>
@@ -241,7 +241,7 @@ function StructureList({
 }) {
   return (
     <div>
-      <p className="text-[12.5px] leading-relaxed text-ink/70">
+      <p className="text-[14.5px] leading-relaxed text-ink/70">
         지도나 목록에서 혈관·신경을 가리키면 나머지가 흐려집니다. 눌러서 고정하고, Esc로 해제하세요.
       </p>
       <ul className="mt-4 border-t border-ink/10">
@@ -261,7 +261,7 @@ function StructureList({
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{ background: layerColor(s.layer), boxShadow: `0 0 0 1px ${casingOf(s.layer)}` }}
               />
-              <span className="min-w-0 flex-1 truncate text-[13.5px] text-ink underline-offset-4 group-hover:underline">
+              <span className="min-w-0 flex-1 truncate text-[15.5px] text-ink underline-offset-4 group-hover:underline">
                 {s.ko}
               </span>
               <RiskText risk={s.risk} />
@@ -391,7 +391,7 @@ export function FaceMap({
                 type="button"
                 aria-pressed={on}
                 onClick={() => onToggleLayer(layer.key)}
-                className={`inline-flex items-center gap-1.5 text-[12px] transition ${
+                className={`inline-flex items-center gap-1.5 text-[14px] transition ${
                   on ? "text-inkdeep" : "text-ink/65 hover:text-ink"
                 }`}
               >
@@ -410,14 +410,14 @@ export function FaceMap({
           })}
         </div>
       </div>
-      {plan.muscleOnly && <p className="mb-3 text-[12px] text-ink/70">보톡스 케이스라 근육 레이어만 표시합니다.</p>}
+      {plan.muscleOnly && <p className="mb-3 text-[14px] text-ink/70">보톡스 케이스라 근육 레이어만 표시합니다.</p>}
 
       <div className="grid gap-x-8 gap-y-6 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
         <div
           id={panelId}
           role="tabpanel"
           aria-labelledby={`${uid}-tab-${view}`}
-          className="relative mx-auto w-full max-w-[400px] rounded-[18px] bg-[#fbf7f2]"
+          className="relative mx-auto w-full max-w-[560px] rounded-[20px] bg-[#fbf7f2]"
         >
           <svg
             viewBox={`0 0 ${W} ${H}`}
@@ -556,7 +556,7 @@ export function FaceMap({
       <p aria-live="polite" className="sr-only">
         {shown ? `${shown.ko}: ${shown.course}. 잘못되면 — ${shown.riskNote}` : ""}
       </p>
-      <p className="mt-3 text-[11.5px] leading-relaxed text-ink/65">
+      <p className="mt-3 text-[13px] leading-relaxed text-ink/65">
         도식입니다. 실제 주행과 깊이는 개인차가 크니 시술 전 촉진·초음파로 확인하세요.
       </p>
     </div>

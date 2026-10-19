@@ -5,7 +5,7 @@ import { isReviewed, type AtlasStructure } from "../../../lib/bbip/anatomy/atlas
 export function ReviewBadge({ structure }: { structure: Pick<AtlasStructure, "reviewedBy" | "reviewedAt"> }) {
   if (isReviewed(structure)) {
     return (
-      <span title={`${structure.reviewedBy} · ${structure.reviewedAt}`} className="whitespace-nowrap text-[11.5px] text-[#0f5132]">
+      <span title={`${structure.reviewedBy} · ${structure.reviewedAt}`} className="whitespace-nowrap text-[13px] text-[#0f5132]">
         원장 검토됨
       </span>
     );
@@ -13,7 +13,7 @@ export function ReviewBadge({ structure }: { structure: Pick<AtlasStructure, "re
   return (
     <span
       title="표준 해부학 지식으로 작성한 초안 — 원장이 검토하면 표시가 사라집니다"
-      className="whitespace-nowrap text-[11.5px] italic text-[#8a5a00]"
+      className="whitespace-nowrap text-[13px] italic text-[#8a5a00]"
     >
       원장 검토 전 초안
     </span>

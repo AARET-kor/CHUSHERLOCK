@@ -43,7 +43,7 @@ const KNOWLEDGE_LINKS = [
 
 function DueBadge({ due }: { due: number }) {
   return (
-    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[10px] font-bold text-white tabular-nums">
+    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[11.5px] font-bold text-white tabular-nums">
       {due > 99 ? "99+" : due}
     </span>
   );
@@ -61,11 +61,11 @@ export function AppNav({ due }: { due: number }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink/5 bg-white/85 backdrop-blur">
-      <nav aria-label="주 메뉴" className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+      <nav aria-label="주 메뉴" className="mx-auto flex max-w-[1360px] items-center justify-between gap-3 px-5 py-3.5 sm:px-8 sm:py-4 lg:px-12">
         <Link href="/" className="brand-link flex shrink-0 items-baseline gap-2 text-ink">
-          <span className="font-serifa text-xl font-bold tracking-tight sm:text-2xl">BBIP</span>
+          <span className="font-serifa text-2xl font-bold tracking-tight sm:text-[32px]">BBIP</span>
         </Link>
-        <div className="flex items-center gap-1 rounded-full bg-mist p-1 text-xs sm:text-sm">
+        <div className="flex items-center gap-1 rounded-full bg-mist p-1 text-[15.5px] sm:text-[17px]">
           {primary.map((item) => {
             const active = item.key === section;
             return (
@@ -90,8 +90,8 @@ export function AppNav({ due }: { due: number }) {
 
       {section === "knowledge" && (
         <nav aria-label="지식창고 메뉴" className="border-t border-ink/5 bg-white/70">
-          <div className="mobile-nav mx-auto flex max-w-5xl items-center gap-1 overflow-x-auto px-4 py-2 text-xs text-ink sm:px-6">
-            <span className="mr-2 shrink-0 font-mono text-[10px] uppercase tracking-[0.2em] text-ink/60">
+          <div className="mobile-nav mx-auto flex max-w-[1360px] items-center gap-1 overflow-x-auto px-5 py-2 text-[15px] text-ink sm:px-8 lg:px-12">
+            <span className="mr-2 shrink-0 font-mono text-[11.5px] uppercase tracking-[0.2em] text-ink/60">
               Knowledge
             </span>
             {KNOWLEDGE_LINKS.map((link) => {

@@ -14,6 +14,11 @@
   color: #51626b !important;
 }
 
+html {
+  /* A touch larger than the browser default — the app is read mid-consult. */
+  font-size: 17px;
+}
+
 body {
   background-color: #ffffff;
   color: #051a24;
@@ -446,7 +451,7 @@ a.ev-ai {
 
 /* Prose for briefs and opened sections — larger, airier than note-body. */
 .bbip-prose {
-  font-size: 15.5px;
+  font-size: 17.5px;
   line-height: 1.85;
   color: #0d212c;
 }
@@ -508,7 +513,7 @@ a.ev-ai {
   width: 100%;
   margin: 1em 0 1.2em;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 15px;
   line-height: 1.6;
 }
 .bbip-prose th {

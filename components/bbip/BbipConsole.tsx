@@ -217,10 +217,10 @@ export function BbipConsole({
       {/* Masthead — the case line, with recent cases in the right column. */}
       <section
         aria-labelledby="bbip-title"
-        className="grid gap-x-14 gap-y-10 pb-12 pt-2 md:grid-cols-[minmax(0,1fr)_210px] md:pt-6"
+        className="grid gap-x-20 gap-y-10 pb-14 pt-2 md:grid-cols-[minmax(0,1fr)_240px] md:pt-8 lg:grid-cols-[minmax(0,1fr)_300px]"
       >
         <div className="min-w-0">
-          <div className="mb-7 flex items-center gap-3 text-[12px] text-ink/60">
+          <div className="mb-7 flex items-center gap-3 text-[14px] text-ink/60">
             BBIP
             <span className="h-px w-12 bg-ink/25" />
             미용 GP 진료 비서
@@ -228,7 +228,7 @@ export function BbipConsole({
           <h1
             id="bbip-title"
             className={`break-keep leading-[1.08] tracking-tight text-ink transition-[font-size] duration-500 ${
-              session ? "text-[2rem] md:text-[2.6rem]" : "text-[2.6rem] md:text-[4rem]"
+              session ? "text-[2.3rem] md:text-[3rem]" : "text-[2.9rem] md:text-[4.6rem]"
             }`}
           >
             케이스를 적으면,
@@ -236,7 +236,7 @@ export function BbipConsole({
             <span className="font-serifa font-bold italic">핵심부터.</span>
           </h1>
           {!session && (
-            <p className="mt-5 max-w-[430px] text-[13.5px] leading-[1.75] text-ink/60">
+            <p className="mt-6 max-w-[540px] text-[15.5px] leading-[1.75] text-ink/60">
               한 줄 메모에서 금기와 주의를 먼저 짚고, 내 노트를 근거로 진료 전에 볼 것만 추려 드립니다.
             </p>
           )}
@@ -250,14 +250,14 @@ export function BbipConsole({
             />
           </div>
           {error && (
-            <p role="alert" className="mt-4 border-l-2 border-red-700 pl-3 text-[13.5px] text-red-800">
+            <p role="alert" className="mt-4 border-l-2 border-red-700 pl-3 text-[15.5px] text-red-800">
               {error}
             </p>
           )}
 
           {!session && (
-            <div className="mt-8 flex flex-wrap items-baseline gap-x-2 gap-y-2 text-[13px]">
-              <span className="mr-2 text-[11.5px] font-medium text-ink/65">예시</span>
+            <div className="mt-8 flex flex-wrap items-baseline gap-x-2 gap-y-2 text-[15px]">
+              <span className="mr-2 text-[13px] font-medium text-ink/65">예시</span>
               {EXAMPLES.map((example, i) => (
                 <span key={example} className="inline-flex items-baseline gap-2">
                   <button

@@ -84,8 +84,8 @@ export function PromoteDialog({
     }
   }
 
-  const fieldLabel = "block text-[11.5px] font-medium text-ink/65";
-  const field = "bbip-line mt-1.5 pb-1.5 text-[15px] text-ink";
+  const fieldLabel = "block text-[13px] font-medium text-ink/65";
+  const field = "bbip-line mt-1.5 pb-1.5 text-[17px] text-ink";
 
   return (
     <dialog
@@ -95,15 +95,15 @@ export function PromoteDialog({
       className="m-auto w-[calc(100%-2rem)] max-w-md rounded-[20px] bg-white p-0 shadow-[0_30px_80px_rgba(5,26,36,0.22)] backdrop:bg-inkdeep/30 backdrop:backdrop-blur-[2px]"
     >
       <div className="px-7 pb-6 pt-7">
-        <h2 id="promote-title" className="font-serifa text-[22px] font-bold text-inkdeep">
+        <h2 id="promote-title" className="font-serifa text-[25.5px] font-bold text-inkdeep">
           노트로 저장
         </h2>
-        <p className="mt-2 text-[12.5px] leading-relaxed text-ink/60">
+        <p className="mt-2 text-[14.5px] leading-relaxed text-ink/60">
           초안으로 저장되어 “검토 필요”로 표시됩니다. 검토 전까지 BBIP는 이 노트를{" "}
           <span className="italic text-[#8a5a00]">AI</span> 보충으로 취급합니다.
         </p>
 
-        {!loaded && !error && <p className="mt-6 text-[13px] text-ink/65">불러오는 중…</p>}
+        {!loaded && !error && <p className="mt-6 text-[15px] text-ink/65">불러오는 중…</p>}
         {loaded && (
           <div className="mt-6 space-y-5">
             <label className={fieldLabel}>
@@ -138,18 +138,18 @@ export function PromoteDialog({
         )}
 
         {error && (
-          <p role="alert" className="mt-4 text-[13px] text-red-800">
+          <p role="alert" className="mt-4 text-[15px] text-red-800">
             {error}
           </p>
         )}
 
         <div className="mt-8 flex items-center justify-end gap-5">
-          <button type="button" className="text-[13px] text-ink/60 transition hover:text-ink" onClick={cancel}>
+          <button type="button" className="text-[15px] text-ink/60 transition hover:text-ink" onClick={cancel}>
             취소
           </button>
           <button
             type="button"
-            className="inline-flex h-10 items-center rounded-full bg-ink px-6 text-[13px] font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(5,26,36,0.22)] disabled:translate-y-0 disabled:bg-ink/25 disabled:shadow-none"
+            className="inline-flex h-10 items-center rounded-full bg-ink px-6 text-[15px] font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(5,26,36,0.22)] disabled:translate-y-0 disabled:bg-ink/25 disabled:shadow-none"
             disabled={!loaded || saving || title.trim().length < 2}
             onClick={() => void save()}
           >
