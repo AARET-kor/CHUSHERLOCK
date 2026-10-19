@@ -53,6 +53,62 @@ function req(method: string, body?: unknown): Request {
 }
 
 describe("promote helpers", () => {
+  it("maps cited papers and web pages to sources with levels on their claims", () => {
+    const { session, turn } = makeDoneTurn(
+      "- 피코토닝은 MASI를 낮춘다 (메타분석) [P2]\n- 허가 범위 내 사용 [W1]\n- 일반적으로 반복 시술한다 [AI]\n- 미인용 논문은 빠진다"
+    );
+    const literature = {
+      pubmedQuery: "q",
+      webQuery: "w",
+      errors: {},
+      fetchedAt: "2026-10-19T00:00:00.000Z",
+      papers: [
+        { pmid: "1", title: "Uncited", authors: [], journal: "J", abstract: "", publicationTypes: [], level: "case" as const },
+        {
+          pmid: "38000001",
+          title: "Pico meta",
+          authors: ["Kim J", "Lee S", "Park H", "Choi Y"],
+          year: 2024,
+          journal: "JAAD",
+          abstract: "",
+          publicationTypes: ["Meta-Analysis"],
+          level: "meta" as const,
+        },
+      ],
+      web: [{ url: "https://www.fda.gov/label", title: "FDA label", snippet: "" }],
+    };
+    const input = promote.buildPromoteInput({
+      session: { ...session, literature },
+      turn,
+      notes: [],
+      title: "피코토닝 문헌",
+      categoryKey: "pico-toning",
+      tier: "deep_study",
+      today: "2026-10-19",
+    });
+    expect(input.sources).toEqual([
+      { type: "other", citation: "BBIP AI 보충 · fake · 2026-10-19" },
+      {
+        type: "paper",
+        citation: "Kim J, Lee S, Park H et al. (2024). Pico meta. JAAD. PMID 38000001",
+        url: "https://pubmed.ncbi.nlm.nih.gov/38000001/",
+        authors: "Kim J, Lee S, Park H et al.",
+        year: 2024,
+        evidenceLevel: "systematic_review",
+      },
+      { type: "website", citation: "FDA label — https://www.fda.gov/label", url: "https://www.fda.gov/label" },
+    ]);
+    expect(input.content).toContain("(PMID 38000001)");
+    expect(input.content).toContain("(fda.gov)");
+    expect(input.claims.map((c) => [c.sourceIndex, c.evidenceLevel])).toEqual([
+      [1, "systematic_review"],
+      [2, "unknown"],
+      [0, "unknown"],
+      [0, "unknown"],
+    ]);
+    expect(input.claims[0]!.claimText).toBe("피코토닝은 MASI를 낮춘다 (메타분석) (PMID 38000001)");
+  });
+
   it("builds draft input with relations, AI source and claims", () => {
     const { session, turn } = makeDoneTurn(
       "| 감별 | 포인트 |\n|---|---|\n| ABNOM | 양측성 회갈색 점 [1] |\n- 우드램프 소견 차이 확인 [AI]"

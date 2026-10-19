@@ -85,6 +85,13 @@
       "when": 1792318356598,
       "tag": "0011_pale_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1792412562348,
+      "tag": "0012_bbip_literature",
+      "breakpoints": true
     }
   ]
 }

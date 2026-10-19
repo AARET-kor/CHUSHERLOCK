@@ -9,19 +9,19 @@ import { fakeTurnText } from "../lib/bbip/generate";
 describe("atlas tokens", () => {
   it("renders known ids as focusable chips", () => {
     const html = renderEvidenceHtml("{{atlas:angular-artery}} 주의 [AI]", []);
-    expect(html).toContain('<button type="button" class="ev ev-atlas" data-atlas="angular-artery"');
-    expect(html).toContain("각동맥");
+    expect(html).toContain('<button type="button" class="atlas-ref" data-atlas="angular-artery"');
+    expect(html).toContain(">각동맥</button>");
   });
 
   it("drops unknown ids to plain text", () => {
     const html = renderEvidenceHtml("{{atlas:made-up-artery}} 근처", []);
-    expect(html).not.toContain("ev-atlas");
+    expect(html).not.toContain("atlas-ref");
     expect(html).toContain("made-up-artery");
     expect(html).not.toContain("{{");
   });
 
   it("leaves tokens inside code untouched", () => {
-    expect(renderEvidenceHtml("`{{atlas:angular-artery}}`", [])).not.toContain("ev-atlas");
+    expect(renderEvidenceHtml("`{{atlas:angular-artery}}`", [])).not.toContain("atlas-ref");
   });
 
   it("lists known ids and spells tokens out for notes", () => {

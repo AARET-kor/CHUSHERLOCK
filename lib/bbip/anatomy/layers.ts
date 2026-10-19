@@ -1,5 +1,5 @@
 // Shared vocabulary for the BBIP anatomy map. Framework-free; colors are
-// plain hex so both SVG and Tailwind-free contexts can use them.
+// plain hex so SVG can use them directly.
 
 export type ViewKey = "front" | "oblique" | "lateral";
 export const VIEWS: { key: ViewKey; ko: string; en: string }[] = [
@@ -13,16 +13,19 @@ export type LayerKey =
 
 export interface LayerDef { key: LayerKey; ko: string; en: string; color: string }
 
+// Ink line work on white; one red (arteries, danger zones), a muted slate
+// for veins and the sheet's ochre for nerves — the anatomical convention,
+// desaturated to sit on the consult sheet.
 export const LAYERS: LayerDef[] = [
-  { key: "arteries", ko: "동맥", en: "Arteries", color: "#dc2626" },
-  { key: "veins", ko: "정맥", en: "Veins", color: "#2563eb" },
-  { key: "nerves", ko: "신경", en: "Nerves", color: "#ca8a04" },
-  { key: "ducts", ko: "관", en: "Ducts", color: "#0d9488" },
-  { key: "muscles", ko: "근육", en: "Muscles", color: "#be185d" },
-  { key: "fat", ko: "지방구획", en: "Fat compartments", color: "#d97706" },
-  { key: "ligaments", ko: "인대", en: "Ligaments", color: "#7c3aed" },
-  { key: "danger", ko: "위험구역", en: "Danger zones", color: "#dc2626" },
-  { key: "entry", ko: "진입점·벡터", en: "Entry points", color: "#059669" },
+  { key: "arteries", ko: "동맥", en: "Arteries", color: "#b42318" },
+  { key: "veins", ko: "정맥", en: "Veins", color: "#3a5675" },
+  { key: "nerves", ko: "신경", en: "Nerves", color: "#8a5a00" },
+  { key: "ducts", ko: "관", en: "Ducts", color: "#33454e" },
+  { key: "muscles", ko: "근육", en: "Muscles", color: "#5b4a52" },
+  { key: "fat", ko: "지방구획", en: "Fat compartments", color: "#7a6a4f" },
+  { key: "ligaments", ko: "인대", en: "Ligaments", color: "#33454e" },
+  { key: "danger", ko: "위험구역", en: "Danger zones", color: "#b42318" },
+  { key: "entry", ko: "진입점·벡터", en: "Entry points", color: "#051a24" },
 ];
 
 /** Superficial → deep. */

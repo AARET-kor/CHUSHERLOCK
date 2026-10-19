@@ -2,32 +2,20 @@
 
 import { useMemo } from "react";
 import { renderEvidenceHtml } from "../../lib/bbip/evidence";
-import type { NoteRef } from "../../lib/bbip/types";
+import type { LiteratureBlock, NoteRef } from "../../lib/bbip/types";
 
-/** Markdown with [n]/[AI] markers rendered as evidence badges and
- * {{atlas:id}} tokens as anatomy-map chips. Raw HTML in the model output is
- * escaped inside renderEvidenceHtml. */
+/** Markdown with [n]/[P#]/[W#]/[AI] markers rendered as footnote
+ * superscripts. Raw HTML in the model output is escaped inside
+ * renderEvidenceHtml. */
 export function EvidenceMarkdown({
   markdown,
   notes,
-  onAtlas,
+  literature,
 }: {
   markdown: string;
   notes: NoteRef[];
-  onAtlas?: (id: string) => void;
+  literature?: LiteratureBlock;
 }) {
-  const html = useMemo(() => renderEvidenceHtml(markdown, notes), [markdown, notes]);
-  return (
-    // Click delegation for the rendered chips (they are real <button>s, so
-    // keyboard activation arrives here as a click too).
-    <div
-      className="note-body text-sm"
-      onClick={(event) => {
-        const chip = (event.target as HTMLElement).closest<HTMLElement>("[data-atlas]");
-        const id = chip?.dataset.atlas;
-        if (id && onAtlas) onAtlas(id);
-      }}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  );
+  const html = useMemo(() => renderEvidenceHtml(markdown, notes, literature), [markdown, notes, literature]);
+  return <div className="bbip-prose" dangerouslySetInnerHTML={{ __html: html }} />;
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { X } from "lucide-react";
 import { ATLAS, ATLAS_VIEWBOX, type AtlasStructure, type Pt, type Shape } from "../../../lib/bbip/anatomy/atlas";
 import {
   anchorOf,
@@ -15,7 +14,7 @@ import {
 import { LAYERS, VIEWS, type LayerKey, type ViewKey } from "../../../lib/bbip/anatomy/layers";
 import { getRegion, type AnatomyPlan, type RegionKey } from "../../../lib/bbip/anatomy/regions";
 import { ReviewBadge } from "./ReviewBadge";
-import { depthText, layerColor, RiskPill } from "./vocab";
+import { depthText, layerColor, RiskText, textToggleClass } from "./vocab";
 
 const { width: W, height: H } = ATLAS_VIEWBOX;
 
@@ -37,7 +36,7 @@ function ShapeEl({
   ids: { hatch: string; arrow: string };
 }) {
   const color = layerColor(structure.layer);
-  const width = emphasis ? 3 : 1.7;
+  const width = emphasis ? 2.8 : 1.5;
   if (shape.kind === "point") {
     const [x, y] = shape.at;
     if (structure.layer === "entry") {
@@ -89,15 +88,15 @@ function ShapeEl({
         className="atlas-shape"
         d={d}
         fill={danger ? `url(#${ids.hatch})` : color}
-        fillOpacity={danger ? 0.85 : structure.layer === "fat" ? 0.2 : 0.15}
+        fillOpacity={danger ? 0.9 : structure.layer === "fat" ? 0.06 : 0.1}
         stroke={color}
-        strokeOpacity={danger ? 0.8 : 0.55}
-        strokeWidth={emphasis ? 1.8 : 0.8}
-        strokeDasharray={danger ? "3 2" : undefined}
+        strokeOpacity={danger ? 0.85 : 0.6}
+        strokeWidth={emphasis ? 1.6 : 0.7}
+        strokeDasharray={danger ? "3 2" : structure.layer === "fat" ? "1 1.5" : undefined}
       />
     );
   }
-  const dashed = structure.layer === "ligaments" || structure.layer === "ducts";
+  const dashed = structure.layer === "ligaments" || structure.layer === "ducts" || structure.layer === "nerves";
   return (
     <g className="atlas-shape">
       <path d={d} fill="none" stroke="transparent" strokeWidth={9} />
@@ -123,27 +122,25 @@ function StructureInfo({
   onClose: () => void;
 }) {
   return (
-    <div className="space-y-1.5 text-xs leading-relaxed text-ink/80">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-serifa text-sm font-bold text-inkdeep">{structure.ko}</p>
-          <p className="font-mono text-[10px] text-ink/65">{structure.en}</p>
-        </div>
+    <div className="space-y-1.5 text-[12.5px] leading-relaxed text-ink/80">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="min-w-0 font-serifa text-[15px] font-bold text-inkdeep">
+          {structure.ko} <span className="font-sans text-[11.5px] font-normal text-ink/65">{structure.en}</span>
+        </p>
         {pinned && (
           <button
             type="button"
             onClick={onClose}
-            aria-label="구조물 정보 닫기"
-            className="-mr-1 -mt-1 rounded-full p-1 text-ink/60 transition hover:bg-ink/5 hover:text-ink"
+            className="shrink-0 text-[11.5px] text-ink/65 underline decoration-ink/30 underline-offset-4 hover:text-ink"
           >
-            <X aria-hidden="true" className="h-3.5 w-3.5" />
+            닫기
           </button>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <RiskPill risk={structure.risk} />
+      <p className="flex flex-wrap items-baseline gap-x-3 border-b border-ink/10 pb-1.5">
+        <RiskText risk={structure.risk} />
         <ReviewBadge structure={structure} />
-      </div>
+      </p>
       <p>
         <span className="font-semibold text-ink">주행</span> {structure.course}
       </p>
@@ -230,7 +227,7 @@ export function FaceMap({
   return (
     <div className="min-w-0">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div role="tablist" aria-label="얼굴 도식 보기" className="inline-flex rounded-full bg-mist p-1">
+        <div role="tablist" aria-label="얼굴 도식 보기" className="flex items-baseline gap-4">
           {VIEWS.map((v, index) => {
             const selected = v.key === view;
             return (
@@ -247,9 +244,7 @@ export function FaceMap({
                 tabIndex={selected ? 0 : -1}
                 onClick={() => onViewChange(v.key)}
                 onKeyDown={(e) => onTabKey(e, index)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-                  selected ? "bg-ink text-white shadow-sm" : "text-ink/70 hover:text-ink"
-                }`}
+                className={textToggleClass(selected)}
               >
                 {v.ko}
               </button>
@@ -258,7 +253,7 @@ export function FaceMap({
         </div>
       </div>
 
-      <div role="group" aria-label="레이어" className="mb-3 flex flex-wrap gap-1.5">
+      <div role="group" aria-label="레이어" className="mb-4 flex flex-wrap gap-x-4 gap-y-1.5">
         {availableLayers.map((layer) => {
           const on = layers.has(layer.key);
           return (
@@ -267,14 +262,14 @@ export function FaceMap({
               type="button"
               aria-pressed={on}
               onClick={() => onToggleLayer(layer.key)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ring-inset transition ${
-                on ? "bg-white text-ink ring-ink/20" : "bg-transparent text-ink/60 ring-ink/10 hover:text-ink"
+              className={`inline-flex items-center gap-1.5 text-[12px] transition ${
+                on ? "text-inkdeep" : "text-ink/65 hover:text-ink"
               }`}
             >
               <span
                 aria-hidden="true"
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: on ? layer.color : "transparent", boxShadow: `inset 0 0 0 1.5px ${layer.color}` }}
+                className="h-2.5 w-2.5"
+                style={{ background: on ? layer.color : "transparent", boxShadow: `inset 0 0 0 1px ${layer.color}` }}
               />
               {layer.ko}
             </button>
@@ -282,14 +277,14 @@ export function FaceMap({
         })}
       </div>
       {plan.muscleOnly && (
-        <p className="mb-2 text-[11px] text-ink/70">보톡스 케이스 — 근육 레이어만 표시합니다.</p>
+        <p className="mb-3 text-[12px] text-ink/70">보톡스 케이스라 근육 레이어만 표시합니다.</p>
       )}
 
       <div
         id={panelId}
         role="tabpanel"
         aria-labelledby={`${uid}-tab-${view}`}
-        className="relative mx-auto w-full max-w-[380px] rounded-[20px] bg-[#fbf9f5] ring-1 ring-ink/[0.06]"
+        className="relative mx-auto w-full max-w-[380px] bg-white"
       >
         <svg
           viewBox={`0 0 ${W} ${H}`}
@@ -302,25 +297,24 @@ export function FaceMap({
         >
           <defs>
             <pattern id={ids.hatch} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
-              <rect width="5" height="5" fill="#fee2e2" />
-              <line x1="0" y1="0" x2="0" y2="5" stroke="#dc2626" strokeWidth="1.4" strokeOpacity="0.55" />
+              <rect width="5" height="5" fill="#ffffff" />
+              <line x1="0" y1="0" x2="0" y2="5" stroke="#b42318" strokeWidth="1" strokeOpacity="0.6" />
             </pattern>
             <marker id={ids.arrow} viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto">
               <path d="M0,0 L6,3 L0,6 z" fill={layerColor("entry")} />
             </marker>
           </defs>
 
-          <path d={outline} fill="#f4ede2" stroke="#051A24" strokeOpacity="0.35" strokeWidth="1" />
+          <path d={outline} fill="#ffffff" stroke="#051a24" strokeOpacity="0.55" strokeWidth="1" />
           {guides.map((shape, i) =>
             shape.kind === "line" || shape.kind === "area" ? (
               <path
                 key={i}
                 d={smoothPath(shape.pts, shape.kind === "area")}
-                fill={shape.kind === "area" ? "#ffffff" : "none"}
-                fillOpacity={0.7}
-                stroke="#051A24"
+                fill="none"
+                stroke="#051a24"
                 strokeOpacity="0.4"
-                strokeWidth="0.9"
+                strokeWidth="0.8"
                 strokeLinecap="round"
               />
             ) : null
@@ -330,12 +324,12 @@ export function FaceMap({
               <path
                 key={i}
                 d={smoothPath(shape.pts, true)}
-                fill="#10b981"
-                fillOpacity="0.08"
-                stroke="#047857"
-                strokeOpacity="0.55"
-                strokeWidth="1"
-                strokeDasharray="3 3"
+                fill="#051a24"
+                fillOpacity="0.035"
+                stroke="#051a24"
+                strokeOpacity="0.45"
+                strokeWidth="0.8"
+                strokeDasharray="2 2.5"
               />
             ) : null
           )}
@@ -345,7 +339,7 @@ export function FaceMap({
             const label = `${structure.ko} ${structure.en}`;
             if (!active) {
               return (
-                <g key={structure.id} opacity={0.16} aria-hidden="true" pointerEvents="none">
+                <g key={structure.id} opacity={0.14} aria-hidden="true" pointerEvents="none">
                   {shapes.map((shape, i) => (
                     <ShapeEl key={i} shape={shape} structure={structure} emphasis={false} ids={ids} />
                   ))}
@@ -388,8 +382,8 @@ export function FaceMap({
               cy={anchor[1]}
               r="8"
               fill="none"
-              stroke="#0284c7"
-              strokeWidth="1.6"
+              stroke="#051a24"
+              strokeWidth="1.2"
               className="atlas-pulse"
               pointerEvents="none"
             />
@@ -398,7 +392,7 @@ export function FaceMap({
 
         {shown && anchor && (
           <div
-            className="pointer-events-auto absolute z-10 w-[min(260px,85%)] rounded-2xl bg-white p-3 shadow-[0_18px_45px_rgba(5,26,36,0.18)] ring-1 ring-ink/10"
+            className="pointer-events-auto absolute z-10 w-[min(270px,85%)] border border-ink/20 bg-white p-3 shadow-[0_10px_30px_rgba(5,26,36,0.08)]"
             style={{
               top: `${Math.min(70, (anchor[1] / H) * 100 + 4)}%`,
               ...(anchor[0] / W > 0.5
@@ -420,8 +414,8 @@ export function FaceMap({
       <p aria-live="polite" className="sr-only">
         {shown ? `${shown.structure.ko}: ${shown.structure.course}. 위험 — ${shown.structure.riskNote}` : ""}
       </p>
-      <p className="mt-2 text-center text-[11px] leading-relaxed text-ink/65">
-        도식(schematic) — 실제 주행·깊이는 개인차가 큽니다. 시술 전 촉진·초음파로 확인하세요.
+      <p className="mt-2 text-[11.5px] leading-relaxed text-ink/65">
+        도식입니다. 실제 주행과 깊이는 개인차가 크니 시술 전 촉진·초음파로 확인하세요.
       </p>
     </div>
   );

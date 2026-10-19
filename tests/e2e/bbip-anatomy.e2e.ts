@@ -28,7 +28,7 @@ test("filler case shows the anatomy map instantly and atlas chips focus structur
 
   // The fake brief cites one atlas structure as {{atlas:id}} → chip.
   await expect(page.getByText("[FAKE 모드]")).toBeVisible(COLD);
-  const chip = page.locator("button.ev-atlas").first();
+  const chip = page.locator("button.atlas-ref").first();
   const id = await chip.getAttribute("data-atlas");
   expect(id).toBeTruthy();
   await chip.click();

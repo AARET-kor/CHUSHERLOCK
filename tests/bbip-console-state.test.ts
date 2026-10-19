@@ -10,7 +10,7 @@ const view: SessionView = {
     chips: { patient: ["40대 여성"], conditions: ["기미"], meds: [], procedures: ["피코토닝"] },
     flags: [],
     sourceNoteIds: [],
-    promptVersion: "bbip-v1",
+    promptVersion: "bbip-v2",
     createdAt: "2026-10-18T00:00:00.000Z",
   },
   turns: [
@@ -29,6 +29,15 @@ const view: SessionView = {
 };
 
 describe("consoleReducer", () => {
+  it("a literature event attaches the block to the session", () => {
+    const block = { pubmedQuery: "q", webQuery: "w", papers: [], web: [], errors: {}, fetchedAt: "" };
+    let state = initialConsoleState(view);
+    state = consoleReducer(state, { type: "turn-start", key: "k", request: { kind: "literature" } });
+    state = consoleReducer(state, { type: "turn-event", key: "k", event: { type: "literature", block } });
+    expect(state.session?.literature).toEqual(block);
+    expect(state.turns.find((t) => t.key === "k")).toMatchObject({ kind: "literature", status: "streaming", output: "" });
+  });
+
   it("hydrates from a server view", () => {
     const state = initialConsoleState(view);
     expect(state.session?.id).toBe("s");

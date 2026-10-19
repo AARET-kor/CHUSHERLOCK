@@ -47,6 +47,7 @@ describe("modelForRequest", () => {
       "claude-sonnet-5-5"
     );
     expect(modelForRequest({ kind: "custom", question: "질문" }).model).toBe("claude-opus-5-5");
+    expect(modelForRequest({ kind: "literature" })).toEqual({ model: "claude-sonnet-5-5", effort: "medium" });
   });
 
   it("honours brief overrides", async () => {

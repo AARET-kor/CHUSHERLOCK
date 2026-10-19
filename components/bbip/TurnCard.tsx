@@ -1,127 +1,126 @@
 "use client";
 
 import Link from "next/link";
-import { LoaderCircle, RotateCcw } from "lucide-react";
+import { useMemo } from "react";
 import type { ClientTurn } from "../../lib/bbip/consoleState";
-import { getSection } from "../../lib/bbip/sections";
-import type { NoteRef } from "../../lib/bbip/types";
+import { citedNoteNumbers } from "../../lib/bbip/evidence";
+import type { LiteratureBlock, NoteRef } from "../../lib/bbip/types";
 import { EvidenceMarkdown } from "./EvidenceMarkdown";
-import { GROUP_LABELS, turnIcon } from "./icons";
+import { LiteratureFootnoteItems, LiteratureSearchNote } from "./LiteratureFootnotes";
 
-function cardHeading(turn: ClientTurn): { kicker: string; title: string } {
-  if (turn.kind === "brief") return { kicker: "Core brief", title: "핵심 브리핑" };
-  if (turn.kind === "section" && turn.sectionKey) {
-    const section = getSection(turn.sectionKey);
-    return { kicker: `Section · ${GROUP_LABELS[section.group].ko}`, title: section.label };
-  }
-  return {
-    kicker: turn.kind === "followup" ? "Follow-up" : "Your question",
-    title: turn.question ?? "질문",
-  };
-}
-
+/** One written section of the sheet: body, its footnotes, and the quiet
+ * actions underneath. The heading lives in the sheet's margin column. */
 export function TurnCard({
   turn,
   notes,
+  title,
+  literature,
   onRetry,
   onPromote,
-  onAtlas,
 }: {
   turn: ClientTurn;
   notes: NoteRef[];
+  /** Session literature: [P#]/[W#] markers and their footnotes. */
+  literature?: LiteratureBlock;
+  /** In-body title (questions); section names live in the margin. */
+  title?: string;
   onRetry: (turn: ClientTurn) => void;
   onPromote: (turnId: string) => void;
-  onAtlas?: (id: string) => void;
 }) {
   const streaming = turn.status === "streaming";
-  const brief = turn.kind === "brief";
-  const Icon = turnIcon(turn);
-  const { kicker, title } = cardHeading(turn);
+  const done = turn.status === "done" && turn.id;
+
+  const cited = useMemo(() => {
+    const numbers = new Set(citedNoteNumbers(turn.output));
+    return notes.filter((n) => numbers.has(n.n));
+  }, [turn.output, notes]);
+  const hasAi = /\[AI\]/.test(turn.output) || cited.some((n) => !n.verified);
 
   return (
-    <article
-      aria-busy={streaming}
-      className={`animate-pop-in overflow-hidden border bg-white ${
-        brief
-          ? "rounded-[26px] border-ink/15 shadow-[0_24px_60px_rgba(5,26,36,0.09)]"
-          : "rounded-[24px] border-ink/10 shadow-[0_16px_45px_rgba(5,26,36,0.06)]"
-      }`}
-    >
-      <header
-        className={`flex items-start justify-between gap-3 border-b border-ink/[0.07] px-5 py-4 md:px-6 ${
-          brief ? "bg-[#f4f0e8]" : ""
-        }`}
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-white">
-            <Icon aria-hidden="true" className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink/65">{kicker}</p>
-            <h3
-              className={`break-words font-serifa font-bold leading-snug text-inkdeep ${
-                brief ? "text-xl" : "text-lg"
-              }`}
-            >
-              {title}
-            </h3>
-          </div>
-        </div>
-        {streaming && (
-          <span className="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] text-ink/70 ring-1 ring-ink/10">
-            <LoaderCircle aria-hidden="true" className="h-3 w-3 animate-spin" />
-            생성 중…
-          </span>
-        )}
-      </header>
+    <article aria-busy={streaming} className="min-w-0">
+      {title && (
+        <h3 className="mb-4 break-keep font-serifa text-[20px] font-bold leading-snug text-inkdeep sm:text-[22px]">
+          {title}
+        </h3>
+      )}
 
-      <div className={`px-5 py-5 md:px-6 ${brief ? "md:py-6" : ""}`}>
-        {turn.output ? (
-          <EvidenceMarkdown markdown={turn.output} notes={notes} onAtlas={onAtlas} />
-        ) : streaming ? (
-          <div className="dot-pulse flex items-center gap-1.5 text-sm text-ink/65">
-            근거를 모으는 중 <span /> <span /> <span />
-          </div>
-        ) : null}
+      {turn.output && <EvidenceMarkdown markdown={turn.output} notes={notes} literature={literature} />}
+      {/* literature hook */}
+      {turn.kind === "literature" && turn.status === "done" && literature && <LiteratureSearchNote block={literature} />}
+      {streaming && (
+        <p className="bbip-caret mt-1 text-[12px] text-ink/50">
+          {turn.output ? "작성 중" : "근거를 모으는 중"}
+        </p>
+      )}
 
-        {turn.status === "failed" && (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200">
-            <span role="alert" className="min-w-0 flex-1">
-              {turn.error ?? "생성에 실패했습니다."}
-            </span>
-            <button
-              type="button"
-              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-ink ring-1 ring-ink/10 transition hover:ring-ink/30"
-              onClick={() => onRetry(turn)}
-            >
-              <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />
-              다시 시도
-            </button>
-          </div>
-        )}
-      </div>
+      {turn.status === "failed" && (
+        <p role="alert" className="mt-3 text-[13.5px] leading-relaxed text-red-800">
+          {turn.error ?? "생성에 실패했습니다."}{" "}
+          <button
+            type="button"
+            onClick={() => onRetry(turn)}
+            className="ml-1 font-semibold text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
+          >
+            다시 시도
+          </button>
+        </p>
+      )}
 
-      {turn.status === "done" && turn.id && (
-        <footer className="flex items-center justify-between gap-3 border-t border-ink/[0.07] px-5 py-3 md:px-6">
-          <p className="hidden text-[11px] text-ink/65 sm:block">
-            <span className="ev ev-note">📚</span> 내 노트 근거 · <span className="ev ev-ai">🤖AI</span> 검증 전 보충
-          </p>
-          {turn.promotedEntryId ? (
-            <Link
-              href={`/entries/${turn.promotedEntryId}`}
-              className="ml-auto whitespace-nowrap rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200 transition hover:bg-emerald-100"
-            >
-              ✓ 노트에 저장됨
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className="ml-auto whitespace-nowrap rounded-full bg-ink px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-inkdeep"
-              onClick={() => onPromote(turn.id!)}
-            >
-              ＋ 노트로 저장
-            </button>
-          )}
+      {done && (
+        <footer className="mt-6 flex flex-col gap-4 border-t border-ink/10 pt-4 sm:flex-row sm:items-start sm:justify-between">
+          <ol className="min-w-0 space-y-1.5 text-[12.5px] leading-snug text-ink/70">
+            {cited.map((note) => (
+              <li key={note.id} className="flex gap-2.5">
+                <span
+                  className={`w-5 shrink-0 text-right font-mono text-[11px] ${
+                    note.verified ? "text-[#0f5132]" : "italic text-[#8a5a00]"
+                  }`}
+                >
+                  {note.verified ? note.n : "AI"}
+                </span>
+                <span className="min-w-0">
+                  <Link href={`/entries/${note.id}`} className="text-ink underline-offset-4 hover:underline">
+                    {note.title}
+                  </Link>
+                  <span className="text-ink/45"> · {note.categoryLabel}</span>
+                  {!note.verified && <span className="italic text-[#8a5a00]"> · 검토 전 초안</span>}
+                  {note.verified && note.book && (
+                    <span className="text-ink/65">
+                      {" · "}
+                      <i>{note.book.title}</i>
+                      {note.book.page ? ` p.${note.book.page}` : ""}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+            {/* literature hook */}
+            <LiteratureFootnoteItems markdown={turn.output} literature={literature} />
+            {hasAi && (
+              <li className="flex gap-2.5">
+                <span className="w-5 shrink-0 text-right font-mono text-[11px] italic text-[#8a5a00]">AI</span>
+                <span>내 노트에 없는 일반 지식 — 수치·용량은 IFU와 허가사항으로 확인하세요.</span>
+              </li>
+            )}
+          </ol>
+          <div className="shrink-0">
+            {turn.promotedEntryId ? (
+              <Link
+                href={`/entries/${turn.promotedEntryId}`}
+                className="whitespace-nowrap text-[12.5px] font-medium text-[#0f5132] underline decoration-[#0f5132]/30 underline-offset-4 hover:decoration-[#0f5132]"
+              >
+                노트에 저장됨 →
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onPromote(turn.id!)}
+                className="whitespace-nowrap text-[12.5px] font-medium text-ink underline decoration-ink/30 underline-offset-4 transition hover:decoration-ink"
+              >
+                노트로 저장
+              </button>
+            )}
+          </div>
         </footer>
       )}
     </article>

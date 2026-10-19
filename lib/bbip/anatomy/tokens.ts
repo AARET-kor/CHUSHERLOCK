@@ -36,7 +36,7 @@ export function atlasTokensToText(text: string): string {
 export function atlasChipHtml(id: string): string {
   const s = getStructure(id);
   if (!s) return escapeHtml(id);
-  return `<button type="button" class="ev ev-atlas" data-atlas="${escapeHtml(id)}" title="${escapeHtml(
+  return `<button type="button" class="atlas-ref" data-atlas="${escapeHtml(id)}" title="${escapeHtml(
     `${s.en} — 해부 지도에서 보기`
-  )}">🧭 ${escapeHtml(s.ko)}</button>`;
+  )}">${escapeHtml(s.ko)}</button>`;
 }

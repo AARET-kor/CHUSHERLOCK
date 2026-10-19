@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-e2e/
 out/
 build/
 *.log
@@ -18,3 +19,4 @@ playwright-report/
 data/e2e-figures/
 data/e2e-ingest/
 .codex/
+next-env.d.ts

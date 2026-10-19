@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type Anthropic from "@anthropic-ai/sdk";
 import {
   buildStreamParams,
+  fakeTurnText,
   RefusalError,
   streamTurnText,
   TruncatedError,
@@ -16,7 +17,7 @@ const session: BbipSession = {
   chips: { patient: [], conditions: ["기미"], meds: [], procedures: ["피코토닝"] },
   flags: [],
   sourceNoteIds: [],
-  promptVersion: "bbip-v1",
+  promptVersion: "bbip-v2",
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
@@ -105,5 +106,24 @@ describe("streamTurnText", () => {
       streamTurnText(args(), () => fakeStream(["x"], { model: "claude-opus-5-5", stop_reason: "refusal" }))
     );
     expect(out.error).toBeInstanceOf(RefusalError);
+  });
+});
+
+describe("fakeTurnText", () => {
+  it("fake literature text cites P1/W1 only when the session has them", () => {
+    const lit = {
+      pubmedQuery: "q",
+      webQuery: "w",
+      errors: {},
+      fetchedAt: "",
+      papers: [{ pmid: "1", title: "t", authors: [], journal: "", abstract: "", publicationTypes: [], level: "rct" as const }],
+      web: [{ url: "https://fda.gov/", title: "t", snippet: "" }],
+    };
+    const withLit = fakeTurnText(args({ session: { ...session, literature: lit }, request: { kind: "literature" } }));
+    expect(withLit).toContain("문헌 근거 (FAKE)");
+    expect(withLit).toContain("[P1]");
+    expect(withLit).toContain("[W1]");
+    const without = fakeTurnText(args({ request: { kind: "literature" } }));
+    expect(without).not.toContain("[P1]");
   });
 });

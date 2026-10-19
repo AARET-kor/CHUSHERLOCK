@@ -1,6 +1,6 @@
 import { getRegion, type RegionKey } from "./regions";
 
-// "📖 내 자료 그림": figures already cropped from the doctor's ingested
+// "내 자료 그림": figures already cropped from the doctor's ingested
 // material, attached to the session's notes, whose captions look anatomical.
 
 export interface FigureCandidate {
