@@ -41,10 +41,38 @@ describe("bbipService", () => {
     await new Promise((r) => setTimeout(r, 5));
     const second = service.createSession({ chips, flags: [], sourceNoteIds: [] });
     expect(service.getSession(first.id)).toEqual(first);
-    expect(first.promptVersion).toBe("bbip-v1");
+    expect(first.promptVersion).toBe("bbip-v2");
     const listed = service.listSessions(10).map((s) => s.id);
     expect(listed.indexOf(second.id)).toBeLessThan(listed.indexOf(first.id));
     expect(service.getSession("missing")).toBeNull();
+  });
+
+  it("stores and replaces the session literature block", () => {
+    const session = service.createSession({ chips, flags: [], sourceNoteIds: [] });
+    expect(service.getSession(session.id)?.literature).toBeUndefined();
+    const block = {
+      pubmedQuery: '"Melasma"[MeSH Terms]',
+      webQuery: "melasma picosecond laser",
+      papers: [
+        {
+          pmid: "123",
+          title: "Paper",
+          authors: ["Kim A"],
+          year: 2024,
+          journal: "J Dermatol",
+          abstract: "Abstract",
+          publicationTypes: ["Meta-Analysis"],
+          level: "meta" as const,
+        },
+      ],
+      web: [],
+      errors: {},
+      fetchedAt: "2026-10-19T00:00:00.000Z",
+    };
+    service.setSessionLiterature(session.id, block);
+    expect(service.getSession(session.id)?.literature).toEqual(block);
+    service.setSessionLiterature(session.id, { ...block, papers: [] });
+    expect(service.getSession(session.id)?.literature?.papers).toEqual([]);
   });
 
   it("tracks a turn from streaming to done, failed and promoted", async () => {

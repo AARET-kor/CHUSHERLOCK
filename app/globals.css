@@ -429,6 +429,20 @@ body {
 a.ev-ai {
   border-bottom: 1px dotted rgba(138, 90, 0, 0.5);
 }
+/* Literature footnotes: P# PubMed paper, W# medical web page. */
+.ev-paper {
+  color: #1d4e89;
+  border-bottom: 1px solid rgba(29, 78, 137, 0.35);
+}
+.ev-web {
+  color: #5b3a8c;
+  border-bottom: 1px solid rgba(91, 58, 140, 0.35);
+}
+.ev-paper:hover,
+.ev-web:hover {
+  color: #051a24;
+  border-bottom-color: #051a24;
+}
 
 /* Prose for briefs and opened sections — larger, airier than note-body. */
 .bbip-prose {

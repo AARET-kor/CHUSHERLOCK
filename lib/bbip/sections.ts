@@ -125,5 +125,6 @@ export function turnTitle(turn: Pick<TurnRequest, "kind" | "sectionKey" | "quest
     const section = getSection(turn.sectionKey);
     return `${section.emoji} ${section.label}`;
   }
+  if (turn.kind === "literature") return "🔬 문헌 근거";
   return `💬 ${turn.question ?? "질문"}`;
 }

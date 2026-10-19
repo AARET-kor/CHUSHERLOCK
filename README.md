@@ -17,6 +17,17 @@ left "streaming" by a crash are closed as interrupted when the session is
 next opened; that orphan detection tracks live generations in memory, so it
 assumes a single server process.
 
+**🔬 문헌 근거** runs only when the button is pressed: Haiku turns the chips
+into an English PubMed query (MeSH first) and a web query; PubMed is read
+through NCBI E-utilities (esearch → efetch, 3 req/s, 10 with `NCBI_API_KEY`)
+and the web through Claude's `web_search_20260209` tool restricted to medical
+domains (`BBIP_WEB_DOMAINS` overrides the list). Results are cached for 30
+days in `literature_cache`. The 문헌 근거 card cites 🔬[P#] (PubMed link,
+evidence level) and 🌐[W#] (source URL); the literature block stays on the
+session so later cards may cite it too, and saving a card turns P#/W# into
+paper/website sources. Notes whose claims come from an ingested textbook show
+as 📖 *책명* p.x. Plan: `docs/superpowers/plans/2026-10-19-bbip-literature.md`.
+
 A personal + clinic knowledge base for aesthetic medicine — and a clinical
 assistant you can **ask**: it answers from your own notes and cites them
 (`/ask`, see below). You feed it raw
@@ -241,6 +252,9 @@ CODEX_AI_MODEL_MID=claude-sonnet-5-5  # mid model (figures/clusters/BBIP section
 CODEX_AI_MODEL_LIGHT=claude-haiku-5-5 # light model (OCR/relatedness/BBIP case parsing) — optional
 BBIP_BRIEF_MODEL=claude-opus-5-5      # optional: BBIP ⚡ brief model (default: CODEX_AI_MODEL)
 BBIP_BRIEF_EFFORT=low                 # optional: BBIP brief effort
+NCBI_API_KEY=...                      # optional: BBIP 🔬 PubMed at 10 req/s instead of 3
+BBIP_WEB_DOMAINS=fda.gov,jaad.org     # optional: override the BBIP web-search domain allow-list
+BBIP_WEB_MODEL=claude-sonnet-5-5      # optional: BBIP web-search model (default: CODEX_AI_MODEL_MID)
 CODEX_MAX_UPLOAD_MB=100               # optional upload cap
 CODEX_AI_MODE=fake                    # optional: offline deterministic mode (no API calls)
 CODEX_INGEST_LEASE_MS=45000           # optional durable-worker lease
@@ -365,6 +379,7 @@ lib/
     classify.ts               chunk-by-chunk AI classification (implemented)
   bbip/                    BBIP chairside assistant (parse, flags, prompts,
                            context, generate, runTurn, evidence, promote)
+    literature/            🔬 PubMed + web search, query, cache, literature turn
 tests/                       Vitest: taxonomy, entrySchemas, overlap, markdown-export
 ```
 

@@ -153,7 +153,8 @@ export default async function EntryDetailPage({
             {entry.claims.map((claim) => (
               <article
                 key={claim.id}
-                className={`rounded-xl border p-4 text-sm ${
+                id={`claim-${claim.id}`}
+                className={`scroll-mt-24 rounded-xl border p-4 text-sm ${
                   claim.conflictStatus !== "none"
                     ? "border-amber-300 bg-amber-50"
                     : "border-ink/10 bg-mist/30"

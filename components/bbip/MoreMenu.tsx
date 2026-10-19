@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SECTIONS, type SectionGroup } from "../../lib/bbip/sections";
 import type { SectionKey, TurnRequest } from "../../lib/bbip/types";
+import { LiteratureIndexItem } from "./LiteratureFootnotes";
 
 const GROUPS: Array<{ key: SectionGroup; label: string }> = [
   { key: "safety", label: "안전" },
@@ -17,11 +18,13 @@ export function MoreMenu({
   followups,
   openedSections,
   openedQuestions,
+  literatureOpened = false,
   onRequest,
 }: {
   followups: string[];
   openedSections: Set<SectionKey>;
   openedQuestions: Set<string>;
+  literatureOpened?: boolean;
   onRequest: (request: TurnRequest) => void;
 }) {
   const [question, setQuestion] = useState("");
@@ -85,6 +88,9 @@ export function MoreMenu({
           </div>
         ))}
       </div>
+
+      {/* literature hook */}
+      <LiteratureIndexItem opened={literatureOpened} onRequest={onRequest} />
 
       <form
         className="mt-9 flex items-end gap-4"

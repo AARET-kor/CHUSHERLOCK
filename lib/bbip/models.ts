@@ -39,5 +39,7 @@ export function modelForRequest(request: TurnRequest): ModelChoice {
     const tier = getSection(request.sectionKey).tier;
     return { model: tier === "opus" ? MODEL : MID_MODEL, effort: "medium" };
   }
+  // Synthesis over fetched abstracts: the mid model is enough.
+  if (request.kind === "literature") return { model: MID_MODEL, effort: "medium" };
   return { model: MODEL, effort: "medium" };
 }

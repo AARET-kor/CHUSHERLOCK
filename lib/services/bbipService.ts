@@ -7,6 +7,7 @@ import {
   type BbipSession,
   type BbipTurn,
   type Flag,
+  type LiteratureBlock,
   type ParsedCase,
   type SectionKey,
   type TurnKind,
@@ -29,6 +30,7 @@ function toSession(row: SessionRow): BbipSession {
     chips: row.chips,
     flags: row.flags,
     sourceNoteIds: row.sourceNoteIds,
+    ...(row.literature ? { literature: row.literature } : {}),
     promptVersion: row.promptVersion,
     createdAt: row.createdAt,
   };
@@ -61,6 +63,7 @@ export function createSession(input: {
     chips: input.chips,
     flags: input.flags,
     sourceNoteIds: input.sourceNoteIds,
+    literature: null,
     promptVersion: BBIP_PROMPT_VERSION,
     createdAt: nowIso(),
   };
@@ -81,6 +84,11 @@ export function listSessions(limit = 30): BbipSession[] {
     .limit(limit)
     .all()
     .map(toSession);
+}
+
+/** Attaches (or replaces) the session's literature block. */
+export function setSessionLiterature(sessionId: string, block: LiteratureBlock): void {
+  db.update(bbipSessions).set({ literature: block }).where(eq(bbipSessions.id, sessionId)).run();
 }
 
 export function startTurn(sessionId: string, request: TurnRequest, model: string): BbipTurn {

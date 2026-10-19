@@ -24,6 +24,7 @@ describe("BBIP sections", () => {
     expect(turnTitle({ kind: "brief" })).toBe("⚡ 핵심 브리핑");
     expect(turnTitle({ kind: "section", sectionKey: "ddx" })).toBe("🔍 감별질환");
     expect(turnTitle({ kind: "custom", question: "아스피린 끊어야 해?" })).toBe("💬 아스피린 끊어야 해?");
+    expect(turnTitle({ kind: "literature" })).toBe("🔬 문헌 근거");
     expect(turnTitle({ kind: "followup", question: "재발 멘트" })).toBe("💬 재발 멘트");
   });
 });

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useMemo } from "react";
 import type { ClientTurn } from "../../lib/bbip/consoleState";
 import { citedNoteNumbers } from "../../lib/bbip/evidence";
-import type { NoteRef } from "../../lib/bbip/types";
+import type { LiteratureBlock, NoteRef } from "../../lib/bbip/types";
 import { EvidenceMarkdown } from "./EvidenceMarkdown";
+import { LiteratureFootnoteItems, LiteratureSearchNote } from "./LiteratureFootnotes";
 
 /** One written section of the sheet: body, its footnotes, and the quiet
  * actions underneath. The heading lives in the sheet's margin column. */
@@ -13,11 +14,14 @@ export function TurnCard({
   turn,
   notes,
   title,
+  literature,
   onRetry,
   onPromote,
 }: {
   turn: ClientTurn;
   notes: NoteRef[];
+  /** Session literature: [P#]/[W#] markers and their footnotes. */
+  literature?: LiteratureBlock;
   /** In-body title (questions); section names live in the margin. */
   title?: string;
   onRetry: (turn: ClientTurn) => void;
@@ -40,7 +44,9 @@ export function TurnCard({
         </h3>
       )}
 
-      {turn.output && <EvidenceMarkdown markdown={turn.output} notes={notes} />}
+      {turn.output && <EvidenceMarkdown markdown={turn.output} notes={notes} literature={literature} />}
+      {/* literature hook */}
+      {turn.kind === "literature" && turn.status === "done" && literature && <LiteratureSearchNote block={literature} />}
       {streaming && (
         <p className="bbip-caret mt-1 text-[12px] text-ink/50">
           {turn.output ? "작성 중" : "근거를 모으는 중"}
@@ -78,9 +84,18 @@ export function TurnCard({
                   </Link>
                   <span className="text-ink/45"> · {note.categoryLabel}</span>
                   {!note.verified && <span className="italic text-[#8a5a00]"> · 검토 전 초안</span>}
+                  {note.verified && note.book && (
+                    <span className="text-ink/65">
+                      {" · "}
+                      <i>{note.book.title}</i>
+                      {note.book.page ? ` p.${note.book.page}` : ""}
+                    </span>
+                  )}
                 </span>
               </li>
             ))}
+            {/* literature hook */}
+            <LiteratureFootnoteItems markdown={turn.output} literature={literature} />
             {hasAi && (
               <li className="flex gap-2.5">
                 <span className="w-5 shrink-0 text-right font-mono text-[11px] italic text-[#8a5a00]">AI</span>

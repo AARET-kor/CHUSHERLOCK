@@ -1,0 +1,84 @@
+<?xml version="1.0" ?>
+<!DOCTYPE PubmedArticleSet PUBLIC "-//NLM//DTD PubMedArticle, 1st January 2025//EN" "https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_250101.dtd">
+<PubmedArticleSet>
+<PubmedArticle>
+  <MedlineCitation Status="MEDLINE" Owner="NLM">
+    <PMID Version="1">38000001</PMID>
+    <Article PubModel="Print-Electronic">
+      <Journal>
+        <ISSN IssnType="Electronic">1097-6787</ISSN>
+        <JournalIssue CitedMedium="Internet">
+          <Volume>90</Volume>
+          <PubDate><Year>2024</Year><Month>Mar</Month></PubDate>
+        </JournalIssue>
+        <Title>Journal of the American Academy of Dermatology</Title>
+        <ISOAbbreviation>J Am Acad Dermatol</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>Picosecond laser for melasma: a systematic review &amp; meta-analysis of <i>randomized</i> trials.</ArticleTitle>
+      <Abstract>
+        <AbstractText Label="BACKGROUND" NlmCategory="BACKGROUND">Melasma is a chronic, relapsing hyperpigmentation.</AbstractText>
+        <AbstractText Label="RESULTS" NlmCategory="RESULTS">Twelve trials (n = 640) showed MASI reduction &gt; 30% with 1064-nm picosecond toning.</AbstractText>
+      </Abstract>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y"><LastName>Kim</LastName><ForeName>Jiwon</ForeName><Initials>J</Initials></Author>
+        <Author ValidYN="Y"><LastName>Lee</LastName><ForeName>Seojin</ForeName><Initials>S</Initials></Author>
+        <Author ValidYN="Y"><LastName>Park</LastName><ForeName>Hana</ForeName><Initials>H</Initials></Author>
+        <Author ValidYN="Y"><LastName>Choi</LastName><ForeName>Yuna</ForeName><Initials>Y</Initials></Author>
+      </AuthorList>
+      <PublicationTypeList>
+        <PublicationType UI="D016428">Journal Article</PublicationType>
+        <PublicationType UI="D017418">Meta-Analysis</PublicationType>
+        <PublicationType UI="D000078182">Systematic Review</PublicationType>
+      </PublicationTypeList>
+    </Article>
+  </MedlineCitation>
+  <PubmedData>
+    <ReferenceList><Reference><Citation>Old ref</Citation><ArticleIdList><ArticleId IdType="pubmed">11111111</ArticleId></ArticleIdList></Reference></ReferenceList>
+  </PubmedData>
+</PubmedArticle>
+<PubmedArticle>
+  <MedlineCitation Status="MEDLINE" Owner="NLM">
+    <PMID Version="1">38000002</PMID>
+    <Article PubModel="Print">
+      <Journal>
+        <JournalIssue CitedMedium="Internet">
+          <PubDate><MedlineDate>2023 Nov-Dec</MedlineDate></PubDate>
+        </JournalIssue>
+        <Title>Dermatologic Surgery</Title>
+      </Journal>
+      <ArticleTitle>Low-fluence Q-switched versus picosecond toning in Asian melasma: a randomized split-face trial.</ArticleTitle>
+      <Abstract>
+        <AbstractText>Forty patients &#x2013; Fitzpatrick III&#8211;IV &#8211; were randomized.</AbstractText>
+      </Abstract>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y"><CollectiveName>Korean Laser Study Group</CollectiveName></Author>
+      </AuthorList>
+      <PublicationTypeList>
+        <PublicationType UI="D016449">Randomized Controlled Trial</PublicationType>
+        <PublicationType UI="D016428">Journal Article</PublicationType>
+      </PublicationTypeList>
+    </Article>
+  </MedlineCitation>
+</PubmedArticle>
+<PubmedArticle>
+  <MedlineCitation Status="MEDLINE" Owner="NLM">
+    <PMID Version="1">38000003</PMID>
+    <Article PubModel="Print">
+      <Journal>
+        <JournalIssue CitedMedium="Print">
+          <PubDate><Year>2022</Year></PubDate>
+        </JournalIssue>
+        <Title>Journal of Cosmetic Dermatology</Title>
+        <ISOAbbreviation>J Cosmet Dermatol</ISOAbbreviation>
+      </Journal>
+      <ArticleTitle>Mottled hypopigmentation after laser toning in a patient on aspirin.</ArticleTitle>
+      <AuthorList CompleteYN="Y">
+        <Author ValidYN="Y"><LastName>Han</LastName><Initials>M</Initials></Author>
+      </AuthorList>
+      <PublicationTypeList>
+        <PublicationType UI="D002363">Case Reports</PublicationType>
+      </PublicationTypeList>
+    </Article>
+  </MedlineCitation>
+</PubmedArticle>
+</PubmedArticleSet>

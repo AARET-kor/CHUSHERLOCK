@@ -15,6 +15,7 @@ import { getSection } from "../../lib/bbip/sections";
 import { CASE_INPUT_ID, CaseInput } from "./CaseInput";
 import { ChipBar } from "./ChipBar";
 import { FlagBanner } from "./FlagBanner";
+import { turnEndpoint } from "./LiteratureFootnotes";
 import { MoreMenu } from "./MoreMenu";
 import { PromoteDialog } from "./PromoteDialog";
 import { RecentCases } from "./RecentCases";
@@ -36,6 +37,7 @@ function marginFor(turn: ClientTurn): { label: string; note?: string; title?: st
     const section = getSection(turn.sectionKey);
     return { label: section.label, note: GROUP_LABELS[section.group] };
   }
+  if (turn.kind === "literature") return { label: "문헌 근거", note: "PubMed · 웹" };
   return {
     label: turn.kind === "followup" ? "이어서 묻기" : "직접 질문",
     title: turn.question,
@@ -77,10 +79,11 @@ export function BbipConsole({
       const controller = newController();
       dispatch({ type: "turn-start", key, request });
       try {
-        const res = await fetch(`/api/bbip/sessions/${sessionId}/turns`, {
+        const endpoint = turnEndpoint(sessionId, request);
+        const res = await fetch(endpoint.url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
+          body: endpoint.body,
           signal: controller.signal,
         });
         if (!res.ok || !res.body) {
@@ -304,7 +307,13 @@ export function BbipConsole({
                   : "관련 노트가 없어 일반 지식(AI) 위주로 작성"
               }
             >
-              <TurnCard turn={brief} notes={state.notes} onRetry={retry} onPromote={setPromoteTurnId} />
+              <TurnCard
+                turn={brief}
+                notes={state.notes}
+                literature={session.literature}
+                onRetry={retry}
+                onPromote={setPromoteTurnId}
+              />
             </SheetSection>
           )}
 
@@ -314,6 +323,7 @@ export function BbipConsole({
                 followups={brief.followups}
                 openedSections={openedSections}
                 openedQuestions={openedQuestions}
+                literatureOpened={state.turns.some((t) => t.kind === "literature")}
                 onRequest={(request) => void runTurn(session.id, request)}
               />
             </SheetSection>
@@ -333,6 +343,7 @@ export function BbipConsole({
                   turn={turn}
                   title={margin.title}
                   notes={state.notes}
+                  literature={session.literature}
                   onRetry={retry}
                   onPromote={setPromoteTurnId}
                 />
