@@ -393,27 +393,178 @@ body {
   }
 }
 
-/* BBIP evidence badges — 📚 note / 📖 textbook note / 🔬 PubMed paper /
-   🌐 medical web page / 🤖 unverified AI supplement. */
+/* ───────────────────────── BBIP ─────────────────────────
+   Editorial consult sheet: evidence reads like journal footnotes, not
+   badges. Superscript numerals point at the doctor's own notes; a small
+   italic "AI" marks unreviewed model knowledge. */
 .ev {
-  @apply mx-0.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px align-[0.1em] font-mono text-[10px] font-semibold leading-4 tracking-tight no-underline;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  top: -0.5em;
+  margin-left: 0.1em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.68em;
+  font-weight: 600;
+  line-height: 0;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ev + .ev {
+  margin-left: 0.25em;
 }
 .ev-note {
-  @apply bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200 hover:bg-emerald-100 hover:ring-emerald-300;
+  color: #0f5132;
+  border-bottom: 1px solid rgba(15, 81, 50, 0.35);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.ev-note:hover {
+  color: #051a24;
+  border-bottom-color: #051a24;
 }
 .ev-ai {
-  @apply bg-violet-50 text-violet-800 ring-1 ring-inset ring-violet-200;
+  color: #8a5a00;
+  font-style: italic;
+  font-weight: 500;
 }
+a.ev-ai {
+  border-bottom: 1px dotted rgba(138, 90, 0, 0.5);
+}
+/* Literature footnotes: P# PubMed paper, W# medical web page. */
 .ev-paper {
-  @apply bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-200 hover:bg-sky-100 hover:ring-sky-300;
+  color: #1d4e89;
+  border-bottom: 1px solid rgba(29, 78, 137, 0.35);
 }
 .ev-web {
-  @apply bg-amber-50 text-amber-900 ring-1 ring-inset ring-amber-200 hover:bg-amber-100 hover:ring-amber-300;
+  color: #5b3a8c;
+  border-bottom: 1px solid rgba(91, 58, 140, 0.35);
 }
-.ev-book {
-  @apply bg-stone-100 text-stone-800 ring-1 ring-inset ring-stone-300 hover:bg-stone-200;
+.ev-paper:hover,
+.ev-web:hover {
+  color: #051a24;
+  border-bottom-color: #051a24;
 }
-.ev-book i {
-  @apply font-serifa not-italic;
+
+/* Prose for briefs and opened sections — larger, airier than note-body. */
+.bbip-prose {
+  font-size: 15.5px;
+  line-height: 1.85;
+  color: #0d212c;
+}
+.bbip-prose > :first-child {
+  margin-top: 0;
+}
+.bbip-prose p {
+  margin-bottom: 0.9em;
+}
+.bbip-prose ul,
+.bbip-prose ol {
+  margin-bottom: 1em;
+  padding-left: 0;
+}
+.bbip-prose ul > li {
+  position: relative;
+  list-style: none;
+  padding-left: 1.4em;
+  margin-bottom: 0.35em;
+}
+.bbip-prose ul > li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: rgba(5, 26, 36, 0.35);
+}
+.bbip-prose ol {
+  padding-left: 1.4em;
+  list-style: decimal;
+}
+.bbip-prose ol > li::marker {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.8em;
+  color: rgba(5, 26, 36, 0.55);
+}
+.bbip-prose h1,
+.bbip-prose h2,
+.bbip-prose h3 {
+  font-family: "Gowun Batang", Georgia, serif;
+  font-weight: 700;
+  color: #0d212c;
+  margin: 1.6em 0 0.5em;
+  font-size: 1.12em;
+}
+.bbip-prose strong {
+  font-weight: 650;
+  color: #051a24;
+}
+.bbip-prose blockquote {
+  margin: 1.1em 0;
+  padding: 0.1em 0 0.1em 1em;
+  border-left: 2px solid #b54708;
+  color: #3d2a00;
+}
+.bbip-prose blockquote p {
+  margin-bottom: 0.3em;
+}
+.bbip-prose table {
+  width: 100%;
+  margin: 1em 0 1.2em;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.bbip-prose th {
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(5, 26, 36, 0.4);
+  padding: 0.5em 0.75em 0.5em 0;
+}
+.bbip-prose td {
+  vertical-align: top;
+  border-bottom: 1px solid rgba(5, 26, 36, 0.08);
+  padding: 0.55em 0.75em 0.55em 0;
+}
+.bbip-prose code {
+  font-size: 0.85em;
+  background: #f4f4f6;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+/* Streaming caret at the end of a section being written. */
+@keyframes bbipCaret {
+  50% {
+    opacity: 0;
+  }
+}
+.bbip-caret::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1.05em;
+  margin-left: 0.15em;
+  vertical-align: -0.15em;
+  background: #051a24;
+  animation: bbipCaret 1s steps(1) infinite;
+}
+
+/* Underline-only input used for the case line and direct questions. */
+.bbip-line {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(5, 26, 36, 0.18);
+  border-radius: 0;
+  transition: border-color 0.2s ease;
+}
+.bbip-line:focus {
+  outline: none;
+  border-bottom-color: #051a24;
+}
+.bbip-line::placeholder {
+  color: rgba(5, 26, 36, 0.32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bbip-caret::after {
+    animation: none;
+  }
 }

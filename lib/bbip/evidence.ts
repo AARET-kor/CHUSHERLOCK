@@ -4,9 +4,9 @@ import { hostOf, LEVEL_LABEL, pubmedUrl } from "./literature/refs";
 import type { LiteratureBlock, NoteRef } from "./types";
 
 // The model ends claims with evidence markers: [n] for the doctor's own note
-// n (📖 when the note's claims come from a textbook), [P#] for a PubMed paper
-// and [W#] for a web page of the session's literature block, [AI] for
-// unverified model knowledge. A [n] that points at an unreviewed
+// n (its textbook and page when the note's claims come from one), [P#] for a
+// PubMed paper and [W#] for a web page of the session's literature block,
+// [AI] for unverified model knowledge. All render as footnote superscripts. A [n] that points at an unreviewed
 // BBIP draft is shown (and promoted) as AI, never as "my note". Markers are handled by an inline
 // marked extension, so they are never touched inside code spans/fences, link
 // titles or alt text. A local Marked instance is used so the global `marked`
@@ -34,11 +34,6 @@ interface EvToken extends Tokens.Generic {
 let currentNotes = new Map<number, NoteRef>();
 let currentLiterature: LiteratureBlock | undefined;
 
-const BOOK_TITLE_MAX = 24;
-function shortTitle(title: string): string {
-  return title.length > BOOK_TITLE_MAX ? `${title.slice(0, BOOK_TITLE_MAX - 1)}…` : title;
-}
-
 const marked = new Marked({
   breaks: true,
   async: false,
@@ -55,31 +50,33 @@ const marked = new Marked({
       renderer(token) {
         const { token: value, raw } = token as EvToken;
         if (value === "AI") {
-          return '<span class="ev ev-ai" title="검증되지 않은 AI 보충">🤖AI</span>';
+          return '<span class="ev ev-ai" title="내 노트에 없는 AI 보충 — 검토 필요">AI</span>';
         }
         if (value.startsWith("P")) {
           const paper = currentLiterature?.papers[Number(value.slice(1)) - 1];
           if (!paper) return escapeAttr(raw);
           const meta = [paper.journal, paper.year, LEVEL_LABEL[paper.level]].filter(Boolean).join(" · ");
-          return `<a class="ev ev-paper" href="${escapeAttr(pubmedUrl(paper.pmid))}" target="_blank" rel="noopener noreferrer" title="${escapeAttr(`${paper.title} — ${meta}`)}">🔬${value}</a>`;
+          return `<a class="ev ev-paper" href="${escapeAttr(pubmedUrl(paper.pmid))}" target="_blank" rel="noopener noreferrer" title="${escapeAttr(`${paper.title} — ${meta}`)}">${value}</a>`;
         }
         if (value.startsWith("W")) {
           const hit = currentLiterature?.web[Number(value.slice(1)) - 1];
           if (!hit || !/^https?:\/\//i.test(hit.url)) return escapeAttr(raw);
-          return `<a class="ev ev-web" href="${escapeAttr(hit.url)}" target="_blank" rel="noopener noreferrer" title="${escapeAttr(hit.title)}">🌐${value}</a>`;
+          return `<a class="ev ev-web" href="${escapeAttr(hit.url)}" target="_blank" rel="noopener noreferrer" title="${escapeAttr(hit.title)}">${value}</a>`;
         }
         const note = currentNotes.get(Number(value));
         if (!note) return escapeAttr(raw);
         const href = `/entries/${encodeURIComponent(note.id)}`;
         if (!note.verified) {
-          return `<a class="ev ev-ai" href="${href}" title="검토 전 BBIP 초안 — 노트 링크">🤖AI</a>`;
+          return `<a class="ev ev-ai" href="${href}" title="검토 전 BBIP 초안 — 노트 링크">AI</a>`;
         }
         if (note.book) {
+          // Textbook-backed note: same numeral, linked to the claim; the
+          // footnote list spells out the book and page.
           const anchor = note.book.claimId ? `#claim-${encodeURIComponent(note.book.claimId)}` : "";
           const page = note.book.page ? ` p.${note.book.page}` : "";
-          return `<a class="ev ev-book" href="${href}${anchor}" title="${escapeAttr(`📚${note.n} ${note.title}`)}">📖<i>${escapeAttr(shortTitle(note.book.title))}</i>${page}</a>`;
+          return `<a class="ev ev-note" href="${href}${anchor}" title="${escapeAttr(`${note.title} — ${note.book.title}${page}`)}">${note.n}</a>`;
         }
-        return `<a class="ev ev-note" href="${href}" title="${escapeAttr(note.title)}">📚${note.n}</a>`;
+        return `<a class="ev ev-note" href="${href}" title="${escapeAttr(note.title)}">${note.n}</a>`;
       },
     },
   ],

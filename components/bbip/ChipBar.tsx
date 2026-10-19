@@ -1,22 +1,20 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import type { ParsedCase } from "../../lib/bbip/types";
-import { CHIP_ICONS } from "./icons";
 
 /** Mirrors the per-group cap in createSessionSchema. */
 const MAX_PER_GROUP = 8;
 
-const GROUPS: Array<{ key: keyof ParsedCase; label: string }> = [
+export const CHIP_GROUPS: Array<{ key: keyof ParsedCase; label: string }> = [
   { key: "patient", label: "환자" },
   { key: "conditions", label: "질환·고민" },
   { key: "meds", label: "복용약" },
   { key: "procedures", label: "시술" },
 ];
 
-/** Parsed case chips, rendered inside the dark hero. Editing chips opens a
- * new session (the brief is regenerated). */
+/** The parsed case as a chart header: four labelled columns of plain words.
+ * Removing or adding a word opens a new session (the brief is rewritten). */
 export function ChipBar({
   chips,
   disabled,
@@ -28,9 +26,9 @@ export function ChipBar({
 }) {
   const [group, setGroup] = useState<keyof ParsedCase | null>(null);
   const [draft, setDraft] = useState("");
-  const total = GROUPS.reduce((sum, g) => sum + chips[g.key].length, 0);
+  const total = CHIP_GROUPS.reduce((sum, g) => sum + chips[g.key].length, 0);
   const groupFull = group !== null && chips[group].length >= MAX_PER_GROUP;
-  const firstOpen = GROUPS.find((g) => chips[g.key].length < MAX_PER_GROUP)?.key ?? null;
+  const firstOpen = CHIP_GROUPS.find((g) => chips[g.key].length < MAX_PER_GROUP)?.key ?? null;
 
   function remove(key: keyof ParsedCase, index: number) {
     onChange({ ...chips, [key]: chips[key].filter((_, i) => i !== index) });
@@ -45,111 +43,104 @@ export function ChipBar({
     const value = draft.trim();
     if (!group || !value || disabled || groupFull) return;
     onChange({ ...chips, [group]: [...chips[group], value] });
-    setDraft("");
-    setGroup(null);
+    cancel();
   }
 
   return (
-    <div className="mt-5">
-      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">Parsed case</p>
-      <div className="flex flex-wrap items-center gap-2">
-        {GROUPS.flatMap((g) => {
-          const Icon = CHIP_ICONS[g.key];
-          return chips[g.key].map((item, index) => (
-            <span
-              key={`${g.key}-${index}`}
-              title={g.label}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/10 py-1 pl-3 pr-1 text-xs text-white ring-1 ring-white/15"
-            >
-              <Icon aria-hidden="true" className="h-3.5 w-3.5 text-[#bfe7d1]" />
-              {item}
-              <button
-                type="button"
-                aria-label={`${item} 삭제`}
-                disabled={disabled || total <= 1}
-                onClick={() => remove(g.key, index)}
-                className="flex h-5 w-5 items-center justify-center rounded-full text-white/70 transition hover:bg-white/20 hover:text-white disabled:opacity-30"
-              >
-                <X aria-hidden="true" className="h-3 w-3" />
-              </button>
-            </span>
-          ));
-        })}
-        {group ? (
-          <form
-            className="flex flex-wrap items-center gap-1.5"
-            onSubmit={(e) => {
-              e.preventDefault();
-              add();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") cancel();
-            }}
-          >
-            <label htmlFor="chip-group" className="sr-only">
-              칩 종류
-            </label>
-            <select
-              id="chip-group"
-              value={group}
-              onChange={(e) => setGroup(e.target.value as keyof ParsedCase)}
-              className="field !w-auto !rounded-full !py-1 text-xs"
-            >
-              {GROUPS.map((g) => (
-                <option key={g.key} value={g.key}>
-                  {g.label}
-                </option>
+    <div>
+      <dl className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+        {CHIP_GROUPS.map((g) => (
+          <div key={g.key} className="min-w-0">
+            <dt className="mb-2 text-[11.5px] font-medium text-ink/65">{g.label}</dt>
+            <dd className="flex flex-col items-start gap-1">
+              {chips[g.key].length === 0 && <span className="text-[15px] text-ink/25">—</span>}
+              {chips[g.key].map((item, index) => (
+                <span key={`${g.key}-${index}`} className="group inline-flex max-w-full items-baseline gap-1.5">
+                  <span className="break-words text-[15px] leading-snug text-ink">{item}</span>
+                  <button
+                    type="button"
+                    aria-label={`${item} 삭제`}
+                    disabled={disabled || total <= 1}
+                    onClick={() => remove(g.key, index)}
+                    className="text-[13px] leading-none text-ink/25 transition hover:text-red-700 focus-visible:text-red-700 disabled:opacity-0"
+                  >
+                    ×
+                  </button>
+                </span>
               ))}
-            </select>
-            <label htmlFor="chip-draft" className="sr-only">
-              칩 내용
-            </label>
-            <input
-              id="chip-draft"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                // Enter confirming an IME composition must not submit the form.
-                if (e.key === "Enter" && (e.nativeEvent.isComposing || e.keyCode === 229)) e.preventDefault();
-              }}
-              maxLength={40}
-              autoFocus
-              className="field !w-36 !rounded-full !py-1 text-xs"
-            />
-            <button
-              type="submit"
-              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink transition hover:bg-[#bfe7d1] disabled:opacity-50"
-              disabled={disabled || groupFull || !draft.trim()}
-            >
-              추가
-            </button>
-            {groupFull && (
-              <span role="status" className="text-xs text-amber-200">
-                칩은 그룹당 최대 {MAX_PER_GROUP}개입니다.
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={cancel}
-              className="rounded-full px-2 py-1 text-xs text-white/70 transition hover:text-white"
-            >
-              취소
-            </button>
-          </form>
-        ) : (
-          <button
-            type="button"
-            disabled={disabled || firstOpen === null}
-            title={firstOpen === null ? `칩은 그룹당 최대 ${MAX_PER_GROUP}개입니다.` : undefined}
-            onClick={() =>
-              setGroup(chips.conditions.length < MAX_PER_GROUP ? "conditions" : firstOpen)
-            }
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/30 px-3 py-1 text-xs text-white/70 transition hover:border-white/60 hover:text-white disabled:opacity-40"
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {group ? (
+        <form
+          className="mt-5 flex flex-wrap items-end gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            add();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") cancel();
+          }}
+        >
+          <label htmlFor="chip-group" className="sr-only">
+            칩 종류
+          </label>
+          <select
+            id="chip-group"
+            value={group}
+            onChange={(e) => setGroup(e.target.value as keyof ParsedCase)}
+            className="bbip-line !w-auto pb-1.5 text-[13px] text-ink"
           >
-            <Plus aria-hidden="true" className="h-3 w-3" />칩 추가
+            {CHIP_GROUPS.map((g) => (
+              <option key={g.key} value={g.key}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+          <label htmlFor="chip-draft" className="sr-only">
+            칩 내용
+          </label>
+          <input
+            id="chip-draft"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter confirming an IME composition must not submit the form.
+              if (e.key === "Enter" && (e.nativeEvent.isComposing || e.keyCode === 229)) e.preventDefault();
+            }}
+            maxLength={40}
+            autoFocus
+            placeholder="추가할 항목"
+            className="bbip-line !w-48 pb-1.5 text-[14px] text-ink"
+          />
+          <button
+            type="submit"
+            disabled={disabled || groupFull || !draft.trim()}
+            className="pb-1.5 text-[13px] font-semibold text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink disabled:text-ink/30 disabled:no-underline"
+          >
+            추가
           </button>
-        )}
-      </div>
+          <button type="button" onClick={cancel} className="pb-1.5 text-[13px] text-ink/65 hover:text-ink">
+            취소
+          </button>
+          {groupFull && (
+            <span role="status" className="pb-1.5 text-[12px] text-amber-800">
+              칩은 그룹당 최대 {MAX_PER_GROUP}개입니다.
+            </span>
+          )}
+        </form>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled || firstOpen === null}
+          onClick={() => setGroup(chips.conditions.length < MAX_PER_GROUP ? "conditions" : firstOpen)}
+          className="mt-5 text-[12.5px] text-ink/60 underline decoration-ink/20 underline-offset-4 transition hover:text-ink hover:decoration-ink disabled:opacity-40"
+        >
+          + 칩 추가
+        </button>
+      )}
     </div>
   );
 }

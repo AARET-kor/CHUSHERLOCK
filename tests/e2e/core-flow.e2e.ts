@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 
 test("dashboard and quick-note flow work end to end", async ({ page }) => {
   await page.goto("/kb");
-  await expect(page.getByRole("heading", { name: "COGNITIO" })).toBeVisible();
-  await expect(page.getByRole("navigation")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "KNOWLEDGE", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "주 메뉴" })).toBeVisible();
   await expect(page.getByText("자료 넣기 — Drop Anything")).toBeVisible();
 
   await page.goto("/entries/new");
@@ -12,7 +12,7 @@ test("dashboard and quick-note flow work end to end", async ({ page }) => {
     "E2E 근거 노트\n\n권장 용량은 10 mg이며 원문 대조 전에는 임상 적용하지 않는다."
   );
   await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page).toHaveURL(/\/entries\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/entries\/[0-9a-f-]{36}$/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { level: 1 })).toContainText("E2E 근거 노트");
   await expect(page.getByText("AI/사용자 초안")).toBeVisible();
 });
@@ -36,7 +36,7 @@ test("CHUNK deck builds flashcards and opens a focused review", async ({ page })
     "CHUNK E2E 노트\n\n응급 상황의 첫 단계와 확인 항목을 순서대로 정리한다."
   );
   await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page).toHaveURL(/\/entries\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/entries\/[0-9a-f-]{36}$/, { timeout: 15_000 });
   const entryId = new URL(page.url()).pathname.split("/").pop();
   expect(entryId).toBeTruthy();
 

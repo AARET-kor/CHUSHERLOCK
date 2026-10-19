@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, MotionConfig } from "motion/react";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
-const WORDMARK = "COGNITIO".split("");
+const WORDMARK = "KNOWLEDGE".split("");
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -70,7 +70,7 @@ export function LandingHero({
             little horizontal slack clips only vertically in practice. */}
         <div className="relative z-10 overflow-hidden pb-[0.06em]">
           <motion.h1
-            aria-label="COGNITIO"
+            aria-label="KNOWLEDGE"
             initial={{ scale: 1.03 }}
             animate={{ scale: 1 }}
             transition={{ duration: 1.2, ease: EASE }}
@@ -106,11 +106,11 @@ export function LandingHero({
           </div>
           <div className="hidden w-[5%] justify-center pt-0.5 text-ink/30 md:flex">→</div>
           <div className="flex-1 text-ink/80 md:w-[30%] md:flex-none">
-            논문·교과서·파라미터·노하우를
+            BBIP가 근거로 읽는 지식창고.
             <br />
-            한 곳에서 읽고, 분류하고,
+            논문·교과서·노하우를 읽고,
             <br />
-            연결하는 지식 엔진.
+            분류하고, 연결합니다.
           </div>
           <div className="hidden w-[5%] justify-center pt-0.5 text-ink/30 md:flex">→</div>
           <div className="hidden w-[15%] flex-col items-end gap-1.5 md:flex">

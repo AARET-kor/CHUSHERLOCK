@@ -1,135 +1,99 @@
 "use client";
 
-import { Check, CornerDownRight, MessageCircle, Microscope, Plus } from "lucide-react";
 import { useState } from "react";
 import { SECTIONS, type SectionGroup } from "../../lib/bbip/sections";
 import type { SectionKey, TurnRequest } from "../../lib/bbip/types";
-import { GROUP_LABELS, SECTION_ICONS } from "./icons";
-import { SectionHeading } from "./SectionHeading";
+import { LiteratureIndexItem } from "./LiteratureFootnotes";
 
-const GROUP_ORDER: SectionGroup[] = ["safety", "practice", "business"];
+const GROUPS: Array<{ key: SectionGroup; label: string }> = [
+  { key: "safety", label: "안전" },
+  { key: "practice", label: "실무" },
+  { key: "business", label: "비즈니스" },
+];
 
+/** What to read next, laid out like a table of contents: suggested
+ * follow-ups as serif lines, the nine sections as an index, and a direct
+ * question on a hairline. */
 export function MoreMenu({
   followups,
   openedSections,
   openedQuestions,
-  literatureOpened,
+  literatureOpened = false,
   onRequest,
 }: {
   followups: string[];
   openedSections: Set<SectionKey>;
   openedQuestions: Set<string>;
-  literatureOpened: boolean;
+  literatureOpened?: boolean;
   onRequest: (request: TurnRequest) => void;
 }) {
   const [question, setQuestion] = useState("");
 
   return (
-    <section aria-labelledby="bbip-more" className="mt-12">
-      <SectionHeading id="bbip-more" index="02" kicker="Dig deeper">
-        더 <span className="italic">파고들기</span>
-      </SectionHeading>
-
+    <div>
       {followups.length > 0 && (
-        <div className="mb-5">
-          <p className="mb-2 text-[11px] font-medium text-ink/65">이어서 물어볼 만한 질문</p>
-          <div className="flex flex-wrap gap-2">
-            {followups.map((q) => (
-              <button
-                key={q}
-                type="button"
-                disabled={openedQuestions.has(q)}
-                onClick={() => onRequest({ kind: "followup", question: q })}
-                className="inline-flex max-w-full items-center gap-2 rounded-full bg-ink px-4 py-2 text-left text-xs font-medium text-white shadow-[0_8px_20px_rgba(5,26,36,0.12)] transition hover:-translate-y-0.5 hover:bg-inkdeep disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none"
-              >
-                <CornerDownRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-[#bfe7d1]" />
-                {q}
-              </button>
-            ))}
-          </div>
+        <div className="mb-9">
+          <p className="mb-2 text-[11.5px] font-medium text-ink/65">이어서 물어볼 만한 것</p>
+          <ul className="border-t border-ink/[0.08]">
+            {followups.map((q) => {
+              const asked = openedQuestions.has(q);
+              return (
+                <li key={q}>
+                  <button
+                    type="button"
+                    disabled={asked}
+                    onClick={() => onRequest({ kind: "followup", question: q })}
+                    className="group flex w-full items-baseline gap-4 border-b border-ink/[0.08] py-3 text-left transition disabled:cursor-default"
+                  >
+                    <span className="font-serifa text-[17px] leading-snug text-inkdeep underline-offset-[5px] group-hover:underline group-disabled:text-ink/35 group-disabled:no-underline">
+                      {q}
+                    </span>
+                    <span aria-hidden="true" className="ml-auto font-mono text-[11px] text-ink/30 transition group-hover:translate-x-0.5 group-hover:text-ink">
+                      {asked ? "열림" : "→"}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-3">
-        {GROUP_ORDER.map((group) => {
-          const label = GROUP_LABELS[group];
-          return (
-            <div
-              key={group}
-              role="group"
-              aria-label={label.ko}
-              className={`rounded-[24px] border border-ink/10 p-3 shadow-[0_16px_45px_rgba(5,26,36,0.05)] ${
-                group === "business" ? "bg-[#f4f0e8]" : "bg-white"
-              }`}
-            >
-              <p className="mb-1.5 flex items-center justify-between px-2 pt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink/65">
-                <span>{label.en}</span>
-                <span className="font-sans text-[11px] font-semibold normal-case tracking-normal text-ink">
-                  {label.ko}
-                </span>
-              </p>
-              <div className="space-y-0.5">
-                {SECTIONS.filter((section) => section.group === group).map((section) => {
-                  const opened = openedSections.has(section.key);
-                  const Icon = SECTION_ICONS[section.key];
-                  return (
+      <div className="grid gap-x-10 gap-y-7 sm:grid-cols-3">
+        {GROUPS.map((group) => (
+          <div key={group.key}>
+            <p className="mb-1 text-[11.5px] font-medium text-ink/65">{group.label}</p>
+            <ul>
+              {SECTIONS.filter((s) => s.group === group.key).map((section) => {
+                const opened = openedSections.has(section.key);
+                return (
+                  <li key={section.key}>
                     <button
-                      key={section.key}
                       type="button"
                       disabled={opened}
                       onClick={() => onRequest({ kind: "section", sectionKey: section.key })}
-                      className="group flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition hover:bg-ink/5 disabled:cursor-default disabled:hover:bg-transparent"
+                      className="group flex w-full items-baseline justify-between gap-3 border-b border-ink/[0.08] py-2.5 text-left transition disabled:cursor-default"
                     >
-                      <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${
-                          opened ? "bg-emerald-600 text-white" : "bg-ink text-white"
-                        }`}
-                      >
-                        {opened ? (
-                          <Check aria-hidden="true" className="h-4 w-4" />
-                        ) : (
-                          <Icon aria-hidden="true" className="h-4 w-4" />
-                        )}
-                      </span>
-                      <span className={`min-w-0 flex-1 text-sm font-medium ${opened ? "text-ink/65" : "text-inkdeep"}`}>
+                      <span className="text-[14.5px] text-ink underline-offset-4 group-hover:underline group-disabled:text-ink/35 group-disabled:no-underline">
                         {section.label}
-                        {opened && <span className="sr-only"> (열림)</span>}
                       </span>
-                      {!opened && (
-                        <Plus
-                          aria-hidden="true"
-                          className="h-3.5 w-3.5 shrink-0 text-ink/40 transition group-hover:text-ink"
-                        />
-                      )}
+                      <span aria-hidden="true" className="font-mono text-[11px] text-ink/30 transition group-hover:text-ink">
+                        {opened ? "열림" : "→"}
+                      </span>
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </div>
 
-      <button
-        type="button"
-        disabled={literatureOpened}
-        onClick={() => onRequest({ kind: "literature" })}
-        className="mt-3 flex w-full items-center gap-3 rounded-[24px] border border-ink/10 bg-white px-4 py-3 text-left shadow-[0_16px_45px_rgba(5,26,36,0.05)] transition hover:-translate-y-0.5 hover:border-ink/25 disabled:translate-y-0 disabled:cursor-default disabled:opacity-60"
-      >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-white">
-          <Microscope aria-hidden="true" className="h-4 w-4" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-inkdeep">🔬 문헌 근거 찾기</span>
-          <span className="block text-[11px] text-ink/65">
-            PubMed와 의학 도메인 웹에서 근거를 찾습니다 — 누를 때만 검색
-          </span>
-        </span>
-        {literatureOpened && <span className="text-[11px] font-medium text-emerald-700">열림</span>}
-      </button>
+      {/* literature hook */}
+      <LiteratureIndexItem opened={literatureOpened} onRequest={onRequest} />
 
       <form
-        className="mt-4 flex items-center gap-2 rounded-full border border-ink/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_16px_45px_rgba(5,26,36,0.05)] transition focus-within:border-ink/25 focus-within:ring-2 focus-within:ring-ink/10"
+        className="mt-9 flex items-end gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           const q = question.trim();
@@ -138,7 +102,6 @@ export function MoreMenu({
           setQuestion("");
         }}
       >
-        <MessageCircle aria-hidden="true" className="h-4 w-4 shrink-0 text-ink/50" />
         <label htmlFor="bbip-custom" className="sr-only">
           직접 물어보기
         </label>
@@ -151,17 +114,17 @@ export function MoreMenu({
             if (e.key === "Enter" && (e.nativeEvent.isComposing || e.keyCode === 229)) e.preventDefault();
           }}
           maxLength={500}
-          placeholder="직접 물어보기…"
-          className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-ink placeholder:text-ink/45 focus:outline-none"
+          placeholder="직접 묻기 — 예: 아스피린을 끊고 와야 하나요?"
+          className="bbip-line pb-2 font-serifa text-[17px] text-inkdeep"
         />
         <button
           type="submit"
-          className="shrink-0 whitespace-nowrap rounded-full bg-ink px-5 py-2 text-sm font-medium text-white transition hover:bg-inkdeep disabled:opacity-40"
           disabled={question.trim().length < 2}
+          className="shrink-0 whitespace-nowrap pb-2 text-[13px] font-semibold text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink disabled:text-ink/30 disabled:no-underline"
         >
-          묻기
+          묻기 →
         </button>
       </form>
-    </section>
+    </div>
   );
 }

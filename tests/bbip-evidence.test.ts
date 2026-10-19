@@ -13,24 +13,24 @@ describe("renderEvidenceHtml", () => {
   it("turns [n] into a note badge link", () => {
     const html = renderEvidenceHtml("저출력 반복 [1][2]", notes);
     expect(html).toContain('<a class="ev ev-note" href="/entries/id-1"');
-    expect(html).toContain("📚1</a>");
-    expect(html).toContain("📚2</a>");
+    expect(html).toContain(">1</a>");
+    expect(html).toContain(">2</a>");
     expect(html).toContain('title="피코토닝 &quot;기미&quot; 프로토콜"');
   });
 
   it("turns [AI] into an AI badge", () => {
     expect(renderEvidenceHtml("일반 원칙 [AI]", notes)).toContain(
-      '<span class="ev ev-ai" title="검증되지 않은 AI 보충">🤖AI</span>'
+      '<span class="ev ev-ai" title="내 노트에 없는 AI 보충 — 검토 필요">AI</span>'
     );
   });
 
   it("badges an unverified BBIP draft as AI but still links to it", () => {
     const html = renderEvidenceHtml("초안 내용 [3]", notes);
     expect(html).toContain(
-      '<a class="ev ev-ai" href="/entries/draft-3" title="검토 전 BBIP 초안 — 노트 링크">🤖AI</a>'
+      '<a class="ev ev-ai" href="/entries/draft-3" title="검토 전 BBIP 초안 — 노트 링크">AI</a>'
     );
     expect(html).not.toContain("ev-note");
-    expect(html).not.toContain("📚");
+    expect(html).not.toContain('class="ev ev-note"');
   });
 
   it("leaves unknown note numbers as literal text", () => {
@@ -166,10 +166,10 @@ describe("literature badges", () => {
   it("links [P#] to PubMed and [W#] to the page", () => {
     const html = renderEvidenceHtml("효과 [P1], 허가 [W1]", notes, literature);
     expect(html).toContain(
-      '<a class="ev ev-paper" href="https://pubmed.ncbi.nlm.nih.gov/38000001/" target="_blank" rel="noopener noreferrer" title="Pico &quot;meta&quot; — JAAD · 2024 · 메타분석·SR">🔬P1</a>'
+      '<a class="ev ev-paper" href="https://pubmed.ncbi.nlm.nih.gov/38000001/" target="_blank" rel="noopener noreferrer" title="Pico &quot;meta&quot; — JAAD · 2024 · 메타분석·SR">P1</a>'
     );
     expect(html).toContain(
-      '<a class="ev ev-web" href="https://www.fda.gov/label" target="_blank" rel="noopener noreferrer" title="FDA label">🌐W1</a>'
+      '<a class="ev ev-web" href="https://www.fda.gov/label" target="_blank" rel="noopener noreferrer" title="FDA label">W1</a>'
     );
   });
 
@@ -181,14 +181,14 @@ describe("literature badges", () => {
     expect(renderEvidenceHtml("[W2]", notes, literature)).not.toContain("javascript");
   });
 
-  it("shows a textbook badge for notes backed by a book", () => {
-    const withBook = [{ ...notes[0]!, book: { title: "Cosmetic Dermatology Principles", page: 212, claimId: "c 1" } }];
+  it("links a textbook-backed note to the claim and names the book in the title", () => {
+    const withBook = [{ ...notes[0]!, book: { title: "Cosmetic Dermatology", page: 212, claimId: "c 1" } }];
     const html = renderEvidenceHtml("교과서 [1]", withBook);
     expect(html).toContain(
-      '<a class="ev ev-book" href="/entries/id-1#claim-c%201" title="📚1 피코토닝 &quot;기미&quot; 프로토콜">📖<i>Cosmetic Dermatology Pr…</i> p.212</a>'
+      '<a class="ev ev-note" href="/entries/id-1#claim-c%201" title="피코토닝 &quot;기미&quot; 프로토콜 — Cosmetic Dermatology p.212">1</a>'
     );
     const draft = [{ ...notes[2]!, book: { title: "Book" } }];
-    expect(renderEvidenceHtml("[3]", draft)).toContain("🤖AI");
+    expect(renderEvidenceHtml("[3]", draft)).toContain(">AI</a>");
   });
 
   it("collects cited literature numbers", () => {
