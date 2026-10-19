@@ -59,10 +59,12 @@ export function BbipConsole({
       const controller = newController();
       dispatch({ type: "turn-start", key, request });
       try {
-        const res = await fetch(`/api/bbip/sessions/${sessionId}/turns`, {
+        // 🔬 literature runs search + card on its own endpoint.
+        const literature = request.kind === "literature";
+        const res = await fetch(`/api/bbip/sessions/${sessionId}/${literature ? "literature" : "turns"}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
+          body: literature ? "{}" : JSON.stringify(request),
           signal: controller.signal,
         });
         if (!res.ok || !res.body) {
@@ -183,6 +185,8 @@ export function BbipConsole({
     state.turns.flatMap((t) => (t.kind === "followup" && t.question ? [t.question] : []))
   );
 
+  const literatureOpened = state.turns.some((t) => t.kind === "literature");
+
   // Unreviewed BBIP drafts are AI content, not "my notes".
   const verifiedNotes = state.notes.filter((n) => n.verified).length;
 
@@ -276,7 +280,13 @@ export function BbipConsole({
               >
                 먼저 볼 <span className="italic">핵심</span>
               </SectionHeading>
-              <TurnCard turn={brief} notes={state.notes} onRetry={retry} onPromote={setPromoteTurnId} />
+              <TurnCard
+                turn={brief}
+                notes={state.notes}
+                literature={session.literature}
+                onRetry={retry}
+                onPromote={setPromoteTurnId}
+              />
             </section>
           )}
           {brief && brief.status !== "streaming" && (
@@ -284,6 +294,7 @@ export function BbipConsole({
               followups={brief.followups}
               openedSections={openedSections}
               openedQuestions={openedQuestions}
+              literatureOpened={literatureOpened}
               onRequest={(request) => void runTurn(session.id, request)}
             />
           )}
@@ -298,6 +309,7 @@ export function BbipConsole({
                     key={turn.key}
                     turn={turn}
                     notes={state.notes}
+                    literature={session.literature}
                     onRetry={retry}
                     onPromote={setPromoteTurnId}
                   />

@@ -3,6 +3,7 @@ import {
   Droplets,
   MessageCircle,
   MessageCircleQuestion,
+  Microscope,
   Pill,
   Repeat2,
   Search,
@@ -49,5 +50,6 @@ export const GROUP_LABELS: Record<SectionGroup, { ko: string; en: string }> = {
 export function turnIcon(turn: { kind: TurnKind; sectionKey?: SectionKey }): LucideIcon {
   if (turn.kind === "brief") return Zap;
   if (turn.kind === "section" && turn.sectionKey) return SECTION_ICONS[turn.sectionKey];
+  if (turn.kind === "literature") return Microscope;
   return MessageCircleQuestion;
 }

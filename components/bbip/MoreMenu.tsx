@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CornerDownRight, MessageCircle, Plus } from "lucide-react";
+import { Check, CornerDownRight, MessageCircle, Microscope, Plus } from "lucide-react";
 import { useState } from "react";
 import { SECTIONS, type SectionGroup } from "../../lib/bbip/sections";
 import type { SectionKey, TurnRequest } from "../../lib/bbip/types";
@@ -13,11 +13,13 @@ export function MoreMenu({
   followups,
   openedSections,
   openedQuestions,
+  literatureOpened,
   onRequest,
 }: {
   followups: string[];
   openedSections: Set<SectionKey>;
   openedQuestions: Set<string>;
+  literatureOpened: boolean;
   onRequest: (request: TurnRequest) => void;
 }) {
   const [question, setQuestion] = useState("");
@@ -107,6 +109,24 @@ export function MoreMenu({
           );
         })}
       </div>
+
+      <button
+        type="button"
+        disabled={literatureOpened}
+        onClick={() => onRequest({ kind: "literature" })}
+        className="mt-3 flex w-full items-center gap-3 rounded-[24px] border border-ink/10 bg-white px-4 py-3 text-left shadow-[0_16px_45px_rgba(5,26,36,0.05)] transition hover:-translate-y-0.5 hover:border-ink/25 disabled:translate-y-0 disabled:cursor-default disabled:opacity-60"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-white">
+          <Microscope aria-hidden="true" className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-inkdeep">🔬 문헌 근거 찾기</span>
+          <span className="block text-[11px] text-ink/65">
+            PubMed와 의학 도메인 웹에서 근거를 찾습니다 — 누를 때만 검색
+          </span>
+        </span>
+        {literatureOpened && <span className="text-[11px] font-medium text-emerald-700">열림</span>}
+      </button>
 
       <form
         className="mt-4 flex items-center gap-2 rounded-full border border-ink/10 bg-white py-1.5 pl-4 pr-1.5 shadow-[0_16px_45px_rgba(5,26,36,0.05)] transition focus-within:border-ink/25 focus-within:ring-2 focus-within:ring-ink/10"

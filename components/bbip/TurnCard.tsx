@@ -4,9 +4,10 @@ import Link from "next/link";
 import { LoaderCircle, RotateCcw } from "lucide-react";
 import type { ClientTurn } from "../../lib/bbip/consoleState";
 import { getSection } from "../../lib/bbip/sections";
-import type { NoteRef } from "../../lib/bbip/types";
+import type { LiteratureBlock, NoteRef } from "../../lib/bbip/types";
 import { EvidenceMarkdown } from "./EvidenceMarkdown";
 import { GROUP_LABELS, turnIcon } from "./icons";
+import { LiteratureRefs } from "./LiteratureRefs";
 
 function cardHeading(turn: ClientTurn): { kicker: string; title: string } {
   if (turn.kind === "brief") return { kicker: "Core brief", title: "핵심 브리핑" };
@@ -14,6 +15,7 @@ function cardHeading(turn: ClientTurn): { kicker: string; title: string } {
     const section = getSection(turn.sectionKey);
     return { kicker: `Section · ${GROUP_LABELS[section.group].ko}`, title: section.label };
   }
+  if (turn.kind === "literature") return { kicker: "Literature · PubMed · Web", title: "문헌 근거" };
   return {
     kicker: turn.kind === "followup" ? "Follow-up" : "Your question",
     title: turn.question ?? "질문",
@@ -23,11 +25,13 @@ function cardHeading(turn: ClientTurn): { kicker: string; title: string } {
 export function TurnCard({
   turn,
   notes,
+  literature,
   onRetry,
   onPromote,
 }: {
   turn: ClientTurn;
   notes: NoteRef[];
+  literature?: LiteratureBlock;
   onRetry: (turn: ClientTurn) => void;
   onPromote: (turnId: string) => void;
 }) {
@@ -35,6 +39,7 @@ export function TurnCard({
   const brief = turn.kind === "brief";
   const Icon = turnIcon(turn);
   const { kicker, title } = cardHeading(turn);
+  const hasLiterature = Boolean(literature && (literature.papers.length || literature.web.length));
 
   return (
     <article
@@ -75,12 +80,16 @@ export function TurnCard({
 
       <div className={`px-5 py-5 md:px-6 ${brief ? "md:py-6" : ""}`}>
         {turn.output ? (
-          <EvidenceMarkdown markdown={turn.output} notes={notes} />
+          <EvidenceMarkdown markdown={turn.output} notes={notes} literature={literature} />
         ) : streaming ? (
           <div className="dot-pulse flex items-center gap-1.5 text-sm text-ink/65">
             근거를 모으는 중 <span /> <span /> <span />
           </div>
         ) : null}
+
+        {turn.kind === "literature" && turn.status === "done" && literature && hasLiterature && (
+          <LiteratureRefs block={literature} />
+        )}
 
         {turn.status === "failed" && (
           <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200">
@@ -103,6 +112,12 @@ export function TurnCard({
         <footer className="flex items-center justify-between gap-3 border-t border-ink/[0.07] px-5 py-3 md:px-6">
           <p className="hidden text-[11px] text-ink/65 sm:block">
             <span className="ev ev-note">📚</span> 내 노트 근거 · <span className="ev ev-ai">🤖AI</span> 검증 전 보충
+            {hasLiterature && (
+              <>
+                {" · "}
+                <span className="ev ev-paper">🔬</span> 논문 · <span className="ev ev-web">🌐</span> 웹
+              </>
+            )}
           </p>
           {turn.promotedEntryId ? (
             <Link

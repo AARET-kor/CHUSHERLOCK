@@ -109,11 +109,17 @@ export function consoleReducer(state: ConsoleState, action: ConsoleAction): Cons
           },
         ],
       };
-    case "turn-event":
+    case "turn-event": {
+      const { event } = action;
+      // The block belongs to the session: later cards cite it too.
+      const session =
+        event.type === "literature" && state.session ? { ...state.session, literature: event.block } : state.session;
       return {
         ...state,
-        turns: state.turns.map((t) => (t.key === action.key ? applyEvent(t, action.event) : t)),
+        session,
+        turns: state.turns.map((t) => (t.key === action.key ? applyEvent(t, event) : t)),
       };
+    }
     case "turn-remove":
       return { ...state, turns: state.turns.filter((t) => t.key !== action.key) };
     case "promoted":
