@@ -671,3 +671,30 @@ a.ev-ai {
     transition: none;
   }
 }
+
+/* BBIP submit button: the brand ∞. Hover slides the needle through; busy
+ * dims the loop and runs a light segment around it, endlessly. */
+.bbip-go .go-inf { opacity: 0.95; transition: opacity 0.3s ease; }
+.bbip-go .go-trace { opacity: 0; stroke-dasharray: 18 82; }
+.bbip-go .go-needle {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  opacity: 0.8;
+  transition: stroke-dashoffset 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.bbip-go:not(:disabled):hover .go-needle,
+.bbip-go:focus-visible .go-needle { stroke-dashoffset: 0; }
+.bbip-go[data-busy] .go-inf { opacity: 0.28; }
+.bbip-go[data-busy] .go-trace { opacity: 1; animation: bbipGoTrace 1.5s linear infinite; }
+.bbip-go[data-busy] .go-needle { animation: bbipGoSlice 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+@keyframes bbipGoTrace { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes bbipGoSlice {
+  0% { stroke-dashoffset: 100; opacity: 1; }
+  60% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -100; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bbip-go .go-needle { transition: none; }
+  .bbip-go[data-busy] .go-trace { animation: none; stroke-dasharray: none; opacity: 0.9; }
+  .bbip-go[data-busy] .go-needle { animation: none; opacity: 0; }
+}

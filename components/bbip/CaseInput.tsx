@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowRight, LoaderCircle } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 
 export const CASE_INPUT_ID = "bbip-input";
@@ -65,14 +64,16 @@ export function CaseInput({
         <button
           type="submit"
           disabled={disabled || value.trim().length < 2}
-          className="mb-2 inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-ink px-5 text-[15px] font-semibold tracking-wide text-white transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(5,26,36,0.22)] disabled:translate-y-0 disabled:bg-ink/25 disabled:shadow-none"
+          aria-busy={disabled}
+          data-busy={disabled ? "true" : undefined}
+          className={`bbip-go mb-2 inline-flex h-11 shrink-0 items-center gap-2.5 rounded-full px-5 text-[15px] font-semibold tracking-wide text-white transition duration-200 active:scale-[0.96] ${
+            disabled
+              ? "cursor-progress bg-ink"
+              : "bg-ink hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(5,26,36,0.22)] disabled:translate-y-0 disabled:bg-ink/25 disabled:shadow-none"
+          }`}
         >
-          {disabled ? "분석 중…" : "BBIP"}
-          {disabled ? (
-            <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />
-          ) : (
-            <ArrowRight aria-hidden="true" className="h-4 w-4" />
-          )}
+          {disabled ? "분석 중" : "BBIP"}
+          <GoMark />
         </button>
       </div>
       <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-ink/65">
@@ -80,5 +81,22 @@ export function CaseInput({
         <span>이름·연락처는 쓰지 마세요 — 원문은 저장되지 않습니다</span>
       </p>
     </form>
+  );
+}
+
+// The brand ∞ as a monoline icon: the needle slides through on hover, and
+// while a case is being read a light segment runs the loop (globals.css).
+const INFINITY =
+  "M20 10C23 6 27 4 31 4C35 4 38 7 38 10C38 13 35 16 31 16C27 16 23 14 20 10C17 6 13 4 9 4C5 4 2 7 2 10C2 13 5 16 9 16C13 16 17 14 20 10Z";
+
+function GoMark() {
+  return (
+    <svg viewBox="0 0 40 20" aria-hidden="true" className="h-[15px] w-[30px] overflow-visible">
+      <g transform="rotate(-8 20 10)" fill="none" stroke="currentColor" strokeLinecap="round">
+        <path className="go-inf" d={INFINITY} pathLength={100} strokeWidth={2.4} />
+        <path className="go-trace" d={INFINITY} pathLength={100} strokeWidth={2.8} />
+        <path className="go-needle" d="M-3 14.5L43 5.5" pathLength={100} strokeWidth={1.3} />
+      </g>
+    </svg>
   );
 }
