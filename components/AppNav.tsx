@@ -36,8 +36,6 @@ const KNOWLEDGE_LINKS = [
   { href: "/library", label: "LIBRARY" },
   { href: "/study", label: "CHUNK!" },
   { href: "/review", label: "ANKI's", badge: true },
-  { href: "/ask", label: "ASK to" },
-  { href: "/entries/new", label: "Qmemo" },
   { href: "/categories", label: "Sort" },
 ];
 
@@ -97,7 +95,8 @@ export function AppNav({ due }: { due: number }) {
             </span>
             {KNOWLEDGE_LINKS.map((link) => {
               const active =
-                link.href === "/entries/new" ? pathname.startsWith("/entries") : pathname === link.href || pathname.startsWith(`${link.href}/`);
+                (link.href === "/library" && pathname.startsWith("/entries/")) ||
+                pathname === link.href || pathname.startsWith(`${link.href}/`);
               return (
                 <Link
                   key={link.href}

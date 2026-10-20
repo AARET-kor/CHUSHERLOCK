@@ -117,9 +117,6 @@ export function LandingHero({
             <Link href="/library" className="transition hover:text-ink hover:underline">
               라이브러리
             </Link>
-            <Link href="/entries/new" className="transition hover:text-ink hover:underline">
-              빠른 메모
-            </Link>
             <Link href="/categories" className="transition hover:text-ink hover:underline">
               분류체계
             </Link>
@@ -189,10 +186,10 @@ export function LandingHero({
                 </span>
               </button>
               <Link
-                href="/ask"
+                href="/kb#knowledge-notes"
                 className="rounded-md border border-ink/20 px-6 py-3.5 text-[15px] font-medium text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/50"
               >
-                💬 노트에게 물어보기
+                노트 탐색 →
               </Link>
             </motion.div>
           </motion.div>

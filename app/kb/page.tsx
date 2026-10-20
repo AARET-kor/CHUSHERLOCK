@@ -40,7 +40,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* 03 — recent notes */}
-      <section className="mt-24">
+      <section id="knowledge-notes" className="mt-24 scroll-mt-40">
         {sorted.length === 0 ? (
           <p className="mx-auto max-w-md text-center text-sm text-ink/40">
             아직 노트가 없습니다 — 위에 첫 자료를 던져 넣어 보세요.
