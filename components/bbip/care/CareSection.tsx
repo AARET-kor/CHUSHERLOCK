@@ -69,6 +69,7 @@ export function CareSection({ session, care, index }: { session: BbipSession; ca
             order={order}
             procedures={session.chips.procedures}
             ready={orderReady(order.items, context)}
+            saving={care.saving}
             busy={status === "generating"}
             onSaveSet={care.saveSet}
             onRegenerate={() => {

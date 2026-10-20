@@ -12,6 +12,8 @@ export interface CareController {
   error: string | null;
   generate: (replace?: boolean) => Promise<void>;
   saveItems: (items: CareItem[]) => Promise<void>;
+  /** A row change is still on its way to the server. */
+  saving: boolean;
   /** Resolves to an error message, or null when saved. */
   saveSet: (procedure: string) => Promise<string | null>;
 }
@@ -41,8 +43,12 @@ export function useCareOrder(sessionId: string | null, initial: CareOrder | null
   sessionRef.current = sessionId;
   const orderRef = useRef(current.order);
   orderRef.current = current.order;
-  // Only the latest PATCH response may overwrite local rows.
-  const saveSeq = useRef(0);
+  // Row saves go out one at a time, always with the newest rows: parallel
+  // PATCHes could land out of order and leave an older state on the server
+  // while the screen shows the newer one.
+  const inflight = useRef<Promise<void> | null>(null);
+  const queued = useRef<{ orderId: string; items: CareItem[] } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const generate = useCallback(
     async (replace = false) => {
@@ -70,27 +76,39 @@ export function useCareOrder(sessionId: string | null, initial: CareOrder | null
     [sessionId]
   );
 
-  const saveItems = useCallback(async (items: CareItem[]) => {
+  const saveItems = useCallback((items: CareItem[]): Promise<void> => {
     const order = orderRef.current;
-    if (!order) return;
-    const seq = ++saveSeq.current;
+    if (!order) return Promise.resolve();
     setState((s) => (s.order ? { ...s, order: { ...s.order, items }, error: null } : s));
-    try {
-      const res = await fetch(`/api/bbip/care/${order.id}`, {
-        method: "PATCH",
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ items }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (seq !== saveSeq.current) return;
-      if (!res.ok || !data.order) {
-        setState((s) => ({ ...s, error: data.error ?? "저장하지 못했습니다. 다시 시도해 주세요." }));
-        return;
+    queued.current = { orderId: order.id, items };
+    if (inflight.current) return inflight.current;
+    setSaving(true);
+    inflight.current = (async () => {
+      while (queued.current) {
+        const next = queued.current;
+        queued.current = null;
+        try {
+          const res = await fetch(`/api/bbip/care/${next.orderId}`, {
+            method: "PATCH",
+            headers: JSON_HEADERS,
+            body: JSON.stringify({ items: next.items }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (queued.current) continue; // newer rows are already queued
+          if (!res.ok || !data.order) {
+            setState((s) => ({ ...s, error: data.error ?? "저장하지 못했습니다. 다시 시도해 주세요." }));
+            continue;
+          }
+          setState((s) => (s.order?.id === data.order.id ? { ...s, order: data.order } : s));
+        } catch {
+          if (!queued.current) setState((s) => ({ ...s, error: "네트워크 오류로 저장하지 못했습니다." }));
+        }
       }
-      setState((s) => (s.order?.id === data.order.id ? { ...s, order: data.order } : s));
-    } catch {
-      if (seq === saveSeq.current) setState((s) => ({ ...s, error: "네트워크 오류로 저장하지 못했습니다." }));
-    }
+    })().finally(() => {
+      inflight.current = null;
+      setSaving(false);
+    });
+    return inflight.current;
   }, []);
 
   const saveSet = useCallback(async (procedure: string): Promise<string | null> => {
@@ -109,5 +127,5 @@ export function useCareOrder(sessionId: string | null, initial: CareOrder | null
     }
   }, []);
 
-  return { order: current.order, status: current.status, error: current.error, generate, saveItems, saveSet };
+  return { order: current.order, status: current.status, error: current.error, generate, saveItems, saving, saveSet };
 }

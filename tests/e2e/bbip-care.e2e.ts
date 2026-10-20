@@ -48,7 +48,8 @@ test("care orders: confirm rows, copy the EMR order, print the handout, reuse my
   ]);
   await expect(handout.getByRole("heading", { name: "시술 후 안내" })).toBeVisible(COLD);
   await expect(handout.getByText(/바로 병원으로 연락하세요/)).toBeVisible();
-  await expect(handout.getByText(/\d+월 \d+일\(.\) — 경과를 확인합니다/)).toBeVisible();
+  // Checks come from the field; the patient sentence only follows it.
+  await expect(handout.getByText(/\d+월 \d+일\(.\) — 홍반·색소 확인\. 경과를 확인합니다/)).toBeVisible();
   await handout.close();
 
   await care.getByRole("button", { name: "내 세트로 저장" }).click();

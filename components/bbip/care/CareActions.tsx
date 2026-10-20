@@ -13,6 +13,7 @@ export function CareActions({
   order,
   procedures,
   ready,
+  saving,
   busy,
   onSaveSet,
   onRegenerate,
@@ -20,6 +21,9 @@ export function CareActions({
   order: CareOrder;
   procedures: string[];
   ready: boolean;
+  /** Row changes still reaching the server — the handout and set save read
+   * the stored order, so they wait; copying uses what is on screen. */
+  saving: boolean;
   busy: boolean;
   onSaveSet: (procedure: string) => Promise<string | null>;
   onRegenerate: () => void;
@@ -61,7 +65,7 @@ export function CareActions({
             복사했습니다
           </span>
         )}
-        {ready ? (
+        {ready && !saving ? (
           <Link href={`/care/${order.id}/handout`} target="_blank" className={ACTION}>
             환자 안내문
           </Link>
@@ -87,7 +91,7 @@ export function CareActions({
           )}
           <button
             type="button"
-            disabled={!ready || !procedure}
+            disabled={!ready || saving || !procedure}
             onClick={() => void saveSet()}
             className={`${ACTION} disabled:text-ink/30 disabled:no-underline`}
           >
