@@ -60,7 +60,7 @@ export function AppNav({ due }: { due: number }) {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink/5 bg-white/85 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-ink/5 bg-white/85 backdrop-blur print:hidden">
       <nav aria-label="주 메뉴" className="mx-auto flex max-w-[1360px] items-center justify-between gap-3 px-5 py-3.5 sm:px-8 sm:py-4 lg:px-12">
         <Link href="/" className="brand-link flex shrink-0 items-baseline gap-2 text-ink">
           <span className="font-serifa text-2xl font-bold tracking-tight sm:text-[32px]">BBIP</span>
