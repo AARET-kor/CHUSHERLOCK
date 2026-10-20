@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SECTIONS, type SectionGroup } from "../../lib/bbip/sections";
 import type { SectionKey, TurnRequest } from "../../lib/bbip/types";
 import { LiteratureIndexItem } from "./LiteratureFootnotes";
+import { CareIndexItem } from "./care/CareIndexItem";
 
 const GROUPS: Array<{ key: SectionGroup; label: string }> = [
   { key: "safety", label: "안전" },
@@ -19,12 +20,16 @@ export function MoreMenu({
   openedSections,
   openedQuestions,
   literatureOpened = false,
+  careOpened = false,
+  onCare,
   onRequest,
 }: {
   followups: string[];
   openedSections: Set<SectionKey>;
   openedQuestions: Set<string>;
   literatureOpened?: boolean;
+  careOpened?: boolean;
+  onCare?: () => void;
   onRequest: (request: TurnRequest) => void;
 }) {
   const [question, setQuestion] = useState("");
@@ -91,6 +96,8 @@ export function MoreMenu({
 
       {/* literature hook */}
       <LiteratureIndexItem opened={literatureOpened} onRequest={onRequest} />
+      {/* care orders hook */}
+      {onCare && <CareIndexItem opened={careOpened} onOpen={onCare} />}
 
       <form
         className="mt-9 flex items-end gap-4"

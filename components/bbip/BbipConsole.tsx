@@ -23,6 +23,8 @@ import { SheetSection } from "./SheetSection";
 import { AnatomySection, hasAnatomyMap } from "./anatomy/AnatomySection";
 import { TurnCard } from "./TurnCard";
 import { useRecentSessions } from "./useRecentSessions";
+import { CareSection } from "./care/CareSection";
+import { useCareOrder } from "./care/useCareOrder";
 
 const EXAMPLES = [
   "20대 여성, 여드름 흉터, 이소트레티노인 복용, 레이저 상담",
@@ -57,6 +59,7 @@ export function BbipConsole({
   const [error, setError] = useState<string | null>(null);
   const [promoteTurnId, setPromoteTurnId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const care = useCareOrder(state.session?.id ?? null, initialView?.care ?? null);
   const keySeq = useRef(0);
   const openingRef = useRef(false);
   const controllers = useRef(new Set<AbortController>());
@@ -196,6 +199,8 @@ export function BbipConsole({
   const session = state.session;
   // Anatomy map (Plan 3) takes sheet index 03 when the case maps to the atlas.
   const sheetShift = session && hasAnatomyMap(session) ? 1 : 0;
+  // Care orders (Plan 4) take the block after 더 보기 once opened.
+  const careShift = care.status !== "idle" ? 1 : 0;
   const briefs = state.turns.filter((t) => t.kind === "brief");
   // Prefer the latest brief that did not fail (a retry may sit after a failure).
   const brief = [...briefs].reverse().find((t) => t.status !== "failed") ?? briefs[briefs.length - 1];
@@ -330,9 +335,16 @@ export function BbipConsole({
                 openedSections={openedSections}
                 openedQuestions={openedQuestions}
                 literatureOpened={state.turns.some((t) => t.kind === "literature")}
+                careOpened={care.status !== "idle"}
+                onCare={() => void care.generate()}
                 onRequest={(request) => void runTurn(session.id, request)}
               />
             </SheetSection>
+          )}
+
+          {/* ── Care orders (Plan 4) ── */}
+          {care.status !== "idle" && (
+            <CareSection session={session} care={care} index={String(4 + sheetShift).padStart(2, "0")} />
           )}
 
           {others.map((turn, i) => {
@@ -341,7 +353,7 @@ export function BbipConsole({
               <SheetSection
                 key={turn.key}
                 id={`bbip-turn-${turn.key}`}
-                index={String(i + 4 + sheetShift).padStart(2, "0")}
+                index={String(i + 4 + sheetShift + careShift).padStart(2, "0")}
                 label={margin.label}
                 note={margin.note}
               >
