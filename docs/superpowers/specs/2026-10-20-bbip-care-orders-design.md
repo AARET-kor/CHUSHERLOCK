@@ -69,7 +69,7 @@
 행마다 함께 저장하는 것:
 
 - **환자 문장(patientText)** — 안내문에 들어갈 쉬운 말. **용량·횟수·기간 숫자는 넣지 않는다.** 안내문은 숫자를 칸에서 가져오므로, 원장이 칸을 고치면 안내문도 같이 맞는다.
-- **출처** — `set`(내 세트) / `note`(노트 n) / `literature`(P#·W#) / `ai`. 인용 표시는 기존 각주 방식(`2`, `P1`, `W1`, *AI*)을 따른다.
+- **출처** — `set`(내 세트) / `note`(노트 n) / `literature`(P#·W#) / `ai` / `doctor`(원장이 직접 추가한 행). 인용 표시는 기존 각주 방식(`2`, `P1`, `W1`, *AI*)을 따른다.
 - **확인 여부**, 그리고 세트 행을 AI가 빼자고 했다면 **제외 사유**.
 
 ## 4. 안전 장치
@@ -78,7 +78,7 @@
 
 BBIP의 기존 규칙인 "[AI] 문장에는 수치 금지"는 산문 카드에 그대로 남는다. **수치는 이 오더의 구조화된 칸에서만 허용**한다. 이 칸은 원장 확인을 거쳐야만 복사·안내문으로 나간다.
 
-- AI 출처 행에 숫자가 있으면 **"AI 제안 수치 — 확인 필요"** 표시가 확인 전까지 붙는다.
+- AI 출처 행에 숫자가 있으면 (원장이 직접 추가한 `doctor` 행은 제외) **"AI 제안 수치 — 확인 필요"** 표시가 확인 전까지 붙는다.
 - 허가 범위 밖 사용(오프라벨)이면 AI는 목적 칸에 그 사실을 적는다.
 
 ### 4.2 결정론적 검사 (코드, AI 아님)
@@ -143,7 +143,7 @@ components/bbip/care/
 ```
 bbip_care_orders
   id, session_id → bbip_sessions (cascade, unique), items json(CareItem[]),
-  set_keys json(string[]), caution text, model, created_at, updated_at
+  set_keys json(string[]), caution text, notices json(string[]), model, created_at, updated_at
 bbip_care_sets
   id, procedure_key (unique), label, items json(CareItem[]),
   source_session_id?, updated_at
