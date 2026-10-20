@@ -8,6 +8,7 @@ export const BBIP_SOURCE_PREFIX = "BBIP AI 보충";
 
 const NOTE_EXCERPT_CHARS = 1400;
 const PRIOR_LIMIT = 3000;
+const PRIOR_TURN_CHARS = 700;
 const PAPER_EXCERPT_CHARS = 1200;
 
 /** Defangs the tags this prompt uses as structure, so note text, chips or
@@ -107,22 +108,52 @@ export function buildLiteratureBlock(block: LiteratureBlock | undefined): string
   return `<literature>\n${[...papers, ...web].join("\n\n")}\n</literature>`;
 }
 
-/** Earlier cards as bounded context: the brief in full, other cards by
- * their first paragraph. Failed/streaming turns are skipped. */
+/** A card's substance for context: headings dropped, whole paragraphs up to
+ * PRIOR_TURN_CHARS (a longer first paragraph is cut). */
+function turnDigest(output: string): string {
+  const paragraphs = output
+    .split("\n")
+    .filter((line) => !/^\s*#{1,6}\s/.test(line))
+    .join("\n")
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  let text = "";
+  for (const paragraph of paragraphs) {
+    const next = text ? `${text}\n\n${paragraph}` : paragraph;
+    if (next.length > PRIOR_TURN_CHARS) {
+      if (!text) text = `${paragraph.slice(0, PRIOR_TURN_CHARS)}…`;
+      break;
+    }
+    text = next;
+  }
+  return text;
+}
+
+/** Earlier cards as bounded context: the brief first (up to half the
+ * budget), then the newest cards that still fit, in their original order.
+ * Failed/streaming turns are skipped. */
 export function buildPriorTurnsBlock(turns: BbipTurn[]): string {
-  const parts = turns
-    .filter((turn) => turn.status === "done" && turn.output.trim())
-    .map((turn) => {
-      const body =
-        turn.kind === "brief"
-          ? turn.output.trim()
-          : (turn.output.trim().split(/\n\s*\n/)[0] ?? "");
-      return neutralizeTags(`[${turnTitle(turn)}]\n${body}`);
-    });
+  const done = turns.filter((turn) => turn.status === "done" && turn.output.trim());
+  const part = (turn: BbipTurn) => {
+    const body =
+      turn.kind === "brief" ? turn.output.trim().slice(0, PRIOR_LIMIT / 2) : turnDigest(turn.output);
+    return neutralizeTags(`[${turnTitle(turn)}]\n${body}`);
+  };
+  const briefs = done.filter((turn) => turn.kind === "brief").map(part);
+  let used = briefs.reduce((sum, text) => sum + text.length + 2, 0);
+  const others = done.filter((turn) => turn.kind !== "brief");
+  const kept: string[] = [];
+  for (let i = others.length - 1; i >= 0; i--) {
+    const text = part(others[i]!);
+    if (used + text.length + 2 > PRIOR_LIMIT) break;
+    used += text.length + 2;
+    kept.unshift(text);
+  }
+  const skipped = others.length - kept.length;
+  const parts = [...briefs, ...(skipped > 0 ? [`…(이전 카드 ${skipped}개 생략)`] : []), ...kept];
   if (parts.length === 0) return "";
-  let text = parts.join("\n\n");
-  if (text.length > PRIOR_LIMIT) text = `${text.slice(0, PRIOR_LIMIT)}\n…(생략)`;
-  return `<previous>\n${text}\n</previous>`;
+  return `<previous>\n${parts.join("\n\n")}\n</previous>`;
 }
 
 const BRIEF_INSTRUCTION = `## 요청: 핵심 브리핑

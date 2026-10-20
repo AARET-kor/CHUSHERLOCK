@@ -17,6 +17,10 @@ export interface CareItem {
    * dates come from `fields`, never from here, so an edited field cannot
    * leave a stale number in the handout. */
   patientText: string;
+  /** fieldsFingerprint() of the fields patientText was written for. When the
+   * fields change after that, the sentence is left out of the handout until
+   * the doctor rewrites it. Absent on older rows (treated as current). */
+  patientTextBasis?: string;
   source: CareSource;
   /** "2" for note 2, "P1"/"W1" for literature; only with those sources. */
   cite?: string;

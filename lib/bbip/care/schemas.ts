@@ -8,6 +8,7 @@ const careItemInput = z.object({
   kind: z.enum(["rx", "dressing", "contingency", "followup"]),
   fields: z.record(z.string(), z.string().max(500)),
   patientText: z.string().max(500),
+  patientTextBasis: z.string().max(4000).optional(),
   source: z.enum(["set", "note", "literature", "ai", "doctor"]),
   cite: z.string().max(10).optional(),
   confirmed: z.boolean(),

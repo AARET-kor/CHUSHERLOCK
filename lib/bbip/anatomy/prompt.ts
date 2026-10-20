@@ -26,6 +26,9 @@ export function buildAtlasBlock(plan: AnatomyPlan | null): string {
   return [
     "<atlas>",
     `이번 케이스 시술 부위의 해부 구조물 — BBIP 아틀라스(원장 검토 전 초안 포함). 부위: ${regions}`,
+    ...(plan.regionsGuessed
+      ? ["부위 미확인: 케이스에 시술 부위가 없어 이 시술의 흔한 부위를 모두 넣었습니다. 특정 부위로 단정하지 말고, 필요하면 부위를 확인하라고 쓰세요."]
+      : []),
     ...lines,
     "",
     "규칙: 위 구조물을 언급할 때는 {{atlas:id}} 형식으로 쓰세요(예: {{atlas:" +

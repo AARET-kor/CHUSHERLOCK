@@ -1,5 +1,5 @@
 // lib/bbip/care/format.ts
-import { CARE_KINDS, KIND_LABEL, URGENCY_LABEL } from "./fields";
+import { CARE_KINDS, KIND_LABEL, patientTextCurrent, URGENCY_LABEL } from "./fields";
 import { activeItems } from "./lint";
 import type { CareItem, Urgency } from "./types";
 
@@ -83,23 +83,29 @@ function sentence(head: string, patientText: string): string {
   return patientText.trim() ? `${head} ${patientText.trim()}` : head;
 }
 
+// The action, checks, doses and dates always come from the fields; the
+// patient sentence only adds plain words, and only while it was written for
+// the current field values.
 function handoutLine(item: CareItem, base: Date): string {
   const f = item.fields;
+  const extra = patientTextCurrent(item) ? item.patientText.trim() : "";
   switch (item.kind) {
     case "rx": {
       const name = f.brand?.trim() || f.drug?.trim() || "";
       const head = `${f.form?.trim() ? `${name}(${f.form.trim()})` : name}: ${join([f.dose, f.frequency, f.duration], ", ")}.`;
-      return sentence(head, item.patientText);
+      return sentence(head, extra);
     }
     case "dressing":
-      return sentence(`${f.material?.trim()} — ${join([f.method, f.interval, f.duration], ", ")}.`, item.patientText);
+      return sentence(`${f.material?.trim()} — ${join([f.method, f.interval, f.duration], ", ")}.`, extra);
     case "contingency": {
-      const what = item.patientText.trim() || join([f.situation, f.action], ": ");
-      return `${what} → ${URGENCY_PATIENT[f.urgency as Urgency] ?? ""}`.trim();
+      const when = extra || join([f.situation, f.signs], " — ");
+      const action = (f.action ?? "").trim();
+      return `${when}${action ? ` (조치: ${action})` : ""} → ${URGENCY_PATIENT[f.urgency as Urgency] ?? ""}`.trim();
     }
     case "followup": {
       const day = /^\d{1,3}$/.test(f.day ?? "") ? visitDate(base, Number(f.day)) : (f.when ?? "").trim();
-      return `${day} — ${item.patientText.trim() || (f.checks ?? "").trim()}`;
+      const checks = (f.checks ?? "").trim();
+      return sentence(`${day} — ${checks ? `${checks}.` : ""}`.trim(), extra);
     }
   }
 }

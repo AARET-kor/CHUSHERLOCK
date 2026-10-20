@@ -8,10 +8,11 @@ import { selectPromptNotes } from "../context";
 import { CareGenerationError, CareNotFoundError } from "./errors";
 import { callCareModel, fakeCareResponse, type CareCallResult } from "./generate";
 import { caseText, interactionsFor } from "./interactions";
+import { PRIMARY_FIELD } from "./fields";
 import { canConfirm } from "./lint";
 import { parseCareResponse, type ParsedCare } from "./parse";
 import { buildCareContext, type CareContext } from "./prompt";
-import { dedupeKey, seedFromSets } from "./sets";
+import { conflictingPrimaries, dedupeKey, primaryKey, seedFromSets } from "./sets";
 import type { CareItem, CareOrder } from "./types";
 
 export { CareNotFoundError };
@@ -67,9 +68,30 @@ export async function createCareOrder(sessionId: string, deps: CareDeps = defaul
     if (reason) return { ...item, removed: { reason } };
     return { ...item, confirmed: interactionsFor(item, context).length === 0 && canConfirm(item, context) };
   });
-  const inSet = new Set(seed.map(dedupeKey));
+  // A model row identical to an active set row adds nothing; one that
+  // replaces a removed set row, or changes an active one, is kept.
+  const active = seeded.filter((item) => !item.removed);
+  const inSet = new Set(active.map(dedupeKey));
   const added = parsed.items.filter((item) => !inSet.has(dedupeKey(item)));
-  const items = [...seeded, ...added];
+
+  // Two versions of the same drug (or dressing, …) both need the doctor:
+  // neither is pre-confirmed.
+  const label = (item: CareItem) => (item.fields[PRIMARY_FIELD[item.kind]] ?? "").trim();
+  const review = new Set<string>();
+  for (const name of conflictingPrimaries(active)) {
+    notices.push(`내 세트에 용법이 다른 ${name} 행이 여럿 있습니다 — 하나만 확인하세요`);
+    for (const row of active) if (label(row) === name) review.add(primaryKey(row));
+  }
+  for (const item of added) {
+    const twin = active.find((row) => primaryKey(row) === primaryKey(item));
+    if (!twin || review.has(primaryKey(twin))) continue;
+    review.add(primaryKey(twin));
+    notices.push(`내 세트 행과 다른 용법의 ${label(twin)} 제안이 함께 있습니다 — 하나만 확인하세요`);
+  }
+  const items = [
+    ...seeded.map((item) => (!item.removed && review.has(primaryKey(item)) ? { ...item, confirmed: false } : item)),
+    ...added,
+  ];
   if (items.length === 0) throw new CareGenerationError("오더 행을 만들지 못했습니다.");
 
   return saveCareOrder({

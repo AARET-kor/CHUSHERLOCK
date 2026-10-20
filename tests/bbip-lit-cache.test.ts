@@ -20,6 +20,16 @@ describe("literature cache", () => {
     expect(cache.cacheKey("web", "Melasma laser")).not.toBe(cache.cacheKey("pubmed", "Melasma laser"));
   });
 
+  it("keeps a variant (e.g. the web domain list) in its own key space", async () => {
+    expect(cache.cacheKey("web", "q", "abc")).not.toBe(cache.cacheKey("web", "q"));
+    expect(cache.cacheKey("web", "q", "abc")).not.toBe(cache.cacheKey("web", "q", "def"));
+    const search = vi.fn(async () => [{ id: 1 }]);
+    await cache.cachedSearch("web", "variant-q", search, undefined, "abc");
+    await cache.cachedSearch("web", "variant-q", search, undefined, "def");
+    await cache.cachedSearch("web", "variant-q", search, undefined, "abc");
+    expect(search).toHaveBeenCalledTimes(2);
+  });
+
   it("serves a hit without calling the provider, and refetches after 30 days", async () => {
     const t0 = new Date("2026-10-01T00:00:00.000Z");
     const search = vi.fn(async () => [{ id: 1 }]);

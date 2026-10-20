@@ -120,9 +120,34 @@ describe("buildPriorTurnsBlock", () => {
       turn({ kind: "custom", question: "실패", output: "zzz", status: "failed" }),
     ]);
     expect(block).toContain("[⚡ 핵심 브리핑]\n- 브리핑 줄");
-    expect(block).toContain("[🔍 감별질환]\n첫 문단");
-    expect(block).not.toContain("둘째 문단");
+    expect(block).toContain("[🔍 감별질환]\n첫 문단\n\n둘째 문단");
     expect(block).not.toContain("zzz");
+    expect(block.length).toBeLessThan(3200);
+  });
+
+  const turnOf = (over: Partial<BbipTurn>): BbipTurn => ({
+    id: "t", sessionId: "s", kind: "custom", output: "", followups: [], model: "fake", status: "done", createdAt: "", ...over,
+  });
+
+  it("keeps the body of answers that open with a heading", () => {
+    const block = buildPriorTurnsBlock([
+      turnOf({ kind: "section", sectionKey: "ddx", output: "## 감별질환\n\n- 지루피부염: 경계 불분명\n- 접촉피부염" }),
+    ]);
+    expect(block).toContain("지루피부염: 경계 불분명");
+    expect(block).not.toContain("## 감별질환");
+  });
+
+  it("keeps the brief and the newest cards when the budget runs out", () => {
+    const turns = [
+      turnOf({ kind: "brief", output: "- 브리핑 줄" }),
+      ...Array.from({ length: 8 }, (_, i) => turnOf({ question: `질문${i}`, output: `답${i} ${"가".repeat(600)}` })),
+    ];
+    const block = buildPriorTurnsBlock(turns);
+    expect(block).toContain("- 브리핑 줄");
+    expect(block).toContain("답7");
+    expect(block).not.toContain("답0");
+    expect(block).toMatch(/이전 카드 \d+개 생략/);
+    expect(block.indexOf("답6")).toBeLessThan(block.indexOf("답7"));
     expect(block.length).toBeLessThan(3200);
   });
 });

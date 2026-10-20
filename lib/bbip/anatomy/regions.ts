@@ -50,7 +50,7 @@ export const REGIONS: RegionDef[] = [
     key: "forehead-glabella",
     ko: "이마·미간",
     en: "Forehead · glabella",
-    keywords: /이마|미간|11자|forehead|glabella/i,
+    keywords: /이마|미간|11자|forehead|glabella|frontalis|corrugator|procerus/i,
     structureIds: [
       "glabella-danger",
       "supratrochlear-artery",
@@ -126,9 +126,9 @@ export const REGIONS: RegionDef[] = [
   },
   {
     key: "tear-trough",
-    ko: "눈밑·눈물고랑",
-    en: "Tear trough · infraorbital",
-    keywords: /눈\s*밑|눈물\s*고랑|다크\s*서클|애교|인디언|tear\s*trough|infraorbital/i,
+    ko: "눈가·눈밑",
+    en: "Periorbital · tear trough",
+    keywords: /눈\s*밑|눈\s*가|눈꼬리|눈물\s*고랑|다크\s*서클|애교|인디언|tear\s*trough|infraorbital|crow['’]?s?\s*feet|orbicularis\s*oculi/i,
     structureIds: [
       "tear-trough-danger",
       "angular-artery",
@@ -154,7 +154,7 @@ export const REGIONS: RegionDef[] = [
     key: "midface",
     ko: "중안면·볼",
     en: "Midface · cheek",
-    keywords: /앞\s*광대|광대|중안면|미드\s*페이스|midface|cheek|(?<![가-힣])볼(?!륨)/i,
+    keywords: /앞\s*광대|광대|중안면|미드\s*페이스|midface|cheek|zygomaticus|(?<![가-힣])볼(?!륨)/i,
     structureIds: [
       "zygomaticus-major",
       "facial-artery",
@@ -209,7 +209,7 @@ export const REGIONS: RegionDef[] = [
     key: "lips",
     ko: "입술·입가",
     en: "Lips · perioral",
-    keywords: /입술|입꼬리|입가|인중|구각|마리오네트|lip|perioral|marionette/i,
+    keywords: /입술|입꼬리|입가|인중|구각|마리오네트|lip|perioral|marionette|depressor\s*anguli|(?<![a-z])dao(?![a-z])/i,
     structureIds: [
       "superior-labial-artery",
       "inferior-labial-artery",
@@ -234,7 +234,7 @@ export const REGIONS: RegionDef[] = [
     key: "chin-jawline",
     ko: "턱·턱선",
     en: "Chin · jawline",
-    keywords: /턱|하관|이부|chin|jaw|jowl/i,
+    keywords: /턱|교근|저작근|하관|이부|chin|jaw|jowl|masseter/i,
     structureIds: [
       "facial-artery",
       "marginal-mandibular-nerve",
@@ -275,6 +275,9 @@ export interface AnatomyPlan {
   regions: RegionKey[];
   /** Botox only: the map shows the muscle layer and nothing else. */
   muscleOnly: boolean;
+  /** No region word in the case: `regions` are the categories' usual sites,
+   * shown with a "pick the region" notice rather than as the case's. */
+  regionsGuessed: boolean;
 }
 
 // Rule order matters: dissolving before filler, 쥬베룩 볼륨 before 쥬베룩.
@@ -314,18 +317,19 @@ const DEFAULT_REGIONS: Record<ProcedureCategory, RegionKey[]> = {
   "collagen-stimulator": ["midface", "temple", "chin-jawline"],
   "thread-lifting": ["midface", "chin-jawline", "temple"],
   "skin-booster": ["midface", "tear-trough", "forehead-glabella"],
-  botox: ["forehead-glabella"],
+  botox: ["forehead-glabella", "tear-trough", "lips", "chin-jawline"],
 };
 
 export function anatomyPlanFor(chips: ParsedCase): AnatomyPlan | null {
   const categories = detectCategories(chips.procedures);
   if (categories.length === 0) return null;
   let regions = detectRegions([...chips.procedures, ...chips.conditions]);
-  if (regions.length === 0) {
+  const regionsGuessed = regions.length === 0;
+  if (regionsGuessed) {
     // Union of each category's defaults, in category order.
     regions = [...new Set(categories.flatMap((c) => DEFAULT_REGIONS[c]))];
   }
-  return { categories, regions, muscleOnly: categories.every((c) => c === "botox") };
+  return { categories, regions, muscleOnly: categories.every((c) => c === "botox"), regionsGuessed };
 }
 
 /** A region's structures for this case: muscles only for botox, entry points

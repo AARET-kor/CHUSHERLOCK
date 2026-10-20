@@ -87,6 +87,16 @@ export function pickFields(kind: CareKind, source: Record<string, unknown>): Rec
   );
 }
 
+/** Stable key of a kind's field values — what a patient sentence was written for. */
+export function fieldsFingerprint(kind: CareKind, fields: Record<string, string>): string {
+  return JSON.stringify(CARE_FIELDS[kind].map((field) => (fields[field.key] ?? "").trim()));
+}
+
+/** False once the fields moved on from what patientText was written for. */
+export function patientTextCurrent(item: CareItem): boolean {
+  return item.patientTextBasis === undefined || item.patientTextBasis === fieldsFingerprint(item.kind, item.fields);
+}
+
 export function newCareItem(kind: CareKind, source: CareSource = "doctor"): CareItem {
   return { id: crypto.randomUUID(), kind, fields: emptyFields(kind), patientText: "", source, confirmed: false };
 }

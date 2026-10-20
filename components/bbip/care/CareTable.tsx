@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { CARE_FIELDS, KIND_LABEL, newCareItem, PRIMARY_FIELD } from "../../../lib/bbip/care/fields";
+import { CARE_FIELDS, fieldsFingerprint, KIND_LABEL, newCareItem, PRIMARY_FIELD } from "../../../lib/bbip/care/fields";
 import { orderLine } from "../../../lib/bbip/care/format";
 import { canConfirm, itemIssues } from "../../../lib/bbip/care/lint";
 import type { CareItem, CareKind } from "../../../lib/bbip/care/types";
@@ -90,8 +90,15 @@ function CareRow({
           <button
             type="button"
             onClick={() => {
-              // Any edit needs a fresh confirmation.
-              onChange({ ...draft, confirmed: false });
+              // Any edit needs a fresh confirmation. A rewritten patient
+              // sentence is now about these fields; an untouched one keeps
+              // its old basis, so the handout drops it if the fields moved.
+              // (Older rows without a basis get the fields as they were.)
+              const rewritten = draft.patientText.trim() !== item.patientText.trim();
+              const basis = rewritten
+                ? fieldsFingerprint(draft.kind, draft.fields)
+                : (item.patientTextBasis ?? fieldsFingerprint(item.kind, item.fields));
+              onChange({ ...draft, patientTextBasis: basis, confirmed: false });
               setEditing(false);
             }}
             className={`font-semibold text-ink ${LINK}`}

@@ -1,6 +1,8 @@
 // tests/bbip-care-format.test.ts
 import { describe, expect, it } from "vitest";
+import { fieldsFingerprint } from "../lib/bbip/care/fields";
 import { handoutSections, handoutText, orderText, seoulDay, visitDate } from "../lib/bbip/care/format";
+import { itemIssues, STALE_PATIENT_TEXT } from "../lib/bbip/care/lint";
 import type { CareItem, CareKind } from "../lib/bbip/care/types";
 
 const item = (kind: CareKind, fields: Record<string, string>, over: Partial<CareItem> = {}): CareItem => ({
@@ -81,10 +83,10 @@ describe("handout", () => {
     ]);
     expect(sections[1]!.lines).toEqual(["재생크림 — 세안 후 얇게, 1일 2회, 7일. 문지르지 말고 톡톡 두드려 바르세요."]);
     expect(sections[2]!.lines).toEqual([
-      "물집이나 화끈거림이 생기면 → 바로 병원으로 연락하세요.",
-      "멍이 들면 냉찜질을 해 주세요. → 대부분 저절로 좋아집니다. 지켜보셔도 됩니다.",
+      "물집이나 화끈거림이 생기면 (조치: 항바이러스제 시작) → 바로 병원으로 연락하세요.",
+      "멍이 들면 냉찜질을 해 주세요. (조치: 냉찜질) → 대부분 저절로 좋아집니다. 지켜보셔도 됩니다.",
     ]);
-    expect(sections[3]!.lines).toEqual(["10월 27일(화) — 경과를 확인합니다."]);
+    expect(sections[3]!.lines).toEqual(["10월 27일(화) — 홍반·색소 확인. 경과를 확인합니다."]);
   });
 
   it("drops removed rows and empty sections, and renders plain text", () => {
@@ -99,5 +101,36 @@ describe("handout", () => {
         "궁금한 점이나 이상 증상이 있으면 병원으로 연락해 주세요.",
       ].join("\n")
     );
+  });
+});
+
+describe("handout follows the confirmed fields", () => {
+  const base = seoulDay("2026-10-20T03:00:00.000Z");
+  const contingency = item(
+    "contingency",
+    { situation: "HSV 재발 의심", signs: "수포", action: "새로운 조치", resolution: "", urgency: "now" },
+    { patientText: "이전 조치를 하세요" }
+  );
+
+  it("always prints the action and checks from the fields, even with a patient sentence", () => {
+    const [section] = handoutSections([contingency], base);
+    expect(section!.lines[0]).toContain("새로운 조치");
+    const followup = item("followup", { day: "7", when: "D+7", checks: "홍반 확인", next: "" }, { patientText: "경과를 봅니다." });
+    expect(handoutSections([followup], base)[0]!.lines[0]).toContain("홍반 확인");
+  });
+
+  it("drops a patient sentence written for different field values, and lint says so", () => {
+    const stale: CareItem = {
+      ...contingency,
+      patientTextBasis: fieldsFingerprint("contingency", { ...contingency.fields, action: "이전 조치" }),
+    };
+    const line = handoutSections([stale], base)[0]!.lines[0]!;
+    expect(line).not.toContain("이전 조치를 하세요");
+    expect(line).toContain("새로운 조치");
+    expect(itemIssues(stale, "").map((i) => i.text)).toContain(STALE_PATIENT_TEXT);
+
+    const fresh: CareItem = { ...contingency, patientTextBasis: fieldsFingerprint("contingency", contingency.fields) };
+    expect(handoutSections([fresh], base)[0]!.lines[0]).toContain("이전 조치를 하세요");
+    expect(itemIssues(fresh, "").map((i) => i.text)).not.toContain(STALE_PATIENT_TEXT);
   });
 });

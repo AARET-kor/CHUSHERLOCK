@@ -88,11 +88,41 @@ describe("createCareOrder", () => {
       order.items.find((item) => Object.values(item.fields).includes(value))!;
     // Pregnancy trips the tetracycline rule → stays unconfirmed for review.
     expect(byPrimary("doxycycline")).toMatchObject({ source: "set", confirmed: false });
-    expect(byPrimary("재생크림")).toMatchObject({ source: "set", confirmed: true });
+    // The model proposes another dressing regimen → the set row waits for review too.
+    expect(byPrimary("재생크림")).toMatchObject({ source: "set", confirmed: false });
     expect(byPrimary("cefadroxil")).toMatchObject({ removed: { reason: "필요 없음" }, confirmed: false });
     expect(byPrimary("D+7")).toMatchObject({ source: "ai", confirmed: false });
-    // The duplicate dressing from the model is dropped in favour of the set row.
+    // The model's dressing differs from the set row: both stay for review.
+    const dressings = order.items.filter((item) => item.kind === "dressing");
+    expect(dressings.map((item) => [item.source, item.confirmed])).toEqual([["set", false], ["ai", false]]);
+    expect(order.notices).toContain("내 세트 행과 다른 용법의 재생크림 제안이 함께 있습니다 — 하나만 확인하세요");
+  });
+
+  it("drops only identical model rows, and keeps a replacement for a removed set row", async () => {
+    care.saveCareSet({ label: "시술R", items: [rxRow("valacyclovir"), dressingRow] });
+    const session = newSession("시술R");
+    const generate = vi.fn(async (_context: unknown, seed: CareItem[]) => ({
+      text: JSON.stringify({
+        caution: "",
+        items: [
+          // Same drug, new regimen, replacing the removed set row.
+          { ...BLANK, kind: "rx", drug: "valacyclovir", form: "500 mg 정", dose: "1정", frequency: "1일 2회", duration: "5일" },
+          // Identical to the set's dressing row.
+          { ...BLANK, kind: "dressing", material: "재생크림", method: "얇게" },
+        ],
+        remove: [{ id: seed.find((row) => row.kind === "rx")!.id, reason: "용량 변경" }],
+      }),
+      model: "claude-opus-5-5",
+      stopReason: "end_turn",
+    }));
+    const order = await create.createCareOrder(session.id, { listEntries: async () => [], generate });
+    const rx = order.items.filter((item) => item.kind === "rx");
+    expect(rx.map((item) => [item.source, item.fields.form, Boolean(item.removed)])).toEqual([
+      ["set", "100 mg 캡슐", true],
+      ["ai", "500 mg 정", false],
+    ]);
     expect(order.items.filter((item) => item.kind === "dressing")).toHaveLength(1);
+    expect(order.notices).toEqual([]);
   });
 
   it("falls back to the set alone when the model fails", async () => {

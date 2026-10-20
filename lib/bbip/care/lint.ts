@@ -1,5 +1,5 @@
 // lib/bbip/care/lint.ts
-import { CARE_FIELDS } from "./fields";
+import { CARE_FIELDS, patientTextCurrent } from "./fields";
 import { interactionsFor } from "./interactions";
 import type { CareItem } from "./types";
 
@@ -9,6 +9,7 @@ export interface CareIssue {
 }
 
 export const AI_NUMBER_WARNING = "AI 제안 수치 — 확인 필요";
+export const STALE_PATIENT_TEXT = "칸이 바뀌어 환자 안내 문장이 안내문에서 빠집니다 — 다시 확인하세요";
 
 const URGENCIES = new Set(["now", "followup", "watch"]);
 const ORAL = /정|캡슐|시럽|tab|cap|syrup|oral|경구/i;
@@ -38,6 +39,9 @@ export function itemIssues(item: CareItem, context: string): CareIssue[] {
     if (DIGIT.test(item.patientText)) {
       issues.push({ level: "warn", text: "환자 문장에 숫자가 있습니다 — 처방 칸과 다를 수 있습니다" });
     }
+  }
+  if (item.patientText.trim() && !patientTextCurrent(item)) {
+    issues.push({ level: "warn", text: STALE_PATIENT_TEXT });
   }
   if (item.source === "ai" && !item.confirmed && Object.values(item.fields).some((v) => DIGIT.test(v))) {
     issues.push({ level: "warn", text: AI_NUMBER_WARNING });

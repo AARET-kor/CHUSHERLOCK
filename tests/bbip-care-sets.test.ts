@@ -1,6 +1,6 @@
 // tests/bbip-care-sets.test.ts
 import { describe, expect, it } from "vitest";
-import { dedupeKey, procedureKey, seedFromSets, toSetItems } from "../lib/bbip/care/sets";
+import { conflictingPrimaries, dedupeKey, procedureKey, seedFromSets, toSetItems } from "../lib/bbip/care/sets";
 import type { CareItem, CareSet } from "../lib/bbip/care/types";
 
 const rxFields = { drug: "mupirocin", brand: "", form: "2% 연고", dose: "얇게", frequency: "1일 3회", duration: "5일", purpose: "" };
@@ -44,6 +44,16 @@ describe("care sets", () => {
     ]);
     expect(seed.map((row) => row.id)).not.toContain("1");
     expect(new Set(seed.map((row) => row.id)).size).toBe(3);
+  });
+
+  it("keeps the same drug in another form or dose as its own row", () => {
+    const seed = seedFromSets([
+      set("a", [item({ id: "1" })]),
+      set("b", [item({ id: "2", fields: { ...rxFields, form: "2% 크림" } })]),
+    ]);
+    expect(seed.map((row) => row.fields.form)).toEqual(["2% 연고", "2% 크림"]);
+    expect(conflictingPrimaries(seed)).toEqual(["mupirocin"]);
+    expect(conflictingPrimaries([item(), item({ id: "z", removed: { reason: "x" }, fields: { ...rxFields, dose: "두껍게" } })])).toEqual([]);
   });
 
   it("turns confirmed active rows into set rows without citations", () => {

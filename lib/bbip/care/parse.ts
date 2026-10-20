@@ -1,7 +1,7 @@
 // lib/bbip/care/parse.ts
 import type { LiteratureBlock } from "../types";
 import { CareGenerationError } from "./errors";
-import { CARE_KINDS, PRIMARY_FIELD, pickFields } from "./fields";
+import { CARE_KINDS, fieldsFingerprint, PRIMARY_FIELD, pickFields } from "./fields";
 import type { CareItem, CareKind, CareSource } from "./types";
 
 const MAX_ITEMS = 60;
@@ -63,6 +63,7 @@ export function parseCareResponse(text: string, ctx: CiteContext & { setIds: Set
       kind,
       fields,
       patientText: typeof row.patientText === "string" ? row.patientText.trim().slice(0, 300) : "",
+      patientTextBasis: fieldsFingerprint(kind, fields),
       ...resolveCite(typeof row.cite === "string" ? row.cite : "", ctx),
       confirmed: false,
     });

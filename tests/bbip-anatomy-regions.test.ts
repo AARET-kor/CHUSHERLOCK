@@ -1,5 +1,6 @@
 // tests/bbip-anatomy-regions.test.ts
 import { describe, expect, it } from "vitest";
+import { buildAtlasBlock } from "../lib/bbip/anatomy/prompt";
 import { anatomyPlanFor, detectCategories, detectRegions, regionStructures } from "../lib/bbip/anatomy/regions";
 import type { ParsedCase } from "../lib/bbip/types";
 
@@ -39,13 +40,40 @@ describe("detectRegions", () => {
 });
 
 describe("anatomyPlanFor", () => {
+  it("recognizes eye and masseter aliases instead of falling back to forehead", () => {
+    for (const name of ["눈가 보톡스", "눈꼬리 보톡스", "crow's feet botox", "orbicularis oculi botox"]) {
+      const plan = anatomyPlanFor(chips([name]))!;
+      expect(plan.regions).toEqual(["tear-trough"]);
+      expect(regionStructures(plan.regions[0]!, plan).some((s) => s.id === "orbicularis-oculi")).toBe(true);
+    }
+    for (const name of ["교근 보톡스", "masseter botox"]) {
+      expect(anatomyPlanFor(chips([name]))?.regions).toEqual(["chin-jawline"]);
+    }
+  });
+  it("maps muscle names to their regions", () => {
+    expect(detectRegions(["frontalis botox"])).toEqual(["forehead-glabella"]);
+    expect(detectRegions(["corrugator", "procerus"])).toEqual(["forehead-glabella"]);
+    expect(detectRegions(["zygomaticus"])).toEqual(["midface"]);
+    expect(detectRegions(["DAO 보톡스"])).toEqual(["lips"]);
+    expect(detectRegions(["depressor anguli oris"])).toEqual(["lips"]);
+  });
+
+  it("marks default regions as a guess, and guesses botox across its usual sites", () => {
+    expect(anatomyPlanFor(chips(["사각턱 보톡스"]))?.regionsGuessed).toBe(false);
+    const plan = anatomyPlanFor(chips(["보톡스"]))!;
+    expect(plan.regionsGuessed).toBe(true);
+    expect(plan.regions).toEqual(["forehead-glabella", "tear-trough", "lips", "chin-jawline"]);
+    expect(buildAtlasBlock(plan)).toContain("부위 미확인");
+    expect(buildAtlasBlock(anatomyPlanFor(chips(["사각턱 보톡스"])))).not.toContain("부위 미확인");
+  });
+
   it("returns null when no procedure maps to the atlas", () => {
     expect(anatomyPlanFor(chips(["피코토닝"], ["기미"]))).toBeNull();
   });
 
   it("uses region words from procedures and conditions", () => {
     expect(anatomyPlanFor(chips(["필러"], ["팔자주름"]))).toEqual({
-      categories: ["face-filler"], regions: ["nasolabial"], muscleOnly: false,
+      categories: ["face-filler"], regions: ["nasolabial"], muscleOnly: false, regionsGuessed: false,
     });
   });
 
@@ -56,7 +84,7 @@ describe("anatomyPlanFor", () => {
 
   it("shows only the muscle layer for botox-only cases", () => {
     const plan = anatomyPlanFor(chips(["사각턱 보톡스"]))!;
-    expect(plan).toEqual({ categories: ["botox"], regions: ["chin-jawline"], muscleOnly: true });
+    expect(plan).toEqual({ categories: ["botox"], regions: ["chin-jawline"], muscleOnly: true, regionsGuessed: false });
     expect(regionStructures("chin-jawline", plan).every((s) => s.layer === "muscles")).toBe(true);
   });
 

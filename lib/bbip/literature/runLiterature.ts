@@ -1,4 +1,5 @@
 // lib/bbip/literature/runLiterature.ts
+import { createHash } from "node:crypto";
 import { isFakeMode } from "../../ai/client";
 import { failTurn, getSession, setSessionLiterature, startTurn } from "../../services/bbipService";
 import { runTurn } from "../runTurn";
@@ -6,7 +7,7 @@ import type { LiteratureBlock, PaperHit, ParsedCase, StreamEvent, TurnRequest, W
 import { cachedSearch } from "./cache";
 import { PUBMED_RETMAX, fakePapers, searchPubMed } from "./pubmed";
 import { buildLiteratureQuery, type LitQuery } from "./query";
-import { fakeWebHits, searchWeb } from "./web";
+import { fakeWebHits, searchWeb, webDomains } from "./web";
 
 export interface LiteratureDeps {
   query: (chips: ParsedCase) => Promise<{ query: LitQuery }>;
@@ -15,6 +16,16 @@ export interface LiteratureDeps {
   /** Generates the 문헌 근거 card once the block is on the session. */
   runTurn: (sessionId: string, request: TurnRequest) => AsyncIterable<StreamEvent>;
   now: () => Date;
+  /** false in fake mode: canned results must never land in (or come from)
+   * the cache real searches use. Default true. */
+  useCache?: boolean;
+  /** Cache key variant for web results — the allowed-domain list. */
+  webVariant?: string;
+}
+
+/** Short, stable id of the web domain allow-list. */
+export function domainsVariant(domains: string[]): string {
+  return createHash("sha1").update([...domains].sort().join(",")).digest("hex").slice(0, 10);
 }
 
 function defaultDeps(): LiteratureDeps {
@@ -25,6 +36,8 @@ function defaultDeps(): LiteratureDeps {
     web: fake ? async (query) => fakeWebHits(query) : (query) => searchWeb(query),
     runTurn: (sessionId, request) => runTurn(sessionId, request),
     now: () => new Date(),
+    useCache: !fake,
+    webVariant: domainsVariant(webDomains()),
   };
 }
 
@@ -37,9 +50,13 @@ export async function searchLiterature(chips: ParsedCase, deps: LiteratureDeps):
   const { query } = await deps.query(chips);
   const now = deps.now();
   const none = Promise.resolve({ results: [] as never[], cached: false });
+  const search = <T>(provider: "pubmed" | "web", q: string, run: (q: string) => Promise<T[]>, variant = "") =>
+    deps.useCache === false
+      ? run(q).then((results) => ({ results, cached: false }))
+      : cachedSearch(provider, q, run, now, variant);
   const [pubmed, web] = await Promise.allSettled([
-    query.pubmed ? cachedSearch("pubmed", query.pubmed, deps.pubmed, now) : none,
-    query.web ? cachedSearch("web", query.web, deps.web, now) : none,
+    query.pubmed ? search("pubmed", query.pubmed, deps.pubmed) : none,
+    query.web ? search("web", query.web, deps.web, deps.webVariant) : none,
   ]);
   const errors: LiteratureBlock["errors"] = {};
   if (pubmed.status === "rejected") {
@@ -58,6 +75,44 @@ export async function searchLiterature(chips: ParsedCase, deps: LiteratureDeps):
     errors,
     fetchedAt: now.toISOString(),
   };
+}
+
+export const MAX_PAPERS = 30;
+export const MAX_WEB = 20;
+
+function urlKey(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host.toLowerCase()}${u.pathname.replace(/\/+$/, "")}${u.search}`;
+  } catch {
+    return url.trim().toLowerCase();
+  }
+}
+
+/** [P#]/[W#] are positions in the session block, and earlier cards (and
+ * notes promoted from them) keep pointing at them. So a re-search never
+ * reorders or drops a source: new ones are appended, up to the caps.
+ * Queries, errors and fetchedAt describe the latest search. */
+export function mergeLiterature(prev: LiteratureBlock | undefined, next: LiteratureBlock): LiteratureBlock {
+  if (!prev) return next;
+  const pmids = new Set(prev.papers.map((paper) => paper.pmid));
+  const urls = new Set(prev.web.map((hit) => urlKey(hit.url)));
+  const papers = [...prev.papers];
+  for (const paper of next.papers) {
+    if (papers.length >= MAX_PAPERS) break;
+    if (pmids.has(paper.pmid)) continue;
+    pmids.add(paper.pmid);
+    papers.push(paper);
+  }
+  const web = [...prev.web];
+  for (const hit of next.web) {
+    if (web.length >= MAX_WEB) break;
+    const key = urlKey(hit.url);
+    if (urls.has(key)) continue;
+    urls.add(key);
+    web.push(hit);
+  }
+  return { ...next, papers, web };
 }
 
 export function noLiteratureText(block: LiteratureBlock): string {
@@ -85,16 +140,19 @@ export async function* runLiterature(
     return;
   }
   let block: LiteratureBlock;
+  let merged: LiteratureBlock;
   try {
     block = await searchLiterature(session.chips, deps);
-    setSessionLiterature(sessionId, block);
+    merged = mergeLiterature(session.literature, block);
+    setSessionLiterature(sessionId, merged);
   } catch (error) {
     console.error("[bbip] literature search failed:", error);
     yield { type: "error", message: "문헌 검색에 실패했습니다." };
     return;
   }
-  yield { type: "literature", block };
+  yield { type: "literature", block: merged };
 
+  // "Nothing found" is about this search, even if earlier sources remain.
   if (block.papers.length === 0 && block.web.length === 0) {
     // Stored as failed: the card shows the queries and offers 다시 시도,
     // and an empty result can never be promoted to a note.
