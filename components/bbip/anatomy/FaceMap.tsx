@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { Maximize2, Minimize2 } from "lucide-react";
 import {
   ATLAS,
   ATLAS_VIEWBOX,
@@ -9,6 +10,7 @@ import {
   type Shape,
 } from "../../../lib/bbip/anatomy/atlas";
 import { areaFor, earFor, featuresFor, shapesFor, smoothPath, viewOutline } from "../../../lib/bbip/anatomy/geometry";
+import { inDepth, regionViewBox, sharedDepthStructures } from "../../../lib/bbip/anatomy/explorer";
 import {
   DEPTHS,
   FLOW_LABELS,
@@ -16,6 +18,7 @@ import {
   LAYERS,
   VIEWS,
   type LayerKey,
+  type DepthKey,
   type ViewKey,
 } from "../../../lib/bbip/anatomy/layers";
 import { getRegion, type AnatomyPlan, type RegionKey } from "../../../lib/bbip/anatomy/regions";
@@ -158,7 +161,7 @@ function DepthStrip({ structure }: { structure: AtlasStructure }) {
           className="px-1 py-1.5 text-center text-[11.5px] leading-tight"
           style={
             on.has(i)
-              ? { background: color, color: structure.layer === "nerves" ? "#3d2a00" : "#ffffff", fontWeight: 600 }
+              ? { background: `${color}20`, color: "#051a24", boxShadow: `inset 0 -2px ${color}`, fontWeight: 600 }
               : { background: "#ffffff", color: "rgba(5,26,36,0.72)" }
           }
         >
@@ -173,10 +176,16 @@ function StructureDetail({
   structure,
   pinned,
   onClose,
+  related,
+  onPickRelated,
+  explain,
 }: {
   structure: AtlasStructure;
   pinned: boolean;
   onClose: () => void;
+  related: AtlasStructure[];
+  onPickRelated: (id: string) => void;
+  explain: boolean;
 }) {
   const layer = LAYER_BY_KEY.get(structure.layer);
   const flowLabel = FLOW_LABELS[structure.layer];
@@ -218,11 +227,25 @@ function StructureDetail({
           <dt className="text-[13px] font-semibold text-[#b42318]">잘못되면</dt>
           <dd className="mt-0.5 text-inkdeep">{structure.riskNote}</dd>
         </div>
-        <div>
+        {!explain && <div>
           <dt className="text-[13px] font-semibold text-ink/65">안전 술기</dt>
           <dd className="mt-0.5">{structure.safeTechnique}</dd>
-        </div>
+        </div>}
       </dl>
+      {!explain && related.length > 0 && (
+        <div className="mt-5 border-t border-ink/10 pt-4">
+          <p className="text-[13px] font-semibold text-ink/75">이 부위에서 같은 층을 지나는 구조</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {related.map((s) => (
+              <button key={s.id} type="button" onClick={() => onPickRelated(s.id)}
+                className="flex items-center gap-1.5 rounded-full border border-ink/15 px-2.5 py-1.5 text-[12px] text-ink/80 hover:bg-ink/5">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: layerColor(s.layer) }} />{s.ko}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[12px] text-ink/60">층 분류 기준이며, 실제 인접 거리나 접촉을 나타내지는 않습니다.</p>
+        </div>
+      )}
       <p className="mt-4">
         <ReviewBadge structure={structure} />
       </p>
@@ -283,6 +306,12 @@ export function FaceMap({
   onToggleLayer,
   focusId,
   onFocus,
+  depth,
+  zoomed,
+  onZoomChange,
+  structures,
+  onPickRelated,
+  explain,
 }: {
   plan: AnatomyPlan;
   region: RegionKey;
@@ -294,6 +323,12 @@ export function FaceMap({
   onToggleLayer: (layer: LayerKey) => void;
   focusId: string | null;
   onFocus: (id: string | null) => void;
+  depth: DepthKey | null;
+  zoomed: boolean;
+  onZoomChange: (zoomed: boolean) => void;
+  structures: AtlasStructure[];
+  onPickRelated: (id: string) => void;
+  explain: boolean;
 }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const ids = { hatch: `${uid}-hatch`, arrow: (layer: LayerKey) => `${uid}-arrow-${layer}` };
@@ -307,18 +342,19 @@ export function FaceMap({
 
   const drawn = useMemo(
     () =>
-      ATLAS.filter((s) => visibleInCase(s, plan) && layers.has(s.layer))
+      ATLAS.filter((s) => visibleInCase(s, plan) && layers.has(s.layer) && inDepth(s, depth))
         .map((s) => ({ structure: s, shapes: shapesFor(s, view), active: regionIds.has(s.id) }))
         .filter((d) => d.shapes.length > 0)
         // Areas under lines; the active region on top of the dimmed rest.
         .sort((a, b) => Number(a.active) - Number(b.active) || areaFirst(a.structure) - areaFirst(b.structure)),
-    [plan, layers, view, regionIds]
+    [plan, layers, view, regionIds, depth]
   );
   const listable = useMemo(() => drawn.filter((d) => d.active).map((d) => d.structure), [drawn]);
 
   const outline = useMemo(() => smoothPath(viewOutline(view), true), [view]);
   const guides = useMemo(() => [...earFor(view), ...featuresFor(view)], [view]);
   const regionArea = useMemo(() => areaFor(getRegion(region).area, view), [region, view]);
+  const viewBox = zoomed ? regionViewBox(regionArea) : `0 0 ${W} ${H}`;
 
   const findActive = (id: string | null) => drawn.find((d) => d.structure.id === id && d.active)?.structure ?? null;
   const activeId = hoverId ?? listHoverId ?? focusId;
@@ -411,25 +447,40 @@ export function FaceMap({
         </div>
       </div>
       {plan.muscleOnly && <p className="mb-3 text-[14px] text-ink/70">보톡스 케이스라 근육 레이어만 표시합니다.</p>}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p role="status" className="text-[12px] text-ink/65">
+          {getRegion(region).ko} · {depth ? DEPTHS.find((d) => d.key === depth)?.ko : "모든 층"} · 표시 구조 {listable.length}개
+        </p>
+        <button type="button" aria-pressed={zoomed} onClick={() => onZoomChange(!zoomed)}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-ink/20 px-3 py-1.5 text-[13px] text-ink/80 hover:bg-ink/5">
+          {zoomed ? <Minimize2 size={14} aria-hidden="true" /> : <Maximize2 size={14} aria-hidden="true" />}
+          {zoomed ? "얼굴 전체" : "부위 확대"}
+        </button>
+      </div>
 
       <div className="grid gap-x-8 gap-y-6 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
         <div
           id={panelId}
           role="tabpanel"
           aria-labelledby={`${uid}-tab-${view}`}
-          className="relative mx-auto w-full max-w-[560px] rounded-[20px] bg-[#fbf7f2]"
+          className="relative mx-auto w-full max-w-[560px] overflow-hidden rounded-[20px] border border-ink/[0.06] bg-[#fbf7f2]"
         >
           <svg
-            viewBox={`0 0 ${W} ${H}`}
+            viewBox={viewBox}
             role="group"
             aria-label={`${getRegion(region).ko} 해부 도식 — ${VIEWS.find((v) => v.key === view)!.ko}`}
             data-focusing={focusing ? "true" : undefined}
-            className="atlas-svg block h-auto w-full touch-manipulation select-none"
+            className="atlas-svg block aspect-[4/5] w-full touch-manipulation select-none"
             onClick={(e) => {
               if (e.target === e.currentTarget) onFocus(null);
             }}
           >
             <defs>
+              <radialGradient id={`${uid}-skin`} cx="42%" cy="36%" r="70%">
+                <stop offset="0%" stopColor="#fffefc" />
+                <stop offset="65%" stopColor="#f6eee5" />
+                <stop offset="100%" stopColor="#e4d5c7" />
+              </radialGradient>
               <pattern id={ids.hatch} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
                 <rect width="5" height="5" fill="#fff5f4" />
                 <line x1="0" y1="0" x2="0" y2="5" stroke="#e0262c" strokeWidth="1" strokeOpacity="0.55" />
@@ -463,7 +514,7 @@ export function FaceMap({
             </defs>
 
             <g className="atlas-backdrop">
-              <path d={outline} fill="#fffdfb" stroke="#051a24" strokeOpacity="0.5" strokeWidth="1" />
+              <path d={outline} fill={`url(#${uid}-skin)`} stroke="#051a24" strokeOpacity="0.5" strokeWidth="1" />
               {guides.map((shape, i) =>
                 shape.kind === "line" || shape.kind === "area" ? (
                   <path
@@ -539,8 +590,11 @@ export function FaceMap({
               structure={shown}
               pinned={pinned?.id === shown.id}
               onClose={() => onFocus(null)}
+              related={sharedDepthStructures(shown, structures)}
+              onPickRelated={onPickRelated}
+              explain={explain}
             />
-          ) : (
+          ) : listable.length ? (
             <StructureList
               structures={listable}
               onHover={setListHoverId}
@@ -549,6 +603,10 @@ export function FaceMap({
                 onFocus(focusId === id ? null : id);
               }}
             />
+          ) : (
+            <div className="rounded-xl border border-dashed border-ink/20 p-5 text-[14px] leading-relaxed text-ink/70">
+              현재 부위·층·레이어 조합에 표시할 구조물이 없습니다. 다른 층을 선택하거나 레이어를 켜 보세요.
+            </div>
           )}
         </aside>
       </div>

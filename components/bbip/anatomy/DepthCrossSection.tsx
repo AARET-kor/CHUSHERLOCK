@@ -40,6 +40,8 @@ export function DepthCrossSection({
   structures,
   focusId,
   onFocus,
+  depth,
+  onDepth,
 }: {
   regionLabel: string;
   category: ProcedureCategory;
@@ -47,8 +49,13 @@ export function DepthCrossSection({
   structures: AtlasStructure[];
   focusId: string | null;
   onFocus: (id: string | null) => void;
+  depth: DepthKey | null;
+  onDepth: (depth: DepthKey | null) => void;
 }) {
+  // Keep the focused structure in view even when it is outside the first ten.
+  const focusedStructure = structures.find((s) => s.id === focusId);
   const cols = structures.slice(0, 10);
+  if (focusedStructure && !cols.includes(focusedStructure)) cols[cols.length - 1] = focusedStructure;
   const span = W - LABEL_W - 16;
   const step = cols.length > 1 ? span / cols.length : span;
   const xOf = (i: number) => LABEL_W + 8 + step * (i + 0.5);
@@ -70,8 +77,11 @@ export function DepthCrossSection({
           className="mx-auto block h-auto w-full max-w-[760px]"
         >
           {bands.map((b) => (
-            <g key={b.key}>
+            <g key={b.key} role="button" tabIndex={0} aria-label={`${b.ko} 층 탐색`} aria-pressed={depth === b.key}
+              className="cursor-pointer" onClick={() => onDepth(depth === b.key ? null : b.key)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onDepth(depth === b.key ? null : b.key); } }}>
               <rect x={LABEL_W} y={b.y} width={W - LABEL_W - 4} height={b.h} fill={b.fill} />
+              <rect x={0} y={b.y} width={W - 4} height={b.h} fill={depth === b.key ? "#051a24" : "transparent"} fillOpacity={depth === b.key ? 0.08 : 0} />
               <line x1={LABEL_W} x2={W - 4} y1={b.y} y2={b.y} stroke="#051a24" strokeOpacity="0.18" strokeWidth="0.6" />
               <text x={LABEL_W - 6} y={b.y + b.h / 2 + 3.5} textAnchor="end" fontSize="10" fill="#22343d">
                 {b.ko}
@@ -97,6 +107,7 @@ export function DepthCrossSection({
                 stroke="#0f5132"
                 strokeOpacity="0.7"
                 strokeWidth="1"
+                pointerEvents="none"
               />
             );
           })}
@@ -164,7 +175,8 @@ export function DepthCrossSection({
             <li key={s.id} className="flex min-w-0 items-center gap-1.5">
               <span className="w-4 text-right font-mono text-[12.5px] text-ink/65">{i + 1}</span>
               <span aria-hidden="true" className="h-2 w-2 shrink-0" style={{ background: layerColor(s.layer) }} />
-              <span className="truncate">{s.ko}</span>
+              <button type="button" onClick={() => onFocus(focusId === s.id ? null : s.id)}
+                aria-pressed={focusId === s.id} className={`truncate text-left underline-offset-4 hover:underline ${focusId === s.id ? "font-semibold underline" : ""}`}>{s.ko}</button>
             </li>
           ))}
         </ol>
@@ -172,6 +184,7 @@ export function DepthCrossSection({
       <p className="mt-2 text-[14px] leading-relaxed text-ink/70">
         <span className="text-[#0f5132]">초록 띠</span>는 권장 주입·삽입 평면입니다. {plane.note}
       </p>
+      <p className="mt-1 text-[12px] text-ink/65">층 이름을 누르면 지도에서 해당 층을 탐색합니다. 두께·간격은 실제 비율이 아닙니다.</p>
     </figure>
   );
 }
