@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
+import type { CareItem } from "../bbip/care/types";
 import type { Flag, LiteratureBlock, ParsedCase } from "../bbip/types";
 
 // Categories are seeded from lib/codex/taxonomy.ts at migrate time, but kept
@@ -341,4 +342,31 @@ export const literatureCache = sqliteTable("literature_cache", {
   provider: text("provider").notNull(), // "pubmed" | "web"
   results: text("results", { mode: "json" }).notNull().$type<unknown[]>(),
   fetchedAt: text("fetched_at").notNull(),
+});
+
+// BBIP care orders — one structured 처방·드레싱·F/U order per session.
+export const bbipCareOrders = sqliteTable("bbip_care_orders", {
+  id: text("id").primaryKey(),
+  sessionId: text("session_id")
+    .notNull()
+    .unique()
+    .references(() => bbipSessions.id, { onDelete: "cascade" }),
+  items: text("items", { mode: "json" }).notNull().$type<CareItem[]>(),
+  setKeys: text("set_keys", { mode: "json" }).notNull().$type<string[]>(),
+  caution: text("caution").notNull().default(""),
+  notices: text("notices", { mode: "json" }).notNull().$type<string[]>(),
+  model: text("model").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// "내 처방 세트" — confirmed rows saved per normalized procedure. No FK to
+// the session it came from: a set outlives the case.
+export const bbipCareSets = sqliteTable("bbip_care_sets", {
+  id: text("id").primaryKey(),
+  procedureKey: text("procedure_key").notNull().unique(),
+  label: text("label").notNull(),
+  items: text("items", { mode: "json" }).notNull().$type<CareItem[]>(),
+  sourceSessionId: text("source_session_id"),
+  updatedAt: text("updated_at").notNull(),
 });
