@@ -28,6 +28,17 @@ session so later cards may cite it too, and saving a card turns P#/W# into
 paper/website sources. Notes whose claims come from an ingested textbook show
 as 📖 *책명* p.x. Plan: `docs/superpowers/plans/2026-10-19-bbip-literature.md`.
 
+**처방·드레싱·F/U** drafts post-procedure orders on demand: prescriptions,
+dressings, "이럴 때는" contingencies (situation → action → expected course →
+urgency) and follow-ups, as structured rows. Every row must be confirmed
+before the EMR order can be copied, the printable patient handout opened
+(`/care/<id>/handout`) or the rows saved as 내 처방 세트 (`/care-sets`). A
+saved set seeds the next case with the same procedure, and the model then
+only suggests case-specific changes. AI-drafted numbers are flagged until
+confirmed; a small drug-vs-case rule table (`lib/bbip/care/interactions.ts`,
+draft until reviewed) warns about pregnancy, anticoagulants, isotretinoin
+and penicillin allergy. Spec: `docs/superpowers/specs/2026-10-20-bbip-care-orders-design.md`.
+
 A personal + clinic knowledge base for aesthetic medicine — and a clinical
 assistant you can **ask**: it answers from your own notes and cites them
 (`/ask`, see below). You feed it raw
@@ -279,6 +290,7 @@ BBIP_BRIEF_EFFORT=low                 # optional: BBIP brief effort
 NCBI_API_KEY=...                      # optional: BBIP 🔬 PubMed at 10 req/s instead of 3
 BBIP_WEB_DOMAINS=fda.gov,jaad.org     # optional: override the BBIP web-search domain allow-list
 BBIP_WEB_MODEL=claude-sonnet-5-5      # optional: BBIP web-search model (default: CODEX_AI_MODEL_MID)
+BBIP_CARE_MODEL=claude-opus-5-5      # optional: BBIP care-order model (default: CODEX_AI_MODEL)
 CODEX_MAX_UPLOAD_MB=100               # optional upload cap
 CODEX_AI_MODE=fake                    # optional: offline deterministic mode (no API calls)
 CODEX_INGEST_LEASE_MS=45000           # optional durable-worker lease
@@ -404,6 +416,7 @@ lib/
   bbip/                    BBIP chairside assistant (parse, flags, prompts,
                            context, generate, runTurn, evidence, promote)
     literature/            🔬 PubMed + web search, query, cache, literature turn
+    care/                  처방·드레싱·F/U orders: fields, rules, lint, format, sets, model call
     anatomy/               curated atlas, regions, view projection, tokens
 tests/                       Vitest: taxonomy, entrySchemas, overlap, markdown-export
 ```
