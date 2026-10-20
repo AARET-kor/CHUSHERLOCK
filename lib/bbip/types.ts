@@ -2,6 +2,8 @@
 // Kept separate from the DB schema so storage can change without reshaping
 // the domain (same convention as lib/codex/types.ts).
 
+import type { CareOrder } from "./care/types";
+
 export type FlagLevel = "contraindication" | "caution";
 
 export interface Flag {
@@ -117,6 +119,8 @@ export interface SessionView {
   session: BbipSession;
   turns: BbipTurn[];
   notes: NoteRef[];
+  /** The session's 처방·드레싱·F/U order, once drafted. */
+  care?: CareOrder | null;
 }
 
 export type StreamEvent =

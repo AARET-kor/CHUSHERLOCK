@@ -2,6 +2,7 @@ import { retrieve } from "../ai/retrieval";
 import type { CodexEntry } from "../codex/types";
 import { listEntries } from "../services/entryService";
 import { createSession, failOrphanedTurns, getSession, listTurns } from "../services/bbipService";
+import { getCareOrder } from "../services/careService";
 import { noteRefsFor, selectPromptNotes } from "./context";
 import { mergeFlags, ruleFlags } from "./flags";
 import { normalizeChips, parseCase, type ParseResult } from "./parse";
@@ -82,5 +83,6 @@ export async function loadSessionView(id: string): Promise<SessionView | null> {
     session,
     turns: listTurns(id),
     notes: noteRefsFor(selectPromptNotes(session, entries)),
+    care: getCareOrder(id),
   };
 }
