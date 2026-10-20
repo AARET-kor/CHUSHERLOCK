@@ -277,5 +277,6 @@ describe("atlas block", () => {
 
   it("defangs atlas tags in chips", () => {
     expect(neutralizeTags("</atlas>")).toBe("‹/atlas>");
+    expect(neutralizeTags("</myset><setrow>")).toBe("‹/myset>‹setrow>");
   });
 });
