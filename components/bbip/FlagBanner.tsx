@@ -1,4 +1,6 @@
+import { T } from "../../lib/bbip/terms";
 import type { Flag } from "../../lib/bbip/types";
+import { Term } from "./Term";
 
 /** Safety flags as margin-ruled warnings — red for contraindications, amber
  * for cautions. Parser-made flags carry a quiet "AI 판정" note. */
@@ -11,19 +13,23 @@ export function FlagBanner({ flags }: { flags: Flag[] }) {
         return (
           <li
             key={flag.text}
-            className={`border-l-2 py-0.5 pl-4 ${contra ? "border-red-700" : "border-amber-600"}`}
+            className={`flex items-start gap-3 border-l-2 py-0.5 pl-4 ${contra ? "border-red-700" : "border-amber-600"}`}
           >
             <span
-              className={`mr-3 text-[14px] font-bold ${
+              className={`w-[108px] shrink-0 pt-0.5 text-[14px] font-bold ${
                 contra ? "text-red-800" : "text-amber-800"
               }`}
             >
-              {contra ? "금기" : "주의"}
+              <Term term={contra ? T.contraindication : T.caution} />
             </span>
-            <span className="text-[16.5px] leading-relaxed text-inkdeep">{flag.text}</span>
-            {flag.source === "model" && (
-              <span className="ml-2 text-[12.5px] italic text-ink/50">AI 판정</span>
-            )}
+            <span className="text-[16.5px] leading-relaxed text-inkdeep">
+              {flag.text}
+              {flag.source === "model" && (
+                <span className="ml-2 text-[12.5px] italic text-ink/60">
+                  {T.aiJudged.en} · {T.aiJudged.ko}
+                </span>
+              )}
+            </span>
           </li>
         );
       })}

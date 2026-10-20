@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { citedLiterature } from "../../lib/bbip/evidence";
 import { authorsShort, hostOf, LEVEL_LABEL, pubmedUrl } from "../../lib/bbip/literature/refs";
 import type { LiteratureBlock, TurnRequest } from "../../lib/bbip/types";
+import { GROUP_TERMS, T } from "../../lib/bbip/terms";
+import { Term } from "./Term";
 
 // 🔬 literature pieces of the consult sheet, kept out of the shared sheet
 // components: TurnCard, MoreMenu and BbipConsole only mount these.
@@ -88,7 +90,7 @@ export function LiteratureIndexItem({
 }) {
   return (
     <div className="mt-7">
-      <p className="mb-1 text-[13px] font-medium text-ink/65">문헌</p>
+      <p className="mb-1 text-[13.5px] font-semibold text-ink/70"><Term term={GROUP_TERMS.literature} /></p>
       <button
         type="button"
         disabled={opened}
@@ -96,11 +98,11 @@ export function LiteratureIndexItem({
         className="group flex w-full items-baseline justify-between gap-3 border-b border-ink/[0.08] py-2.5 text-left transition disabled:cursor-default"
       >
         <span className="text-[16.5px] text-ink underline-offset-4 group-hover:underline group-disabled:text-ink/35 group-disabled:no-underline">
-          문헌 근거 찾기
-          <span className="ml-2 text-[14px] text-ink/65 group-disabled:text-ink/35">PubMed · 의학 웹, 누를 때만 검색</span>
+          <Term term={{ en: "Find Evidence", ko: "문헌 근거 찾기" }} />
+          <span className="ml-3 text-[14px] text-ink/65 group-disabled:text-ink/35">PubMed · 의학 웹, 누를 때만 검색</span>
         </span>
         <span aria-hidden="true" className="font-mono text-[12.5px] text-ink/30 transition group-hover:text-ink">
-          {opened ? "열림" : "→"}
+          {opened ? T.opened.en : "→"}
         </span>
       </button>
     </div>

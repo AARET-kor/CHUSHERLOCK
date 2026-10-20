@@ -22,7 +22,12 @@ const RISK_STYLE: Record<RiskLevel, string> = {
 };
 
 export function RiskText({ risk }: { risk: RiskLevel }) {
-  return <span className={`whitespace-nowrap ${RISK_STYLE[risk]}`}>위험 {RISKS[risk].ko}</span>;
+  return (
+    <span className={`inline-flex flex-col whitespace-nowrap leading-[1.15] ${RISK_STYLE[risk]}`}>
+      <span lang="en">{RISKS[risk].en} risk</span>
+      <span lang="ko" className="text-[0.75em] font-normal">위험 {RISKS[risk].ko}</span>
+    </span>
+  );
 }
 
 export function sortByRisk<T extends Pick<AtlasStructure, "risk">>(items: T[]): T[] {

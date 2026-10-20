@@ -52,14 +52,14 @@ test("explorer connects search, depth, zoom and cross-region navigation", async 
   await expect(card.getByRole("heading", { name: "해부 지도" })).toBeVisible(COLD);
   const map = card.locator("svg.atlas-svg");
 
-  await card.getByRole("button", { name: "시각적 설명", exact: true }).click();
-  await expect(card.getByRole("button", { name: "얼굴 전체", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await card.getByRole("button", { name: /시각적 설명/ }).click();
+  await expect(card.getByRole("button", { name: /얼굴 전체/ })).toHaveAttribute("aria-pressed", "true");
   await expect(map).not.toHaveAttribute("viewBox", "0 0 240 300");
-  await card.getByRole("tab", { name: "측면", exact: true }).click();
+  await card.getByRole("tab", { name: /측면/ }).click();
   await expect(map).not.toHaveAttribute("viewBox", "0 0 240 300");
-  await card.getByRole("button", { name: "자세히 탐색", exact: true }).click();
+  await card.getByRole("button", { name: /자세히 탐색/ }).click();
   await expect(map).toHaveAttribute("viewBox", "0 0 240 300");
-  await expect(card.getByRole("group", { name: "레이어", exact: true }).getByRole("button", { name: "근육", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(card.getByRole("group", { name: "레이어", exact: true }).getByRole("button", { name: /근육/ })).toHaveAttribute("aria-pressed", "true");
 
   await card.getByRole("group", { name: "깊이 탐색", exact: true }).getByRole("button", { name: /골막/ }).click();
   await expect(map.locator("[data-structure='angular-artery']")).toHaveCount(0);
@@ -67,15 +67,15 @@ test("explorer connects search, depth, zoom and cross-region navigation", async 
 
   await card.getByLabel("해부 구조물 검색").fill("각동맥");
   await card.getByRole("region", { name: "구조물 검색 결과" }).getByRole("button", { name: /각동맥/ }).click();
-  await expect(card.getByRole("group", { name: "깊이 탐색", exact: true }).getByRole("button", { name: "모든 층", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(card.getByRole("group", { name: "깊이 탐색", exact: true }).getByRole("button", { name: /모든 층/ })).toHaveAttribute("aria-pressed", "true");
   await expect(map.locator("[data-structure='angular-artery']")).toHaveAttribute("aria-pressed", "true");
-  await expect(card.getByRole("heading", { name: /팔자\s*Nasolabial/ })).toBeVisible();
+  await expect(card.getByRole("heading", { name: /Nasolabial\s*팔자/ })).toBeVisible();
 
   await card.getByLabel("해부 구조물 검색").fill("masseter");
   await card.getByRole("region", { name: "구조물 검색 결과" }).getByRole("button", { name: /교근/ }).click();
   await expect(card.getByLabel("다른 부위 탐색")).toHaveValue("chin-jawline");
   await expect(map.locator("[data-structure='masseter']")).toHaveAttribute("aria-pressed", "true");
-  await expect(card.getByRole("heading", { name: "교근", exact: true })).toBeVisible();
+  await expect(card.getByRole("heading", { name: "Masseter", exact: true })).toBeVisible();
   await expect(card.getByText("이 부위에서 같은 층을 지나는 구조", { exact: true })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).include("section[aria-labelledby='bbip-anatomy']").analyze();
@@ -88,9 +88,9 @@ test("mobile botox case maps the named muscle and can expand to all anatomy", as
   const card = page.locator("section[aria-labelledby='bbip-anatomy']");
   await expect(card.getByLabel("다른 부위 탐색")).toHaveValue("chin-jawline", COLD);
   await expect(card.locator("svg.atlas-svg [data-structure='masseter']")).toBeVisible();
-  await card.getByRole("button", { name: "자세히 탐색", exact: true }).click();
+  await card.getByRole("button", { name: /자세히 탐색/ }).click();
   await expect(card.locator("svg.atlas-svg [data-structure='facial-artery']")).toBeVisible();
-  await card.getByRole("button", { name: "진료 확인", exact: true }).click();
+  await card.getByRole("button", { name: /진료 확인/ }).click();
   await expect(card.locator("svg.atlas-svg [data-structure='facial-artery']")).toHaveCount(0);
   await expect(card.getByLabel("해부 구조물 검색")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

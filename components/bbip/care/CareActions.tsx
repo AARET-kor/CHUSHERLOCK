@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { orderText } from "../../../lib/bbip/care/format";
 import type { CareOrder } from "../../../lib/bbip/care/types";
+import { T } from "../../../lib/bbip/terms";
+import { Term } from "../Term";
 
 const ACTION = "font-semibold text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink";
 const QUIET = "text-ink/70 underline decoration-ink/20 underline-offset-4 hover:text-ink";
@@ -58,7 +60,7 @@ export function CareActions({
           onClick={() => void copy()}
           className={`${ACTION} disabled:text-ink/30 disabled:no-underline`}
         >
-          EMR 오더 복사
+          <Term term={T.copyEmr} />
         </button>
         {copied === "done" && (
           <span role="status" className="text-[14px] text-[#0f5132]">
@@ -67,11 +69,11 @@ export function CareActions({
         )}
         {ready && !saving ? (
           <Link href={`/care/${order.id}/handout`} target="_blank" className={ACTION}>
-            환자 안내문
+            <Term term={T.handout} />
           </Link>
         ) : (
           <span aria-disabled="true" className="font-semibold text-ink/65">
-            환자 안내문
+            <Term term={T.handout} />
           </span>
         )}
         <span className="flex items-center gap-2">
@@ -95,14 +97,14 @@ export function CareActions({
             onClick={() => void saveSet()}
             className={`${ACTION} disabled:text-ink/30 disabled:no-underline`}
           >
-            내 세트로 저장
+            <Term term={T.saveSet} />
           </button>
         </span>
         <button type="button" disabled={busy} onClick={onRegenerate} className={`${QUIET} disabled:text-ink/30`}>
-          다시 작성
+          <Term term={T.redraft} />
         </button>
         <Link href="/care-sets" className={QUIET}>
-          내 세트 관리
+          <Term term={{ en: "Manage My Sets", ko: "내 세트 관리" }} />
         </Link>
       </div>
       {setMessage && (

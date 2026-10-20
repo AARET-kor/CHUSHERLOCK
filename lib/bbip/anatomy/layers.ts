@@ -38,6 +38,12 @@ export const LAYERS: LayerDef[] = [
 export const FLOWING_LAYERS: ReadonlySet<LayerKey> = new Set(["arteries", "veins", "nerves", "ducts"]);
 
 /** What "흐름" means per layer, for the detail panel. */
+export const FLOW_LABELS_EN: Partial<Record<LayerKey, string>> = {
+  arteries: "Blood Flow",
+  veins: "Drainage",
+  nerves: "Distribution",
+  ducts: "Secretion",
+};
 export const FLOW_LABELS: Partial<Record<LayerKey, string>> = {
   arteries: "혈류 방향",
   veins: "배액 방향",
@@ -56,11 +62,11 @@ export const DEPTHS: { key: DepthKey; ko: string; en: string }[] = [
 ];
 
 export type RiskLevel = "critical" | "high" | "moderate" | "low";
-export const RISKS: Record<RiskLevel, { ko: string; rank: number }> = {
-  critical: { ko: "매우 높음", rank: 0 },
-  high: { ko: "높음", rank: 1 },
-  moderate: { ko: "중간", rank: 2 },
-  low: { ko: "낮음", rank: 3 },
+export const RISKS: Record<RiskLevel, { ko: string; en: string; rank: number }> = {
+  critical: { ko: "매우 높음", en: "Critical", rank: 0 },
+  high: { ko: "높음", en: "High", rank: 1 },
+  moderate: { ko: "중간", en: "Moderate", rank: 2 },
+  low: { ko: "낮음", en: "Low", rank: 3 },
 };
 
 export type ProcedureCategory =
@@ -68,6 +74,14 @@ export type ProcedureCategory =
 export const PROCEDURE_CATEGORIES: ProcedureCategory[] = [
   "face-filler", "filler-dissolving", "collagen-stimulator", "thread-lifting", "skin-booster", "botox",
 ];
+export const CATEGORY_EN: Record<ProcedureCategory, string> = {
+  "face-filler": "Filler",
+  "filler-dissolving": "Filler Dissolving",
+  "collagen-stimulator": "Collagen Stimulator",
+  "thread-lifting": "Thread Lift",
+  "skin-booster": "Skin Booster",
+  botox: "Botox",
+};
 export const CATEGORY_LABELS: Record<ProcedureCategory, string> = {
   "face-filler": "필러",
   "filler-dissolving": "필러 용해",

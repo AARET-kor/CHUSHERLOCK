@@ -1,6 +1,6 @@
 "use client";
 
-import type { AtlasStructure } from "../../../lib/bbip/anatomy/atlas";
+import { displayEn, type AtlasStructure } from "../../../lib/bbip/anatomy/atlas";
 import { CATEGORY_LABELS, DEPTHS, type DepthKey, type ProcedureCategory } from "../../../lib/bbip/anatomy/layers";
 import type { PlaneSpec } from "../../../lib/bbip/anatomy/regions";
 import { layerColor } from "./vocab";
@@ -64,9 +64,9 @@ export function DepthCrossSection({
   return (
     <figure className="min-w-0">
       <figcaption className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-serifa text-[17px] font-bold text-inkdeep">깊이 단면 · {regionLabel}</span>
+        <span className="font-serifa text-[17px] font-bold text-inkdeep">Depth Section <span className="font-sans text-[14px] font-normal text-ink/65">깊이 단면 · {regionLabel}</span></span>
         <span className="text-[14px] text-[#0f5132]">
-          {CATEGORY_LABELS[category]} 권장 평면: {plane.depths.length ? planeLabel : "없음"}
+          Recommended plane · {CATEGORY_LABELS[category]} 권장 평면: {plane.depths.length ? planeLabel : "없음"}
         </span>
       </figcaption>
       <div className="border-y border-ink/10 py-2">
@@ -176,7 +176,7 @@ export function DepthCrossSection({
               <span className="w-4 text-right font-mono text-[12.5px] text-ink/65">{i + 1}</span>
               <span aria-hidden="true" className="h-2 w-2 shrink-0" style={{ background: layerColor(s.layer) }} />
               <button type="button" onClick={() => onFocus(focusId === s.id ? null : s.id)}
-                aria-pressed={focusId === s.id} className={`truncate text-left underline-offset-4 hover:underline ${focusId === s.id ? "font-semibold underline" : ""}`}>{s.ko}</button>
+                aria-pressed={focusId === s.id} className={`truncate text-left underline-offset-4 hover:underline ${focusId === s.id ? "font-semibold underline" : ""}`}>{displayEn(s.en)} <span lang="ko" className="text-ink/65">{s.ko}</span></button>
             </li>
           ))}
         </ol>

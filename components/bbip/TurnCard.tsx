@@ -7,6 +7,8 @@ import { citedNoteNumbers } from "../../lib/bbip/evidence";
 import type { LiteratureBlock, NoteRef } from "../../lib/bbip/types";
 import { EvidenceMarkdown } from "./EvidenceMarkdown";
 import { LiteratureFootnoteItems, LiteratureSearchNote } from "./LiteratureFootnotes";
+import { T } from "../../lib/bbip/terms";
+import { Term } from "./Term";
 
 /** One written section of the sheet: body, its footnotes, and the quiet
  * actions underneath. The heading lives in the sheet's margin column. */
@@ -61,7 +63,7 @@ export function TurnCard({
             onClick={() => onRetry(turn)}
             className="ml-1 font-semibold text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
           >
-            다시 시도
+            {T.retry.en} · {T.retry.ko}
           </button>
         </p>
       )}
@@ -109,7 +111,7 @@ export function TurnCard({
                 href={`/entries/${turn.promotedEntryId}`}
                 className="whitespace-nowrap text-[14.5px] font-medium text-[#0f5132] underline decoration-[#0f5132]/30 underline-offset-4 hover:decoration-[#0f5132]"
               >
-                노트에 저장됨 →
+                {T.savedNote.en} · {T.savedNote.ko} →
               </Link>
             ) : (
               <button
@@ -117,7 +119,7 @@ export function TurnCard({
                 onClick={() => onPromote(turn.id!)}
                 className="whitespace-nowrap text-[14.5px] font-medium text-ink underline decoration-ink/30 underline-offset-4 transition hover:decoration-ink"
               >
-                노트로 저장
+                <Term term={T.saveNote} />
               </button>
             )}
           </div>

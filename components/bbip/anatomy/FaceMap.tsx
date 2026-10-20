@@ -5,6 +5,7 @@ import { Maximize2, Minimize2 } from "lucide-react";
 import {
   ATLAS,
   ATLAS_VIEWBOX,
+  displayEn,
   flowDirection,
   type AtlasStructure,
   type Shape,
@@ -14,6 +15,7 @@ import { inDepth, regionViewBox, sharedDepthStructures } from "../../../lib/bbip
 import {
   DEPTHS,
   FLOW_LABELS,
+  FLOW_LABELS_EN,
   FLOWING_LAYERS,
   LAYERS,
   VIEWS,
@@ -22,6 +24,8 @@ import {
   type ViewKey,
 } from "../../../lib/bbip/anatomy/layers";
 import { getRegion, type AnatomyPlan, type RegionKey } from "../../../lib/bbip/anatomy/regions";
+import { ROLE_LABEL, structureFunction, TERRITORY_LABEL } from "../../../lib/bbip/anatomy/functions";
+import { Term } from "../Term";
 import { ReviewBadge } from "./ReviewBadge";
 import { LAYER_BY_KEY, layerColor, RiskText, sortByRisk, textToggleClass } from "./vocab";
 
@@ -165,7 +169,7 @@ function DepthStrip({ structure }: { structure: AtlasStructure }) {
               : { background: "#ffffff", color: "rgba(5,26,36,0.72)" }
           }
         >
-          {depth.ko}
+          <Term term={depth} />
         </li>
       ))}
     </ol>
@@ -189,12 +193,14 @@ function StructureDetail({
 }) {
   const layer = LAYER_BY_KEY.get(structure.layer);
   const flowLabel = FLOW_LABELS[structure.layer];
+  const fn = structureFunction(structure.id);
+  const territoryLabel = TERRITORY_LABEL[structure.layer];
   return (
     <div className="animate-fade-in-up">
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-2 text-[14px] text-ink/70">
           <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: layer?.color }} />
-          {layer?.ko}
+          {layer && <Term term={layer} />}
           <span className="text-ink/30">·</span>
           <RiskText risk={structure.risk} />
         </p>
@@ -204,42 +210,52 @@ function StructureDetail({
             onClick={onClose}
             className="text-[14px] text-ink/65 underline decoration-ink/30 underline-offset-4 hover:text-ink"
           >
-            닫기
+            Close · 닫기
           </button>
         )}
       </div>
-      <h4 className="mt-2 font-serifa text-[26.5px] font-bold leading-tight text-inkdeep">{structure.ko}</h4>
-      <p className="text-[14.5px] italic text-ink/60">{structure.en}</p>
+      <h4 className="mt-2 font-serifa text-[26.5px] font-bold leading-tight text-inkdeep">{displayEn(structure.en)}</h4>
+      <p lang="ko" className="text-[16px] text-ink/70">{structure.ko}</p>
 
       <dl className="mt-5 space-y-4 text-[15.5px] leading-relaxed text-ink/85">
+        {fn && territoryLabel && (
+          <div className="rounded-[4px] bg-mist/70 px-3 py-2.5">
+            <dt className="text-[13px] font-semibold text-ink/70"><Term term={territoryLabel} /></dt>
+            <dd className="mt-1 text-inkdeep">{fn.territory}</dd>
+            <dt className="mt-3 text-[13px] font-semibold text-ink/70"><Term term={ROLE_LABEL} /></dt>
+            <dd className="mt-1">{fn.role}</dd>
+          </div>
+        )}
         <div>
-          <dt className="text-[13px] font-semibold text-ink/65">{flowLabel ? `주행 · ${flowLabel}` : "위치"}</dt>
+          <dt className="text-[13px] font-semibold text-ink/65">
+            <Term term={flowLabel ? { en: `Course · ${FLOW_LABELS_EN[structure.layer]}`, ko: `주행 · ${flowLabel}` } : { en: "Location", ko: "위치" }} />
+          </dt>
           <dd className="mt-0.5">{structure.course}</dd>
         </div>
         <div>
-          <dt className="text-[13px] font-semibold text-ink/65">깊이</dt>
+          <dt className="text-[13px] font-semibold text-ink/65"><Term term={{ en: "Depth", ko: "깊이" }} /></dt>
           <dd>
             <DepthStrip structure={structure} />
             <p className="mt-1.5 text-[14.5px] text-ink/70">{structure.depthNote}</p>
           </dd>
         </div>
         <div className="border-l-2 border-[#e0262c] pl-3">
-          <dt className="text-[13px] font-semibold text-[#b42318]">잘못되면</dt>
+          <dt className="text-[13px] font-semibold text-[#b42318]"><Term term={{ en: "If Injured", ko: "잘못되면" }} /></dt>
           <dd className="mt-0.5 text-inkdeep">{structure.riskNote}</dd>
         </div>
         {!explain && <div>
-          <dt className="text-[13px] font-semibold text-ink/65">안전 술기</dt>
+          <dt className="text-[13px] font-semibold text-ink/65"><Term term={{ en: "Safe Technique", ko: "안전 술기" }} /></dt>
           <dd className="mt-0.5">{structure.safeTechnique}</dd>
         </div>}
       </dl>
       {!explain && related.length > 0 && (
         <div className="mt-5 border-t border-ink/10 pt-4">
-          <p className="text-[13px] font-semibold text-ink/75">이 부위에서 같은 층을 지나는 구조</p>
+          <p className="text-[13px] font-semibold text-ink/75"><Term term={{ en: "Same Layer, This Region", ko: "이 부위에서 같은 층을 지나는 구조" }} /></p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {related.map((s) => (
               <button key={s.id} type="button" onClick={() => onPickRelated(s.id)}
                 className="flex items-center gap-1.5 rounded-full border border-ink/15 px-2.5 py-1.5 text-[12px] text-ink/80 hover:bg-ink/5">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: layerColor(s.layer) }} />{s.ko}
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: layerColor(s.layer) }} />{displayEn(s.en)} · {s.ko}
               </button>
             ))}
           </div>
@@ -284,8 +300,8 @@ function StructureList({
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{ background: layerColor(s.layer), boxShadow: `0 0 0 1px ${casingOf(s.layer)}` }}
               />
-              <span className="min-w-0 flex-1 truncate text-[15.5px] text-ink underline-offset-4 group-hover:underline">
-                {s.ko}
+              <span className="min-w-0 flex-1 text-[15.5px] text-ink underline-offset-4 group-hover:underline">
+                <Term term={{ en: displayEn(s.en), ko: s.ko }} />
               </span>
               <RiskText risk={s.risk} />
             </button>
@@ -413,7 +429,7 @@ export function FaceMap({
                 onKeyDown={(e) => onTabKey(e, index)}
                 className={textToggleClass(selected)}
               >
-                {v.ko}
+                <Term term={v} />
               </button>
             );
           })}
@@ -440,21 +456,21 @@ export function FaceMap({
                     opacity: on ? 1 : 0.6,
                   }}
                 />
-                {layer.ko}
+                <Term term={layer} />
               </button>
             );
           })}
         </div>
       </div>
-      {plan.muscleOnly && <p className="mb-3 text-[14px] text-ink/70">보톡스 케이스라 근육 레이어만 표시합니다.</p>}
+      {plan.muscleOnly && <p className="mb-3 text-[14px] text-ink/70">Botox case — muscles only · 보톡스 케이스라 근육 레이어만 표시합니다.</p>}
       <div className="mb-3 flex items-center justify-between gap-3">
         <p role="status" className="text-[12px] text-ink/65">
-          {getRegion(region).ko} · {depth ? DEPTHS.find((d) => d.key === depth)?.ko : "모든 층"} · 표시 구조 {listable.length}개
+          {getRegion(region).en} {getRegion(region).ko} · {depth ? DEPTHS.find((d) => d.key === depth)?.en : "All layers"} · {listable.length} structures
         </p>
         <button type="button" aria-pressed={zoomed} onClick={() => onZoomChange(!zoomed)}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-ink/20 px-3 py-1.5 text-[13px] text-ink/80 hover:bg-ink/5">
           {zoomed ? <Minimize2 size={14} aria-hidden="true" /> : <Maximize2 size={14} aria-hidden="true" />}
-          {zoomed ? "얼굴 전체" : "부위 확대"}
+          {zoomed ? "Whole Face · 얼굴 전체" : "Zoom Region · 부위 확대"}
         </button>
       </div>
 

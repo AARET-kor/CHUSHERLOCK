@@ -33,7 +33,7 @@ export function MyFigures({ sessionId }: { sessionId: string }) {
   return (
     <div className="mt-8 border-t border-ink/10 pt-5">
       <p className="mb-3 font-serifa text-[17px] font-bold text-inkdeep">
-        내 자료 그림 <span className="font-sans text-[14px] font-normal text-ink/65">{figures.length}점</span>
+        My Figures <span className="font-sans text-[14px] font-normal text-ink/65">내 자료 그림</span> <span className="font-sans text-[14px] font-normal text-ink/65">{figures.length}점</span>
       </p>
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {figures.map((figure) => (

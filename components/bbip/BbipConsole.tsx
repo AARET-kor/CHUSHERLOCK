@@ -20,6 +20,8 @@ import { MoreMenu } from "./MoreMenu";
 import { PromoteDialog } from "./PromoteDialog";
 import { RecentCases } from "./RecentCases";
 import { SheetSection } from "./SheetSection";
+import { Term } from "./Term";
+import { GROUP_TERMS, T, type BiTerm } from "../../lib/bbip/terms";
 import { AnatomySection, hasAnatomyMap } from "./anatomy/AnatomySection";
 import { TurnCard } from "./TurnCard";
 import { useRecentSessions } from "./useRecentSessions";
@@ -32,17 +34,16 @@ const EXAMPLES = [
   "50대 여성, 팔자주름, 와파린 복용, 필러 상담",
 ];
 
-const GROUP_LABELS = { safety: "안전", practice: "실무", business: "비즈니스" } as const;
-
 /** Margin label for an opened card. */
-function marginFor(turn: ClientTurn): { label: string; note?: string; title?: string } {
+function marginFor(turn: ClientTurn): { label: BiTerm; note?: string; title?: string } {
   if (turn.kind === "section" && turn.sectionKey) {
     const section = getSection(turn.sectionKey);
-    return { label: section.label, note: GROUP_LABELS[section.group] };
+    const group = GROUP_TERMS[section.group];
+    return { label: { en: section.en, ko: section.label }, note: `${group.en} · ${group.ko}` };
   }
-  if (turn.kind === "literature") return { label: "문헌 근거", note: "PubMed · 웹" };
+  if (turn.kind === "literature") return { label: T.evidence, note: "PubMed · Web" };
   return {
-    label: turn.kind === "followup" ? "이어서 묻기" : "직접 질문",
+    label: turn.kind === "followup" ? T.followupQuestion : T.customQuestion,
     title: turn.question,
   };
 }
@@ -228,7 +229,7 @@ export function BbipConsole({
           <div className="mb-7 flex items-center gap-3 text-[14px] text-ink/60">
             BBIP
             <span className="h-px w-12 bg-ink/25" />
-            미용 GP 진료 비서
+            <Term term={T.assistant} />
           </div>
           <h1
             id="bbip-title"
@@ -236,9 +237,12 @@ export function BbipConsole({
               session ? "text-[2.3rem] md:text-[3rem]" : "text-[2.9rem] md:text-[4.6rem]"
             }`}
           >
-            케이스를 적으면,
+            Write the case,
             <br />
-            <span className="font-serifa font-bold italic">핵심부터.</span>
+            <span className="font-serifa font-bold italic">get the essentials.</span>
+            <span lang="ko" className="mt-3 block text-[0.42em] font-normal leading-snug tracking-normal text-ink/60">
+              케이스를 적으면, <span className="font-serifa font-bold italic">핵심부터.</span>
+            </span>
           </h1>
           {!session && (
             <p className="mt-6 max-w-[540px] text-[15.5px] leading-[1.75] text-ink/60">
@@ -262,7 +266,7 @@ export function BbipConsole({
 
           {!session && (
             <div className="mt-8 flex flex-wrap items-baseline gap-x-2 gap-y-2 text-[15px]">
-              <span className="mr-2 text-[13px] font-medium text-ink/65">예시</span>
+              <span className="mr-2 text-[13px] font-medium text-ink/65"><Term term={T.examples} /></span>
               {EXAMPLES.map((example, i) => (
                 <span key={example} className="inline-flex items-baseline gap-2">
                   <button
@@ -293,7 +297,7 @@ export function BbipConsole({
           <SheetSection
             id="bbip-case"
             index="01"
-            label="케이스"
+            label={<Term term={T.case} />}
             note={state.degraded ? <span className="text-amber-800">자동 분류에 실패해 쉼표로만 나눴습니다. 확인해 주세요.</span> : "항목을 지우거나 더하면 다시 작성합니다."}
           >
             <ChipBar
@@ -308,7 +312,7 @@ export function BbipConsole({
             <SheetSection
               id="bbip-brief"
               index="02"
-              label="핵심"
+              label={<Term term={T.brief} />}
               note={
                 verifiedNotes > 0
                   ? `내 노트 ${verifiedNotes}개를 근거로 작성`
@@ -329,7 +333,7 @@ export function BbipConsole({
           <AnatomySection session={session} index="03" notes={state.notes} />
 
           {brief && brief.status !== "streaming" && (
-            <SheetSection id="bbip-more" index={String(3 + sheetShift).padStart(2, "0")} label="더 보기" note="필요한 것만 펼쳐 보세요.">
+            <SheetSection id="bbip-more" index={String(3 + sheetShift).padStart(2, "0")} label={<Term term={T.more} />} note="필요한 것만 펼쳐 보세요.">
               <MoreMenu
                 followups={brief.followups}
                 openedSections={openedSections}
@@ -354,7 +358,7 @@ export function BbipConsole({
                 key={turn.key}
                 id={`bbip-turn-${turn.key}`}
                 index={String(i + 4 + sheetShift + careShift).padStart(2, "0")}
-                label={margin.label}
+                label={<Term term={margin.label} />}
                 note={margin.note}
               >
                 <TurnCard

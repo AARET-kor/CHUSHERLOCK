@@ -2,6 +2,7 @@ import Link from "next/link";
 import { chipSummary } from "../../lib/bbip/format";
 import type { BbipSession } from "../../lib/bbip/types";
 import { listSessions } from "../../lib/services/bbipService";
+import { Term } from "../../components/bbip/Term";
 
 // Reads live from SQLite — never prerender.
 export const dynamic = "force-dynamic";
@@ -38,12 +39,15 @@ export default function CasesPage() {
         <div className="mb-7 flex items-center gap-3 text-[14px] text-ink/60">
           BBIP
           <span className="h-px w-12 bg-ink/25" />
-          케이스 기록
+          <Term term={{ en: "Case History", ko: "케이스 기록" }} />
         </div>
         <h1 className="break-keep text-[2.7rem] leading-[1.08] tracking-tight text-ink md:text-[3.9rem]">
-          지나간 케이스,
+          Past cases,
           <br />
-          <span className="font-serifa font-bold italic">그대로 다시.</span>
+          <span className="font-serifa font-bold italic">right where you left them.</span>
+          <span lang="ko" className="mt-3 block text-[0.42em] font-normal leading-snug tracking-normal text-ink/60">
+            지나간 케이스, <span className="font-serifa font-bold italic">그대로 다시.</span>
+          </span>
         </h1>
         <p className="mt-6 max-w-[540px] text-[15.5px] leading-[1.75] text-ink/60">
           열었던 케이스와 펼쳐 본 내용이 그대로 남아 있습니다. 입력 원문은 저장하지 않고, 정리된 항목만 보관합니다.
@@ -57,7 +61,7 @@ export default function CasesPage() {
             href="/"
             className="mt-4 inline-block text-[15px] text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
           >
-            첫 케이스 적기 →
+            Write your first case · 첫 케이스 적기 →
           </Link>
         </div>
       ) : (
@@ -82,9 +86,9 @@ export default function CasesPage() {
                         {chipSummary(session.chips) || "케이스"}
                       </span>
                       <span className="hidden shrink-0 font-mono text-[12px] sm:inline">
-                        {contra > 0 && <span className="text-red-800">금기 {contra}</span>}
+                        {contra > 0 && <span className="text-red-800">Contraindication 금기 {contra}</span>}
                         {contra > 0 && caution > 0 && <span className="text-ink/30"> · </span>}
-                        {caution > 0 && <span className="text-amber-800">주의 {caution}</span>}
+                        {caution > 0 && <span className="text-amber-800">Caution 주의 {caution}</span>}
                       </span>
                       <span aria-hidden="true" className="font-mono text-[12.5px] text-ink/30 transition group-hover:text-ink">
                         →

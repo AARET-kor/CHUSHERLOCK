@@ -45,7 +45,7 @@ test("history restores a finished session", async ({ page }) => {
   const url = page.url();
 
   // "＋ 새 케이스" is a client-side navigation and must clear the screen.
-  await page.getByRole("link", { name: "＋ 새 케이스" }).first().click();
+  await page.getByRole("link", { name: /새 케이스/ }).first().click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByText("[FAKE 모드]")).toHaveCount(0);
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getStructure, isReviewed } from "../../../lib/bbip/anatomy/atlas";
 import { shapesFor } from "../../../lib/bbip/anatomy/geometry";
-import { CATEGORY_LABELS, LAYERS, type DepthKey, type LayerKey, type ProcedureCategory, type ViewKey } from "../../../lib/bbip/anatomy/layers";
+import { CATEGORY_EN, CATEGORY_LABELS, LAYERS, type DepthKey, type LayerKey, type ProcedureCategory, type ViewKey } from "../../../lib/bbip/anatomy/layers";
 import {
   anatomyPlanFor,
   getRegion,
@@ -21,6 +21,8 @@ import { ExplorerControls, type ExplorerMode } from "./ExplorerControls";
 import { MyFigures } from "./MyFigures";
 import { StructureTable } from "./StructureTable";
 import { sortByRisk, textToggleClass } from "./vocab";
+import { T } from "../../../lib/bbip/terms";
+import { Term } from "../Term";
 
 const DEFAULT_LAYERS: LayerKey[] = ["arteries", "veins", "nerves", "ducts", "danger", "entry"];
 
@@ -154,7 +156,7 @@ function AnatomyMap({
     <SheetSection
       id="bbip-anatomy"
       index={index}
-      label="해부 지도"
+      label={<Term term={T.anatomy} />}
       note={
         <>
           {plan.categories.map((c) => CATEGORY_LABELS[c]).join(" · ")} 시술 부위의 위험 구조물과 권장 층. AI가 그린
@@ -170,7 +172,7 @@ function AnatomyMap({
       <div ref={bodyRef} className="scroll-mt-6">
         <div className="mb-5 space-y-2 border-b border-ink/10 pb-4">
           <div role="group" aria-label="부위" className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
-            <span className="w-8 shrink-0 text-[14px] text-ink/65">부위</span>
+            <span className="w-16 shrink-0 text-[14px] text-ink/65"><Term term={{ en: "Region", ko: "부위" }} /></span>
             {shownRegions.map((key) => (
               <button
                 key={key}
@@ -182,7 +184,7 @@ function AnatomyMap({
                 }}
                 className={textToggleClass(key === region)}
               >
-                {getRegion(key).ko}
+                <Term term={getRegion(key)} />
               </button>
             ))}
             <label className="ml-auto text-[13px] text-ink/70">
@@ -190,18 +192,18 @@ function AnatomyMap({
               <select aria-label="다른 부위 탐색" value={region}
                 onChange={(e) => { setRegion(e.target.value as RegionKey); setFocusId(null); }}
                 className="max-w-full rounded-lg border border-ink/15 bg-white px-2 py-1.5">
-                {REGION_KEYS.map((key) => <option key={key} value={key}>{getRegion(key).ko}</option>)}
+                {REGION_KEYS.map((key) => <option key={key} value={key}>{getRegion(key).en} · {getRegion(key).ko}</option>)}
               </select>
             </label>
           </div>
           {plan.regionsGuessed && (
             <p role="note" className="text-[14px] text-amber-900">
-              부위를 알아보지 못해 기본 부위를 보여 줍니다 — 부위를 고르세요.
+              Region not recognized — showing defaults. Pick a region · 부위를 알아보지 못해 기본 부위를 보여 줍니다 — 부위를 고르세요.
             </p>
           )}
           {plan.categories.length > 1 && (
             <div role="group" aria-label="시술" className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
-              <span className="w-8 shrink-0 text-[14px] text-ink/65">시술</span>
+              <span className="w-16 shrink-0 text-[14px] text-ink/65"><Term term={T.procedures} /></span>
               {plan.categories.map((c) => (
                 <button
                   key={c}
@@ -210,7 +212,7 @@ function AnatomyMap({
                   onClick={() => setCategory(c)}
                   className={textToggleClass(c === category)}
                 >
-                  {CATEGORY_LABELS[c]}
+                  <Term term={{ en: CATEGORY_EN[c], ko: CATEGORY_LABELS[c] }} />
                 </button>
               ))}
             </div>
@@ -218,7 +220,7 @@ function AnatomyMap({
         </div>
 
         <h3 className="mb-4 font-serifa text-[23px] font-bold leading-snug text-inkdeep">
-          {regionDef.ko} <span className="font-sans text-[15px] font-normal text-ink/65">{regionDef.en}</span>
+          <Term term={regionDef} koClassName="font-sans text-[15px]" />
         </h3>
 
         <ExplorerControls mode={mode} onMode={changeMode} depth={depth} onDepth={(next) => { setDepth(next); setFocusId(null); }}

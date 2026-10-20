@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { chipSummary, formatSessionTime } from "../../lib/bbip/format";
 import type { BbipSession } from "../../lib/bbip/types";
+import { T } from "../../lib/bbip/terms";
+import { Term } from "./Term";
 
 /** The masthead's right column: a quiet list of the latest cases. */
 export function RecentCases({
@@ -16,10 +18,10 @@ export function RecentCases({
     <aside aria-labelledby="bbip-recent" className="md:pt-1">
       <div className="flex items-baseline justify-between border-b border-ink/20 pb-2">
         <h2 id="bbip-recent" className="font-mono text-[11.5px] font-bold uppercase tracking-[0.2em] text-ink">
-          Recent
+          <Term term={T.recent} koClassName="font-sans normal-case tracking-normal" />
         </h2>
-        <Link href="/" className="text-[14px] text-ink underline-offset-4 hover:underline">
-          ＋ 새 케이스
+        <Link href="/" className="text-right text-[14px] text-ink underline-offset-4 hover:underline">
+          <Term term={{ en: `＋ ${T.newCase.en}`, ko: T.newCase.ko }} />
         </Link>
       </div>
       {sessions.length === 0 ? (
@@ -45,7 +47,7 @@ export function RecentCases({
                   </span>
                   <span className="font-mono text-[11.5px] text-ink/50">
                     {formatSessionTime(session.createdAt)}
-                    {contra && <span className="text-red-800"> · 금기</span>}
+                    {contra && <span className="text-red-800"> · {T.contraindication.en} 금기</span>}
                   </span>
                 </Link>
               </li>
@@ -57,7 +59,7 @@ export function RecentCases({
         href="/cases"
         className="mt-3 inline-block text-[14px] text-ink/60 transition hover:text-ink"
       >
-        전체 기록 →
+        <Term term={{ en: `${T.allCases.en} →`, ko: T.allCases.ko }} />
       </Link>
     </aside>
   );

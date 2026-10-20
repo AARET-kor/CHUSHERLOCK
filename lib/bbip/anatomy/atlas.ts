@@ -951,3 +951,14 @@ export const FACE_GUIDES = {
     line([136, 138], [156, 143], [177, 137]), // infraorbital rim
   ] as Shape[],
 };
+
+/** The English name spelled out for display: "angular a." → "Angular artery". */
+export function displayEn(en: string): string {
+  const full = en
+    .replace(/\ba\.(?=$|\s|,)/g, "artery")
+    .replace(/\bv\.(?=$|\s|,)/g, "vein")
+    .replace(/\bn\.(?=$|\s|,)/g, "nerve")
+    .replace(/\bm\.(?=$|\s|,)/g, "muscle")
+    .replace(/\bbr\.(?=$|\s|,|\))/g, "branch");
+  return full.charAt(0).toUpperCase() + full.slice(1);
+}

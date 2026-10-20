@@ -7,6 +7,8 @@ export type ModelTier = "opus" | "sonnet";
 export interface SectionDef {
   key: SectionKey;
   label: string;
+  /** English name, shown above the Korean label. */
+  en: string;
   emoji: string;
   group: SectionGroup;
   /** Safety-critical sections go to Opus; the rest to Sonnet. */
@@ -21,6 +23,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "cautions",
     label: "유의사항",
+    en: "Precautions",
     emoji: "🛡️",
     group: "safety",
     tier: "opus",
@@ -31,6 +34,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "adverse",
     label: "부작용·대처법",
+    en: "Complications & Management",
     emoji: "🚑",
     group: "safety",
     tier: "opus",
@@ -41,6 +45,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "ddx",
     label: "감별질환",
+    en: "Differential Diagnosis",
     emoji: "🔍",
     group: "safety",
     tier: "opus",
@@ -51,6 +56,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "tips",
     label: "시술팁",
+    en: "Technique Tips",
     emoji: "💉",
     group: "practice",
     tier: "sonnet",
@@ -61,6 +67,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "schedule",
     label: "간격·회차",
+    en: "Interval & Sessions",
     emoji: "📅",
     group: "practice",
     tier: "sonnet",
@@ -71,6 +78,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "homecare",
     label: "홈케어",
+    en: "Home Care",
     emoji: "🧴",
     group: "practice",
     tier: "sonnet",
@@ -81,6 +89,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "notes",
     label: "참고사항",
+    en: "Clinical Notes",
     emoji: "📝",
     group: "practice",
     tier: "sonnet",
@@ -91,6 +100,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "marketing",
     label: "마케팅·업셀링",
+    en: "Marketing & Upsell",
     emoji: "💬",
     group: "business",
     tier: "sonnet",
@@ -101,6 +111,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "alternatives",
     label: "비슷한 치료",
+    en: "Alternative Treatments",
     emoji: "🔄",
     group: "business",
     tier: "sonnet",

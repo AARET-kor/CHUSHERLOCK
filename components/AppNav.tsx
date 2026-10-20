@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, History, Stethoscope } from "lucide-react";
+import { T, type BiTerm } from "../lib/bbip/terms";
+import { Term } from "./bbip/Term";
 
 // BBIP-first information architecture: the chairside assistant and its case
 // history are the product; the Cognitio knowledge base lives one level down
@@ -51,10 +53,10 @@ export function AppNav({ due }: { due: number }) {
   const pathname = usePathname() ?? "/";
   const section = sectionOf(pathname);
 
-  const primary: Array<{ key: Section; href: string; label: string; icon: React.ReactNode }> = [
-    { key: "consult", href: "/", label: "진료", icon: <Stethoscope aria-hidden="true" className="h-3.5 w-3.5" /> },
-    { key: "cases", href: "/cases", label: "기록", icon: <History aria-hidden="true" className="h-3.5 w-3.5" /> },
-    { key: "knowledge", href: "/kb", label: "지식창고", icon: <BookOpen aria-hidden="true" className="h-3.5 w-3.5" /> },
+  const primary: Array<{ key: Section; href: string; term: BiTerm; icon: React.ReactNode }> = [
+    { key: "consult", href: "/", term: T.consult, icon: <Stethoscope aria-hidden="true" className="h-3.5 w-3.5" /> },
+    { key: "cases", href: "/cases", term: T.cases, icon: <History aria-hidden="true" className="h-3.5 w-3.5" /> },
+    { key: "knowledge", href: "/kb", term: T.knowledge, icon: <BookOpen aria-hidden="true" className="h-3.5 w-3.5" /> },
   ];
 
   return (
@@ -77,7 +79,7 @@ export function AppNav({ due }: { due: number }) {
                 }`}
               >
                 {item.icon}
-                {item.label}
+                <Term term={item.term} />
                 {item.key === "knowledge" && due > 0 && !active && (
                   <span aria-label={`복습할 카드 ${due}장`} className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 )}

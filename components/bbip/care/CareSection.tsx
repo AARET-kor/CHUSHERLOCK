@@ -9,6 +9,8 @@ import { SheetSection } from "../SheetSection";
 import { CareActions } from "./CareActions";
 import { CareTable } from "./CareTable";
 import type { CareController } from "./useCareOrder";
+import { T } from "../../../lib/bbip/terms";
+import { Term } from "../Term";
 
 /** "처방·F/U" block of the consult sheet. */
 export function CareSection({ session, care, index }: { session: BbipSession; care: CareController; index: string }) {
@@ -21,7 +23,7 @@ export function CareSection({ session, care, index }: { session: BbipSession; ca
     <SheetSection
       id="bbip-care"
       index={index}
-      label="처방·F/U"
+      label={<Term term={T.care} />}
       note={order ? `${confirmed}/${active.length}행 확인` : "확인한 행만 복사·안내문으로 나갑니다."}
     >
       {status === "generating" && (

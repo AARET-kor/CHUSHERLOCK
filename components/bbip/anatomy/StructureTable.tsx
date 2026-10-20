@@ -5,6 +5,9 @@ import type { AtlasStructure } from "../../../lib/bbip/anatomy/atlas";
 import type { NoteRef } from "../../../lib/bbip/types";
 import { ReviewBadge } from "./ReviewBadge";
 import { depthText, layerColor, LAYER_BY_KEY, RiskText, sortByRisk } from "./vocab";
+import { displayEn } from "../../../lib/bbip/anatomy/atlas";
+import { structureFunction, TERRITORY_LABEL } from "../../../lib/bbip/anatomy/functions";
+import { Term } from "../Term";
 
 /** Session notes whose title names the structure (verified notes only). */
 function relatedNotes(s: AtlasStructure, notes: NoteRef[]): NoteRef[] {
@@ -37,12 +40,12 @@ export function StructureTable({
         <caption className="sr-only">위험도 순 구조물 — 위치, 깊이, 위험, 안전 술기, 근거</caption>
         <thead>
           <tr>
-            <th scope="col">구조물</th>
-            <th scope="col">위치</th>
-            <th scope="col">깊이</th>
-            <th scope="col">위험</th>
-            <th scope="col">안전 술기</th>
-            <th scope="col">근거</th>
+            <th scope="col"><Term term={{ en: "Structure", ko: "구조물" }} /></th>
+            <th scope="col"><Term term={{ en: "Location", ko: "위치" }} /></th>
+            <th scope="col"><Term term={{ en: "Depth", ko: "깊이" }} /></th>
+            <th scope="col"><Term term={{ en: "Risk", ko: "위험" }} /></th>
+            <th scope="col"><Term term={{ en: "Safe Technique", ko: "안전 술기" }} /></th>
+            <th scope="col"><Term term={{ en: "Source", ko: "근거" }} /></th>
           </tr>
         </thead>
         <tbody>
@@ -66,13 +69,20 @@ export function StructureTable({
                     />
                     <span>
                       <span className="block font-semibold text-inkdeep underline-offset-4 group-hover:underline">
-                        {s.ko}
+                        {displayEn(s.en)}
                       </span>
-                      <span className="block text-[14px] text-ink/65">{s.en}</span>
+                      <span lang="ko" className="block text-[14px] text-ink/65">{s.ko}</span>
                     </span>
                   </button>
                 </td>
-                <td className="max-w-[200px] text-ink/80">{s.course}</td>
+                <td className="max-w-[200px] text-ink/80">
+                  {s.course}
+                  {structureFunction(s.id) && (
+                    <span className="mt-1.5 block text-[14px] text-ink/70">
+                      <b className="font-semibold text-ink/80">{TERRITORY_LABEL[s.layer]?.en}</b> {structureFunction(s.id)!.territory}
+                    </span>
+                  )}
+                </td>
                 <td className="max-w-[180px]">
                   {depthText(s)}
                   <span className="block text-[14px] text-ink/65">{s.depthNote}</span>
@@ -85,7 +95,7 @@ export function StructureTable({
                 <td>
                   <ReviewBadge structure={s} />
                   <span className="block text-[14px] text-ink/65">
-                    BBIP 아틀라스
+                    BBIP Atlas
                     {related.map((note) => (
                       <Link key={note.id} href={`/entries/${note.id}`} title={note.title} className="ev ev-note">
                         {note.n}

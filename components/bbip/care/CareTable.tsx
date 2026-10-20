@@ -2,10 +2,11 @@
 "use client";
 
 import { useState } from "react";
-import { CARE_FIELDS, fieldsFingerprint, KIND_LABEL, newCareItem, PRIMARY_FIELD } from "../../../lib/bbip/care/fields";
+import { CARE_FIELDS, fieldsFingerprint, KIND_EN, KIND_LABEL, newCareItem, PRIMARY_FIELD } from "../../../lib/bbip/care/fields";
 import { orderLine } from "../../../lib/bbip/care/format";
 import { canConfirm, itemIssues } from "../../../lib/bbip/care/lint";
 import type { CareItem, CareKind } from "../../../lib/bbip/care/types";
+import { Term } from "../Term";
 
 const LINK = "underline decoration-ink/20 underline-offset-4 transition hover:decoration-ink";
 
@@ -51,7 +52,7 @@ function CareRow({
         <div className="grid gap-3 sm:grid-cols-2">
           {CARE_FIELDS[item.kind].map((field) => (
             <label key={field.key} className="block text-[13px] text-ink/70">
-              {field.label}
+              <span className="font-medium text-ink/80">{field.en}</span> <span className="text-ink/65">{field.label}</span>
               {field.required ? " *" : ""}
               {field.options ? (
                 <select
@@ -167,10 +168,10 @@ function CareRow({
               }}
               className={`text-ink/70 ${LINK}`}
             >
-              수정
+              Edit · 수정
             </button>
             <button type="button" onClick={onDelete} className={`text-ink/70 ${LINK} hover:text-red-800`}>
-              삭제
+              Delete · 삭제
             </button>
           </>
         )}
@@ -194,7 +195,7 @@ export function CareTable({
   const rows = items.filter((item) => item.kind === kind);
   return (
     <div>
-      <h3 className="mb-1 text-[13px] font-medium text-ink/65">{KIND_LABEL[kind]}</h3>
+      <h3 className="mb-1 text-[13.5px] font-semibold text-ink/70"><Term term={{ en: KIND_EN[kind], ko: KIND_LABEL[kind] }} /></h3>
       {rows.length === 0 && <p className="border-b border-ink/[0.08] py-3 text-[14px] text-ink/65">없음</p>}
       <ul>
         {rows.map((item) => (
@@ -212,7 +213,7 @@ export function CareTable({
         onClick={() => onChange([...items, newCareItem(kind)])}
         className={`mt-2 text-[13.5px] font-medium text-ink ${LINK}`}
       >
-        ＋ {KIND_LABEL[kind]} 행 추가
+        ＋ Add {KIND_EN[kind]} · {KIND_LABEL[kind]} 행 추가
       </button>
     </div>
   );

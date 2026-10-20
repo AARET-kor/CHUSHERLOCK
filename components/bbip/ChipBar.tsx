@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { T, type BiTerm } from "../../lib/bbip/terms";
 import type { ParsedCase } from "../../lib/bbip/types";
+import { Term } from "./Term";
 
 /** Mirrors the per-group cap in createSessionSchema. */
 const MAX_PER_GROUP = 8;
 
-export const CHIP_GROUPS: Array<{ key: keyof ParsedCase; label: string }> = [
-  { key: "patient", label: "환자" },
-  { key: "conditions", label: "질환·고민" },
-  { key: "meds", label: "복용약" },
-  { key: "procedures", label: "시술" },
+export const CHIP_GROUPS: Array<{ key: keyof ParsedCase; label: string; term: BiTerm }> = [
+  { key: "patient", label: "환자", term: T.patient },
+  { key: "conditions", label: "질환·고민", term: T.conditions },
+  { key: "meds", label: "복용약", term: T.meds },
+  { key: "procedures", label: "시술", term: T.procedures },
 ];
 
 /** The parsed case as a chart header: four labelled columns of plain words.
@@ -51,7 +53,7 @@ export function ChipBar({
       <dl className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
         {CHIP_GROUPS.map((g) => (
           <div key={g.key} className="min-w-0">
-            <dt className="mb-2 text-[13px] font-medium text-ink/65">{g.label}</dt>
+            <dt className="mb-2 text-[13.5px] font-semibold text-ink/70"><Term term={g.term} /></dt>
             <dd className="flex flex-col items-start gap-1">
               {chips[g.key].length === 0 && <span className="text-[17px] text-ink/25">—</span>}
               {chips[g.key].map((item, index) => (
@@ -95,7 +97,7 @@ export function ChipBar({
           >
             {CHIP_GROUPS.map((g) => (
               <option key={g.key} value={g.key}>
-                {g.label}
+                {g.term.en} · {g.label}
               </option>
             ))}
           </select>
