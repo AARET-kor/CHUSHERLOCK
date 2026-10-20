@@ -62,7 +62,8 @@ export function AppNav({ due }: { due: number }) {
   return (
     <header className="sticky top-0 z-40 border-b border-ink/5 bg-white/85 backdrop-blur print:hidden">
       <nav aria-label="주 메뉴" className="mx-auto flex max-w-[1360px] items-center justify-between gap-3 px-5 py-3.5 sm:px-8 sm:py-4 lg:px-12">
-        <Link href="/" className="brand-link flex shrink-0 items-baseline gap-2 text-ink">
+        <Link href="/" className="brand-link flex shrink-0 items-center gap-2 text-ink sm:gap-3">
+          <img src="/brand/bbip-mark.svg" alt="" aria-hidden="true" className="h-[18px] w-auto sm:h-[28px]" />
           <span className="font-serifa text-2xl font-bold tracking-tight sm:text-[32px]">BBIP</span>
         </Link>
         <div className="flex items-center gap-1 rounded-full bg-mist p-1 text-[15.5px] sm:text-[17px]">
@@ -73,7 +74,7 @@ export function AppNav({ due }: { due: number }) {
                 key={item.key}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 transition sm:px-4 ${
+                className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 transition max-[399px]:[&>svg]:hidden sm:px-4 ${
                   active ? "bg-inkdeep font-semibold text-white shadow-sm" : "text-ink hover:bg-white hover:shadow-sm"
                 }`}
               >
