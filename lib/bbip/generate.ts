@@ -52,7 +52,7 @@ export function fakeTurnText(args: GenerateArgs): string {
   const proc = session.chips.procedures[0] ?? "시술";
   if (request.kind === "brief") {
     const flagLine = session.flags[0]
-      ? `- ${session.flags[0].text} [AI]`
+      ? `- !!${session.flags[0].text}!! [AI]`
       : "- 특이 금기·주의 없음 [AI]";
     const followups = JSON.stringify([`${proc} 감별 포인트는?`, `${proc} 시술 간격은?`, "재발 시 설명 멘트"]);
     const plan = anatomyPlanFor(session.chips);
@@ -61,7 +61,7 @@ export function fakeTurnText(args: GenerateArgs): string {
     return [
       "- **[FAKE 모드]** 핵심 브리핑 예시입니다.",
       flagLine,
-      `- ${proc}: 실제 모드에서는 노트 근거 팁이 표시됩니다 ${cite}`,
+      `- ${proc}: 실제 모드에서는 ==노트 근거 팁==이 표시됩니다 ${cite}`,
       ...(watch ? [`- 주의 구조물: {{atlas:${watch.id}}} [AI]`] : []),
       "- 회차·업셀 제안이 여기에 표시됩니다 [AI]",
       `<followups>${followups}</followups>`,

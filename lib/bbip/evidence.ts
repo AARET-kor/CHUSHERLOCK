@@ -37,6 +37,12 @@ interface AtlasToken extends Tokens.Generic {
   id: string;
 }
 
+interface HlToken extends Tokens.Generic {
+  type: "hl";
+  kind: "key" | "risk";
+  tokens: Tokens.Generic[];
+}
+
 // Built once; the notes for the current call are passed through this
 // module-level map (parsing is synchronous, so calls cannot interleave).
 let currentNotes = new Map<number, NoteRef>();
@@ -88,6 +94,26 @@ const marked = new Marked({
       },
     },
     {
+      // ==핵심== → highlighter, !!위험!! → red. One line, no empty marks.
+      name: "hl",
+      level: "inline",
+      start: (src: string) => {
+        const index = src.search(/==|!!/);
+        return index < 0 ? undefined : index;
+      },
+      tokenizer(src: string) {
+        const match = /^(==|!!)(?=\S)([^\n]*?\S)\1/.exec(src);
+        if (!match) return undefined;
+        const token: HlToken = { type: "hl", raw: match[0], kind: match[1] === "==" ? "key" : "risk", tokens: [] };
+        this.lexer.inline(match[2]!, token.tokens);
+        return token;
+      },
+      renderer(token) {
+        const { kind, tokens } = token as HlToken;
+        return `<mark class="hl hl-${kind}">${this.parser.parseInline(tokens)}</mark>`;
+      },
+    },
+    {
       name: "atlas",
       level: "inline",
       start: (src: string) => {
@@ -127,11 +153,24 @@ const marked = new Marked({
 // fails. Move trailing markers outside the closing delimiter first.
 const EMPH_FIX = /((?:\s*\[(?:\d{1,2}|AI|[PW]\d{1,2})\])+)(\*{1,3}|_{1,3})(?=[^\s\p{P}])/gu;
 
+// Answers written before the highlight rule (or that skipped it) still get
+// their danger words in red; once the model marks anything, it decides.
+const RISK_WORDS = /실명|괴사|색전|혈관\s*폐색|혈관\s*내\s*주입|폐색전|임의\s*중단\s*금지|금기|응급|아나필락시스/g;
+
+export function withRiskWords(markdown: string): string {
+  if (/==\S|!!\S/.test(markdown)) return markdown;
+  // Leave code spans and fences alone.
+  return markdown
+    .split(/(```[\s\S]*?```|`[^`\n]*`)/)
+    .map((part, i) => (i % 2 === 1 ? part : part.replace(RISK_WORDS, "!!$&!!")))
+    .join("");
+}
+
 export function renderEvidenceHtml(markdown: string, notes: NoteRef[], literature?: LiteratureBlock): string {
   currentNotes = new Map(notes.map((note) => [note.n, note]));
   currentLiterature = literature;
   try {
-    return marked.parse(markdown.replace(EMPH_FIX, "$2$1")) as string;
+    return marked.parse(withRiskWords(markdown).replace(EMPH_FIX, "$2$1")) as string;
   } finally {
     currentNotes = new Map();
     currentLiterature = undefined;
@@ -169,6 +208,8 @@ export function toPlainNoteText(
   literature?: LiteratureBlock
 ): string {
   return atlasTokensToText(markdown)
+    // Highlights keep their emphasis as bold in the note.
+    .replace(/(==|!!)(?=\S)([^\n]*?\S)\1/g, "**$2**")
     .replace(/[ \t]*\[([PW])(\d{1,2})\]/g, (_marker, kind: string, n: string) => {
       const index = Number(n) - 1;
       if (kind === "P") {

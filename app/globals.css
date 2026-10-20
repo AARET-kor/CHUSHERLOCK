@@ -698,3 +698,9 @@ a.ev-ai {
   .bbip-go[data-busy] .go-trace { animation: none; stroke-dasharray: none; opacity: 0.9; }
   .bbip-go[data-busy] .go-needle { animation: none; opacity: 0; }
 }
+
+/* Highlights in BBIP answers: ==key== is a highlighter stroke, !!risk!! is
+ * red with a faint band. */
+.bbip-prose mark.hl { color: inherit; padding: 0 0.12em; border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.bbip-prose mark.hl-key { background: linear-gradient(transparent 38%, #fde68a 38%, #fde68a 92%, transparent 92%); font-weight: 600; color: #051a24; }
+.bbip-prose mark.hl-risk { background: linear-gradient(transparent 62%, #fee2e2 62%); color: #b42318; font-weight: 600; }

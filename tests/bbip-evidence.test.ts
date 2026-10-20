@@ -200,3 +200,28 @@ describe("literature badges", () => {
     expect(toPlainNoteText("모름 [P7]", new Set(), literature)).toBe("모름");
   });
 });
+
+describe("highlights", () => {
+  it("renders ==key== as a highlighter and !!risk!! in red, keeping markers inside working", () => {
+    const html = renderEvidenceHtml("- ==캐뉼라 우선== 고려 [AI]\n- !!혈관 내 주입 시 괴사!! 주의 [1]", notes);
+    expect(html).toContain('<mark class="hl hl-key">캐뉼라 우선</mark>');
+    expect(html).toContain('<mark class="hl hl-risk">혈관 내 주입 시 괴사</mark>');
+    expect(html).toContain('class="ev ev-note"');
+  });
+
+  it("leaves code, spaced or multi-line pairs alone", () => {
+    const html = renderEvidenceHtml("`==x==` 와 == 띄움 == 그리고 ==줄\n바꿈==", notes);
+    expect(html).not.toContain("<mark");
+  });
+
+  it("colors danger words only in answers without highlight markers", () => {
+    expect(renderEvidenceHtml("색전 시 실명 위험 [AI]", notes)).toContain('<mark class="hl hl-risk">실명</mark>');
+    const marked = renderEvidenceHtml("==핵심== 문장, 실명 위험 [AI]", notes);
+    expect(marked).not.toContain('<mark class="hl hl-risk">실명</mark>');
+    expect(renderEvidenceHtml("`괴사`", notes)).not.toContain("<mark");
+  });
+
+  it("turns highlights into bold in a promoted note", () => {
+    expect(toPlainNoteText("==핵심== 과 !!위험!! [AI]")).toBe("**핵심** 과 **위험** (AI 보충)");
+  });
+});
