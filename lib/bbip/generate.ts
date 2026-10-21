@@ -20,6 +20,8 @@ export interface GenerateArgs {
   priorTurns: BbipTurn[];
   request: TurnRequest;
   onFinal?: (info: TurnFinalInfo) => void;
+  /** Records history block for a linked patient ("" when none). */
+  history?: string;
 }
 
 const REFUSAL_NOTE =
@@ -64,6 +66,7 @@ export function fakeTurnText(args: GenerateArgs): string {
       `- ${proc}: 실제 모드에서는 ==노트 근거 팁==이 표시됩니다 ${cite}`,
       ...(watch ? [`- 주의 구조물: {{atlas:${watch.id}}} [AI]`] : []),
       "- 회차·업셀 제안이 여기에 표시됩니다 [AI]",
+      ...(args.history ? ["- 이전 경과를 반영한 예시입니다 (이전 경과)"] : []),
       `<followups>${followups}</followups>`,
     ].join("\n");
   }

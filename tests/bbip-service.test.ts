@@ -41,7 +41,7 @@ describe("bbipService", () => {
     await new Promise((r) => setTimeout(r, 5));
     const second = service.createSession({ chips, flags: [], sourceNoteIds: [] });
     expect(service.getSession(first.id)).toEqual(first);
-    expect(first.promptVersion).toBe("bbip-v3");
+    expect(first.promptVersion).toBe("bbip-v4");
     const listed = service.listSessions(10).map((s) => s.id);
     expect(listed.indexOf(second.id)).toBeLessThan(listed.indexOf(first.id));
     expect(service.getSession("missing")).toBeNull();

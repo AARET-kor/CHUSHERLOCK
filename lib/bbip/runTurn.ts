@@ -2,6 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { isFakeMode } from "../ai/client";
 import type { CodexEntry } from "../codex/types";
 import { listEntries } from "../services/entryService";
+import { getPatientRecord } from "../services/recordsService";
+import { buildHistoryBlock } from "../records/history";
 import {
   failTurn,
   finishTurn,
@@ -67,6 +69,7 @@ export async function* runTurn(
   let turn: ReturnType<typeof startTurn>;
   let entries: CodexEntry[];
   let priorTurns: ReturnType<typeof listTurns>;
+  let history = "";
   let safeRequest: TurnRequest;
   try {
     safeRequest =
@@ -76,6 +79,7 @@ export async function* runTurn(
     const wanted = new Set(session.sourceNoteIds);
     entries = (await deps.listEntries()).filter((e) => wanted.has(e.id));
     priorTurns = listTurns(sessionId).filter((t) => t.status === "done");
+    history = session.patientId ? buildHistoryBlock(getPatientRecord(session.patientId)) : "";
     const model = isFakeMode() ? "fake" : modelForRequest(safeRequest).model;
     turn = startTurn(sessionId, safeRequest, model);
   } catch (error) {
@@ -97,7 +101,7 @@ export async function* runTurn(
   let settled = false;
   try {
     yield { type: "start", turnId: turn.id };
-    for await (const chunk of deps.generate({ session, entries, priorTurns, request: safeRequest, onFinal })) {
+    for await (const chunk of deps.generate({ session, entries, priorTurns, request: safeRequest, onFinal, history })) {
       const visible = extractor ? extractor.push(chunk) : chunk;
       if (visible) {
         output += visible;

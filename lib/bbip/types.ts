@@ -133,4 +133,4 @@ export type StreamEvent =
   | { type: "done"; turnId: string }
   | { type: "error"; message: string };
 
-export const BBIP_PROMPT_VERSION = "bbip-v3";
+export const BBIP_PROMPT_VERSION = "bbip-v4";

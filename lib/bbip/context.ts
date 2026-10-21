@@ -86,12 +86,14 @@ export function buildTurnContext(args: {
   entries: CodexEntry[];
   priorTurns: BbipTurn[];
   request: TurnRequest;
+  history?: string;
 }): TurnContext {
   const notes = selectPromptNotes(args.session, args.entries);
   // The atlas block is derived from the chips alone, so it is as stable as
   // the case block.
   const stable = [
     buildCaseBlock(args.session.chips, args.session.flags),
+    args.history ?? "",
     buildNotesBlock(notes),
     buildAtlasBlock(anatomyPlanFor(args.session.chips)),
   ]
