@@ -9,7 +9,7 @@ export interface BiTerm {
 
 export const T = {
   consult: { en: "Consult", ko: "진료" },
-  cases: { en: "Cases", ko: "기록" },
+  cases: { en: "Records", ko: "기록" },
   knowledge: { en: "Knowledge", ko: "지식창고" },
   assistant: { en: "Aesthetic GP Assistant", ko: "미용 GP 진료 비서" },
 
@@ -52,6 +52,18 @@ export const T = {
   redraft: { en: "Redraft", ko: "다시 작성" },
   mySets: { en: "My Sets", ko: "내 세트" },
   addRow: { en: "Add Row", ko: "행 추가" },
+  records: { en: "Records", ko: "기록" },
+  patients: { en: "Patients", ko: "환자" },
+  courses: { en: "Courses", ko: "코스" },
+  visits: { en: "Visits", ko: "방문" },
+  photos: { en: "Photos", ko: "사진" },
+  followUps: { en: "Follow-ups", ko: "F/U 예정" },
+  consultLog: { en: "Consult Log", ko: "진료 기록" },
+  recordVisit: { en: "Record", ko: "기록에 남기기" },
+  patientHistory: { en: "Patient History", ko: "환자 경과" },
+  addVisit: { en: "Add Visit", ko: "방문 추가" },
+  newCourse: { en: "New Course", ko: "새 코스" },
+  dropPhotos: { en: "Drop photos", ko: "사진을 끌어다 놓으세요" },
 } satisfies Record<string, BiTerm>;
 
 export const GROUP_TERMS: Record<"safety" | "practice" | "business" | "literature", BiTerm> = {
