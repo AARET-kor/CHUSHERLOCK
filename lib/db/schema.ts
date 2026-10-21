@@ -1,6 +1,7 @@
 import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
 import type { CareItem } from "../bbip/care/types";
 import type { Flag, LiteratureBlock, ParsedCase } from "../bbip/types";
+import type { Angle, CourseStatus, ScoreKind, VisitKind } from "../records/types";
 
 // Categories are seeded from lib/codex/taxonomy.ts at migrate time, but kept
 // as a real table (not just the static list) so future user-added leaf
@@ -302,6 +303,8 @@ export const bbipSessions = sqliteTable(
     sourceNoteIds: text("source_note_ids", { mode: "json" }).notNull().$type<string[]>(),
     /** 🔬 literature block (null until searched); [P#]/[W#] index into it. */
     literature: text("literature", { mode: "json" }).$type<LiteratureBlock>(),
+    /** Patient this consult belongs to (records). Cleared if the patient is deleted. */
+    patientId: text("patient_id").references(() => patients.id, { onDelete: "set null" }),
     promptVersion: text("prompt_version").notNull(),
     createdAt: text("created_at").notNull(),
   },
@@ -370,3 +373,77 @@ export const bbipCareSets = sqliteTable("bbip_care_sets", {
   sourceSessionId: text("source_session_id"),
   updatedAt: text("updated_at").notNull(),
 });
+
+// ── Case records (Plan 5): patient → course → visit → photo ────────────────
+// A patient is an EMR chart number and an alias — never a name or contact.
+
+export const patients = sqliteTable("patients", {
+  id: text("id").primaryKey(),
+  chartNo: text("chart_no").notNull().unique(),
+  alias: text("alias").notNull().default(""),
+  features: text("features").notNull().default(""),
+  memo: text("memo").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const courses = sqliteTable(
+  "courses",
+  {
+    id: text("id").primaryKey(),
+    patientId: text("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    procedure: text("procedure").notNull(),
+    indication: text("indication").notNull().default(""),
+    plannedSessions: integer("planned_sessions"),
+    scoreKind: text("score_kind").notNull().default("none").$type<ScoreKind>(),
+    status: text("status").notNull().default("active").$type<CourseStatus>(),
+    startedAt: text("started_at").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({ patientIdx: index("courses_patient_idx").on(table.patientId) })
+);
+
+export const visits = sqliteTable(
+  "visits",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    kind: text("kind").notNull().$type<VisitKind>(),
+    sessionNo: integer("session_no"),
+    product: text("product").notNull().default(""),
+    params: text("params").notNull().default(""),
+    note: text("note").notNull().default(""),
+    gaisDoctor: integer("gais_doctor"),
+    gaisPatient: integer("gais_patient"),
+    score: integer("score"),
+    nextFuDate: text("next_fu_date"),
+    sessionId: text("session_id").references(() => bbipSessions.id, { onDelete: "set null" }),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    courseIdx: index("visits_course_idx").on(table.courseId),
+    sessionIdx: index("visits_session_idx").on(table.sessionId),
+  })
+);
+
+export const photos = sqliteTable(
+  "photos",
+  {
+    id: text("id").primaryKey(),
+    visitId: text("visit_id")
+      .notNull()
+      .references(() => visits.id, { onDelete: "cascade" }),
+    angle: text("angle").notNull().$type<Angle>(),
+    file: text("file").notNull(),
+    thumb: text("thumb").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({ visitIdx: index("photos_visit_idx").on(table.visitId) })
+);

@@ -20,3 +20,7 @@ data/e2e-figures/
 data/e2e-ingest/
 .codex/
 next-env.d.ts
+
+data/photos/
+data/e2e-photos/
+backups/
