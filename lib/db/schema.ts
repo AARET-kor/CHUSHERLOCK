@@ -1,7 +1,7 @@
 import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
 import type { CareItem } from "../bbip/care/types";
 import type { Flag, LiteratureBlock, ParsedCase } from "../bbip/types";
-import type { Angle, CourseStatus, ScoreKind, VisitKind } from "../records/types";
+import type { AiAnalysis, Angle, CourseStatus, ScoreKind, VisitKind } from "../records/types";
 
 // Categories are seeded from lib/codex/taxonomy.ts at migrate time, but kept
 // as a real table (not just the static list) so future user-added leaf
@@ -424,6 +424,7 @@ export const visits = sqliteTable(
     nextFuDate: text("next_fu_date"),
     /** Plain-text key brief of the linked consult, filled automatically. */
     result: text("result").notNull().default(""),
+    aiAnalysis: text("ai_analysis", { mode: "json" }).$type<AiAnalysis>(),
     sessionId: text("session_id").references(() => bbipSessions.id, { onDelete: "set null" }),
     createdAt: text("created_at").notNull(),
   },

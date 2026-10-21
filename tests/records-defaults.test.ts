@@ -7,7 +7,7 @@ const course = (id: string, procedure: string, visits: Array<Partial<CourseRecor
   id, patientId: "p", procedure, indication: "", plannedSessions: 20, scoreKind: "mmasi", status: status as "active", startedAt: "2026-09-01", createdAt: "",
   visits: visits.map((v, i) => ({
     id: `${id}-${i}`, courseId: id, date: "2026-09-01", kind: "session", sessionNo: i + 1, product: "", params: "", note: "",
-    gaisDoctor: null, gaisPatient: null, score: null, nextFuDate: null, result: "", sessionId: null, createdAt: "", photos: [], ...v,
+    gaisDoctor: null, gaisPatient: null, score: null, nextFuDate: null, result: "", aiAnalysis: null, sessionId: null, createdAt: "", photos: [], ...v,
   })),
 });
 

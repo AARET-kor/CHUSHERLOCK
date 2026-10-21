@@ -93,8 +93,18 @@ export interface Visit {
   nextFuDate: string | null;
   /** The linked consult's key brief as plain text (saved automatically). */
   result: string;
+  /** AI change analysis against an earlier visit (draft until merged into the note). */
+  aiAnalysis: AiAnalysis | null;
   /** BBIP consult session this visit came from, if any. */
   sessionId: string | null;
+  createdAt: string;
+}
+
+export interface AiAnalysis {
+  text: string;
+  model: string;
+  fromVisitId: string;
+  angle: Angle;
   createdAt: string;
 }
 
