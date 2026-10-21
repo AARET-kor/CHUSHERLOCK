@@ -10,6 +10,7 @@ export async function setupTempDb(prefix: string) {
   process.env.CODEX_DB_PATH = path.join(dir, "test.sqlite");
   process.env.CODEX_FIGURES_DIR = path.join(dir, "figures");
   process.env.CODEX_INGEST_PAYLOAD_DIR = path.join(dir, "ingest");
+  process.env.CODEX_PHOTOS_DIR = path.join(dir, "photos");
   process.env.CODEX_AI_MODE = "fake";
 
   const [{ db, sqliteClient }, { migrate }, taxonomy] = await Promise.all([

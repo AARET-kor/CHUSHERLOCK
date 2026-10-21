@@ -31,6 +31,7 @@ function toSession(row: SessionRow): BbipSession {
     flags: row.flags,
     sourceNoteIds: row.sourceNoteIds,
     ...(row.literature ? { literature: row.literature } : {}),
+    ...(row.patientId ? { patientId: row.patientId } : {}),
     promptVersion: row.promptVersion,
     createdAt: row.createdAt,
   };
@@ -57,6 +58,7 @@ export function createSession(input: {
   chips: ParsedCase;
   flags: Flag[];
   sourceNoteIds: string[];
+  patientId?: string | null;
 }): BbipSession {
   const row: SessionRow = {
     id: randomUUID(),
@@ -64,6 +66,7 @@ export function createSession(input: {
     flags: input.flags,
     sourceNoteIds: input.sourceNoteIds,
     literature: null,
+    patientId: input.patientId ?? null,
     promptVersion: BBIP_PROMPT_VERSION,
     createdAt: nowIso(),
   };

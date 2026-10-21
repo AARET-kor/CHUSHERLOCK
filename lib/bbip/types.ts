@@ -84,6 +84,8 @@ export interface BbipSession {
   sourceNoteIds: string[];
   /** Set by the literature search; later turns may cite it as [P#]/[W#]. */
   literature?: LiteratureBlock;
+  /** Records patient this consult is linked to (Plan 5). */
+  patientId?: string;
   promptVersion: string;
   createdAt: string;
 }
