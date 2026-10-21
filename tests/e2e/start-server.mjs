@@ -11,6 +11,8 @@ const env = {
   CODEX_INGEST_PAYLOAD_DIR:
     process.env.CODEX_E2E_INGEST_DIR ?? path.resolve("data/e2e-ingest"),
   CODEX_AI_MODE: "fake",
+  CODEX_ACCESS_TOKEN: "e2e-access-token",
+  CODEX_PHOTOS_DIR: process.env.CODEX_E2E_PHOTOS_DIR ?? path.resolve("data/e2e-photos"),
   // Own build dir so a running `npm run dev` keeps its compiled chunks.
   NEXT_DIST_DIR: ".next-e2e",
 };

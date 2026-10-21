@@ -11,6 +11,7 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:3100",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    httpCredentials: { username: "bbip", password: "e2e-access-token" },
   },
   webServer: {
     command: "node tests/e2e/start-server.mjs",
