@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { SessionLink } from "../../lib/bbip/types";
-import type { PatientSummary } from "../../lib/records/types";
+import type { PatientSummary, Visit } from "../../lib/records/types";
 
 const LINK = "underline decoration-ink/25 underline-offset-4 hover:decoration-ink";
 
@@ -18,7 +18,7 @@ export function PatientLinkBar({
 }: {
   sessionId: string;
   link: SessionLink;
-  onLinked: (patient: PatientSummary) => void;
+  onLinked: (patient: PatientSummary, visit: Visit | null) => void;
   onUnlinked: () => void;
 }) {
   const [chartNo, setChartNo] = useState(link.pendingChartNo ?? "");
@@ -34,7 +34,7 @@ export function PatientLinkBar({
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.patient) return setError(data.error ?? "연결하지 못했습니다.");
     setError(null);
-    onLinked(data.patient);
+    onLinked(data.patient, data.visit ?? null);
   }
 
   async function unlink() {

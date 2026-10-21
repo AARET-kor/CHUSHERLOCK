@@ -65,6 +65,8 @@ describe("openSession patient link", () => {
     const first = await open.openSession({ input: "#20431 기미 피코토닝" }, deps([]));
     const view = await open.loadSessionView(first.session.id);
     expect(view?.link?.patient?.patient.chartNo).toBe("20431");
-    expect(view?.visit).toBeNull();
+    // Linked consults are recorded automatically as a visit of this consult.
+    expect(view?.visit?.sessionId).toBe(first.session.id);
+    expect(first.visit?.id).toBe(view?.visit?.id);
   });
 });

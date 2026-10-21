@@ -83,7 +83,7 @@ describe("records API", () => {
 });
 
 describe("consult → record", () => {
-  it("registers a chart number, suggests a course and records the next session", async () => {
+  it("registers a chart number, records the consult at once, and drops it on unlink", async () => {
     const bbip = await import("../lib/services/bbipService");
     const session = bbip.createSession({
       chips: { patient: ["40대 여성"], conditions: ["기미"], meds: [], procedures: ["피코토닝"] },
@@ -94,21 +94,22 @@ describe("consult → record", () => {
 
     const linked = await (await sessionPatientRoute.PUT(json("PUT", { chartNo: "N-501" }), params(session.id))).json();
     expect(linked.patient.patient.features).toBe("40대 여성 · 기미");
+    // Linking records the consult at once: a baseline in a new 피코토닝 course.
+    expect(linked.visit).toMatchObject({ kind: "baseline", sessionId: session.id });
 
-    const first = await (await recordRoute.GET(new Request("http://test.local/api"), params(session.id))).json();
-    expect(first.suggestedCourseId).toBeNull();
-    expect(first.newCourse).toMatchObject({ procedure: "피코토닝", defaults: { kind: "baseline" } });
-    const created = await recordRoute.POST(
-      json("POST", { courseId: null, newCourse: { procedure: "피코토닝", scoreKind: "mmasi" }, visit: { ...first.newCourse.defaults, score: 18 } }),
+    const defaults = await (await recordRoute.GET(new Request("http://test.local/api"), params(session.id))).json();
+    expect(defaults.suggestedCourseId).toBe(linked.visit.courseId);
+    const again = await recordRoute.POST(
+      json("POST", { courseId: linked.visit.courseId, newCourse: null, visit: defaults.courses[0].defaults }),
       params(session.id)
     );
-    expect(created.status).toBe(201);
-
-    const second = await (await recordRoute.GET(new Request("http://test.local/api"), params(session.id))).json();
-    expect(second.suggestedCourseId).toBe(second.courses[0].id);
-    expect(second.courses[0].defaults).toMatchObject({ kind: "session", sessionNo: 1 });
+    expect(again.status).toBe(409);
 
     expect((await sessionPatientRoute.DELETE(new Request("http://test.local/api", { method: "DELETE" }), params(session.id))).status).toBe(200);
     expect(bbip.getSession(session.id)?.patientId).toBeUndefined();
+    // Unlinking drops the visit (and the course it alone was in).
+    const records = await import("../lib/services/recordsService");
+    expect(records.getVisit(linked.visit.id)).toBeNull();
+    expect(records.getCourse(linked.visit.courseId)).toBeNull();
   });
 });

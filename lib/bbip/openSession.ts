@@ -5,6 +5,7 @@ import { createSession, failOrphanedTurns, getSession, listTurns } from "../serv
 import { getCareOrder } from "../services/careService";
 import { noteRefsFor, selectPromptNotes } from "./context";
 import { mergeFlags, ruleFlags } from "./flags";
+import { ensureSessionVisit } from "../records/autoRecord";
 import { extractChartNo } from "../records/chart";
 import { matchPatients } from "../records/match";
 import { todayIso } from "../records/schedule";
@@ -17,6 +18,7 @@ import {
 import { normalizeChips, parseCase, sanitizeInput, type ParseResult } from "./parse";
 import { activeTurnIds } from "./runTurn";
 import type { CreateSessionBody } from "./schemas";
+import type { Visit } from "../records/types";
 import type { BbipSession, NoteRef, ParsedCase, SessionLink, SessionView } from "./types";
 
 export const RETRIEVE_LIMIT = 12;
@@ -52,7 +54,7 @@ const defaultDeps: OpenSessionDeps = {
 export async function openSession(
   body: CreateSessionBody,
   deps: OpenSessionDeps = defaultDeps
-): Promise<{ session: BbipSession; notes: NoteRef[]; degraded: boolean; link: SessionLink }> {
+): Promise<{ session: BbipSession; notes: NoteRef[]; degraded: boolean; link: SessionLink; visit: Visit | null }> {
   let parsed: ParseResult;
   let chartNo: string | null = null;
   let inheritedPatientId: string | null = null;
@@ -95,6 +97,8 @@ export async function openSession(
     notes: noteRefsFor(selectPromptNotes(session, retrieved)),
     degraded: parsed.degraded,
     link,
+    // A linked patient's record gets today's visit right away (Plan 5 auto record).
+    visit: patientId ? ensureSessionVisit(session.id) : null,
   };
 }
 

@@ -1,4 +1,5 @@
 // app/api/bbip/sessions/[id]/patient/route.ts
+import { ensureSessionVisit, removeSessionVisit } from "../../../../../../lib/records/autoRecord";
 import { featuresFromChips } from "../../../../../../lib/records/features";
 import { badRequest, notFound } from "../../../../../../lib/records/http";
 import { sessionPatientSchema } from "../../../../../../lib/records/schemas";
@@ -32,14 +33,19 @@ export async function PUT(request: Request, { params }: Ctx) {
       existing?.id ??
       createPatient({ chartNo: parsed.data.chartNo, alias: parsed.data.alias, features: featuresFromChips(session.chips), memo: "" }).id;
   }
+  // Re-linking to someone else first drops the visit made for the old patient.
+  if (session.patientId && session.patientId !== patientId) removeSessionVisit(session.id);
   linkSessionPatient(session.id, patientId);
-  return Response.json({ patient: patientSummary(patientId) });
+  const visit = ensureSessionVisit(session.id);
+  return Response.json({ patient: patientSummary(patientId), visit });
 }
 
-/** DELETE → unlink ("이 환자가 아님"). The patient and its records stay. */
+/** DELETE → unlink ("이 환자가 아님"). The visit this consult made goes with
+ * it (and its course, if left empty); the patient's other records stay. */
 export async function DELETE(_request: Request, { params }: Ctx) {
   const id = (await params).id;
   if (!getSession(id)) return notFound("세션");
+  removeSessionVisit(id);
   linkSessionPatient(id, null);
   return Response.json({ ok: true });
 }

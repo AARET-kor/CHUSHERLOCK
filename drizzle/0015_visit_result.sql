@@ -1,0 +1,1 @@
+ALTER TABLE `visits` ADD `result` text DEFAULT '' NOT NULL;

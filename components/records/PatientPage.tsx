@@ -150,6 +150,11 @@ export function PatientPage({ initial }: { initial: PatientRecord }) {
               <span className="text-inkdeep">{v.procedure}</span>
               <span className="text-ink/70">{VISIT_KIND_LABEL[v.kind].en}{v.kind === "session" && v.sessionNo ? ` ${v.sessionNo}` : ""}</span>
               <span className="text-ink/60">{[v.params, v.photos.length ? `${v.photos.length} photos` : ""].filter(Boolean).join(" · ")}</span>
+              {v.result && v.sessionId && (
+                <Link href={`/?s=${v.sessionId}`} title={v.result.slice(0, 200)} className={`text-[13.5px] text-[#0f5132] ${LINK}`}>
+                  {T.consultResult.en} · {T.consultResult.ko} →
+                </Link>
+              )}
             </li>
           ))}
         </ul>

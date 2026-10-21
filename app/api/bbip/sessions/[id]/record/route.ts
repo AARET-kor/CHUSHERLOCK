@@ -5,7 +5,7 @@ import { nextFuFromCare, todayIso } from "../../../../../../lib/records/schedule
 import { recordCreateSchema } from "../../../../../../lib/records/schemas";
 import { getSession } from "../../../../../../lib/services/bbipService";
 import { getCareOrder } from "../../../../../../lib/services/careService";
-import { createCourse, createVisit, getPatientRecord } from "../../../../../../lib/services/recordsService";
+import { createCourse, createVisit, getPatientRecord, visitForSession } from "../../../../../../lib/services/recordsService";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -52,6 +52,10 @@ export async function POST(request: Request, { params }: Ctx) {
   const parsed = recordCreateSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return badRequest(parsed.error);
   const { session, record } = loaded;
+  // Linked consults already get a visit automatically; that one is edited, not doubled.
+  if (visitForSession(session.id)) {
+    return Response.json({ error: "이 진료의 방문 기록이 이미 있습니다. 기록 수정으로 바꿔 주세요." }, { status: 409 });
+  }
   try {
     let courseId = parsed.data.courseId;
     if (!courseId) {

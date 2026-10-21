@@ -13,6 +13,7 @@ import {
   type CourseRecord,
   type CourseStatus,
   type Patient,
+  type ScoreKind,
   type Photo,
   type VisitWithPhotos,
 } from "../../lib/records/types";
@@ -63,13 +64,13 @@ export function CoursePage({ patient, initial, today }: { patient: Patient; init
     if (res.ok) setCourse((c) => ({ ...c, visits: c.visits.filter((x) => x.id !== v.id) }));
   }
 
-  async function setStatus(status: CourseStatus) {
+  async function patchCourse(patch: { status?: CourseStatus; scoreKind?: ScoreKind }) {
     const res = await fetch(`/api/records/courses/${course.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(patch),
     });
-    if (res.ok) setCourse((c) => ({ ...c, status }));
+    if (res.ok) setCourse((c) => ({ ...c, ...patch }));
   }
 
   const last = [...course.visits].reverse().find((v) => v.product || v.params);
@@ -98,9 +99,14 @@ export function CoursePage({ patient, initial, today }: { patient: Patient; init
             <p className="text-[13px] text-ink/65">Sessions · 회차</p>
             <p className="font-serifa text-[2rem] font-bold text-inkdeep">{done}<span className="text-[1rem] text-ink/60">{course.plannedSessions ? ` / ${course.plannedSessions}` : ""}</span></p>
             {nextFu && <p className="text-[14px] text-[#0f5132]">Next F/U · {nextFu}</p>}
-            <select aria-label="코스 상태" value={course.status} onChange={(e) => void setStatus(e.target.value as CourseStatus)} className="mt-1 border-b border-ink/20 bg-transparent text-[14px]">
-              {(Object.keys(STATUS_LABEL) as CourseStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s].en} · {STATUS_LABEL[s].ko}</option>)}
-            </select>
+            <div className="mt-1 flex flex-wrap justify-end gap-3">
+              <select aria-label="점수 종류" value={course.scoreKind} onChange={(e) => void patchCourse({ scoreKind: e.target.value as ScoreKind })} className="border-b border-ink/20 bg-transparent text-[14px]">
+                {(Object.keys(SCORE_KINDS) as ScoreKind[]).map((k) => <option key={k} value={k}>{SCORE_KINDS[k].en} · {SCORE_KINDS[k].ko}</option>)}
+              </select>
+              <select aria-label="코스 상태" value={course.status} onChange={(e) => void patchCourse({ status: e.target.value as CourseStatus })} className="border-b border-ink/20 bg-transparent text-[14px]">
+                {(Object.keys(STATUS_LABEL) as CourseStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s].en} · {STATUS_LABEL[s].ko}</option>)}
+              </select>
+            </div>
           </div>
         </div>
       </header>
@@ -168,6 +174,19 @@ export function CoursePage({ patient, initial, today }: { patient: Patient; init
                     </span>
                   </div>
                   {v.note && <p className="mt-1 text-[14.5px] text-ink/70">{v.note}</p>}
+                  {v.result && (
+                    <details className="mt-2 rounded-[4px] bg-mist/60 px-3 py-2">
+                      <summary className="cursor-pointer text-[13.5px] font-semibold text-ink/75">
+                        {T.consultResult.en} · {T.consultResult.ko}
+                      </summary>
+                      <p className="mt-2 whitespace-pre-wrap text-[14.5px] leading-relaxed text-ink/85">{v.result}</p>
+                      {v.sessionId && (
+                        <Link href={`/?s=${v.sessionId}`} className={`mt-2 inline-block text-[13.5px] text-ink/70 ${LINK}`}>
+                          Open consult · 진료 열기 →
+                        </Link>
+                      )}
+                    </details>
+                  )}
                   <PhotoStrip
                     photos={v.photos}
                     onChange={(photo) => updateVisit(v.id, (x) => ({ ...x, photos: x.photos.map((p) => (p.id === photo.id ? photo : p)) }))}

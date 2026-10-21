@@ -189,7 +189,7 @@ export function BbipConsole({
         degraded: data.degraded,
       });
       setLink(data.link ?? emptyLink);
-      setVisit(null);
+      setVisit(data.visit ?? null);
       // Shareable URL without a server round trip (keeps this component mounted).
       window.history.replaceState(null, "", `/?s=${data.session.id}`);
       void runTurn(data.session.id, { kind: "brief" });
@@ -210,8 +210,10 @@ export function BbipConsole({
   }
 
   /** A patient linked after the brief: write the brief again so it reads the history. */
-  function linkPatient(patient: NonNullable<SessionLink["patient"]>) {
+  function linkPatient(patient: NonNullable<SessionLink["patient"]>, linkedVisit: Visit | null) {
     setLink({ patient, pendingChartNo: null, candidates: [] });
+    setVisit(linkedVisit);
+    setHistoryVersion((v) => v + 1);
     const brief = state.turns.find((t) => t.kind === "brief");
     if (brief && brief.status !== "streaming") retry(brief);
   }
@@ -331,7 +333,10 @@ export function BbipConsole({
               sessionId={session.id}
               link={link}
               onLinked={linkPatient}
-              onUnlinked={() => setLink(emptyLink)}
+              onUnlinked={() => {
+                setLink(emptyLink);
+                setVisit(null);
+              }}
             />
             {link.patient && (
               <PatientHistoryPanel
@@ -413,6 +418,7 @@ export function BbipConsole({
       {recording && session && (
         <RecordDialog
           sessionId={session.id}
+          visit={visit}
           onClose={() => setRecording(false)}
           onSaved={(saved) => {
             setVisit(saved);

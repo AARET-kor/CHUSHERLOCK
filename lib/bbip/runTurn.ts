@@ -3,6 +3,7 @@ import { isFakeMode } from "../ai/client";
 import type { CodexEntry } from "../codex/types";
 import { listEntries } from "../services/entryService";
 import { getPatientRecord } from "../services/recordsService";
+import { recordBriefResult } from "../records/autoRecord";
 import { buildHistoryBlock } from "../records/history";
 import {
   failTurn,
@@ -115,6 +116,14 @@ export async function* runTurn(
     }
     finishTurn(turn.id, output.trimEnd(), finished.followups, servedModel);
     settled = true;
+    if (safeRequest.kind === "brief") {
+      // A consult linked to a records patient keeps its brief as the visit result.
+      try {
+        recordBriefResult(sessionId, output.trimEnd());
+      } catch (error) {
+        console.warn("[bbip] saving the brief to the visit failed:", error instanceof Error ? error.message : "unknown");
+      }
+    }
     if (finished.followups.length) yield { type: "followups", items: finished.followups };
     yield { type: "done", turnId: turn.id };
   } catch (error) {

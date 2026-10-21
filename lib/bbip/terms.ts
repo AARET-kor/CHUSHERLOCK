@@ -60,6 +60,8 @@ export const T = {
   followUps: { en: "Follow-ups", ko: "F/U 예정" },
   consultLog: { en: "Consult Log", ko: "진료 기록" },
   recordVisit: { en: "Record", ko: "기록에 남기기" },
+  editRecord: { en: "Edit record", ko: "기록 수정" },
+  consultResult: { en: "Consult result", ko: "진료 결과" },
   patientHistory: { en: "Patient History", ko: "환자 경과" },
   addVisit: { en: "Add Visit", ko: "방문 추가" },
   newCourse: { en: "New Course", ko: "새 코스" },

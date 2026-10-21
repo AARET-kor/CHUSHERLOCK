@@ -44,11 +44,9 @@ export function PatientHistoryPanel({
     <div className="mt-6 rounded-[6px] bg-mist/60 px-4 py-4">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h3 className="text-[14.5px] font-semibold text-ink/75"><Term term={T.patientHistory} /></h3>
-        {!visit && (
-          <button type="button" onClick={onRecord} className="rounded-full bg-inkdeep px-4 py-1.5 text-[14px] font-semibold text-white">
-            {T.recordVisit.en} · {T.recordVisit.ko}
-          </button>
-        )}
+        <button type="button" onClick={onRecord} className="rounded-full bg-inkdeep px-4 py-1.5 text-[14px] font-semibold text-white">
+          {visit ? `${T.editRecord.en} · ${T.editRecord.ko}` : `${T.recordVisit.en} · ${T.recordVisit.ko}`}
+        </button>
       </div>
       {active.length === 0 ? (
         <p className="mt-2 text-[14.5px] text-ink/65">진행 중인 코스가 없습니다. 기록에 남기면 새 코스로 시작합니다.</p>
@@ -86,7 +84,7 @@ export function PatientHistoryPanel({
       {visit && (
         <PhotoDropZone visitId={visit.id} onUploaded={(added) => setPhotos((p) => [...p, ...added])} className="mt-4 border-t border-ink/10 pt-3">
           <p className="text-[14px] text-ink/75">
-            이 진료는 {visit.date} {visit.kind === "session" && visit.sessionNo ? `${visit.sessionNo}회차` : VISIT_KIND_LABEL[visit.kind].ko} 방문으로 기록됐습니다.
+            이 진료는 {visit.date} {visit.kind === "session" && visit.sessionNo ? `${visit.sessionNo}회차` : VISIT_KIND_LABEL[visit.kind].ko} 방문으로 기록됐습니다. 핵심 브리핑은 이 방문의 진료 결과로 자동 저장됩니다.
           </p>
           <PhotoStrip
             photos={photos}

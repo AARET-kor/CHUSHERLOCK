@@ -155,7 +155,7 @@ export function deleteCourse(id: string): boolean {
 
 // ── Visits ─────────────────────────────────────────────────────────────────
 
-export type VisitInput = Omit<Visit, "id" | "createdAt">;
+export type VisitInput = Omit<Visit, "id" | "createdAt" | "result"> & { result?: string };
 
 function checkScore(course: Course, score: number | null): void {
   if (score === null) return;
@@ -170,7 +170,7 @@ export function createVisit(input: VisitInput): Visit {
   const course = getCourse(input.courseId);
   if (!course) throw new RecordValidationError("코스를 찾을 수 없습니다.");
   checkScore(course, input.score);
-  const row: VisitRow = { id: randomUUID(), ...input, createdAt: nowIso() };
+  const row: VisitRow = { id: randomUUID(), ...input, result: input.result ?? "", createdAt: nowIso() };
   db.insert(visits).values(row).run();
   touchPatient(course.patientId);
   return toVisit(row);

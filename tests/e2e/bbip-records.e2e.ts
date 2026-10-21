@@ -36,13 +36,14 @@ test("consult → register → record → photos → next consult links and cont
   await page.getByRole("button", { name: new RegExp(`Register #${CHART}`) }).click();
   await expect(page.getByRole("link", { name: `#${CHART}` })).toBeVisible();
 
-  // 2. Record it: a new course starting with a baseline.
-  await page.getByRole("button", { name: /기록에 남기기/ }).click();
-  const dialog = page.getByRole("dialog", { name: /기록에 남기기/ });
-  await expect(dialog.getByLabel(/Procedure · 시술/)).toHaveValue(/피코토닝/, COLD);
+  // 2. Linking records the consult at once (baseline of a new course); edit it.
+  await expect(page.getByText(/시작 전 방문으로 기록됐습니다/)).toBeVisible(COLD);
+  await page.getByRole("button", { name: /기록 수정/ }).click();
+  const dialog = page.getByRole("dialog", { name: /기록 수정/ });
+  await expect(dialog.getByLabel(/Parameters · 파라미터/)).toBeVisible(COLD);
   await dialog.getByLabel(/Parameters · 파라미터/).fill("1064nm 2.5J/cm²");
   await dialog.getByRole("button", { name: "Save · 저장" }).click();
-  await expect(page.getByText(/기록됐습니다/)).toBeVisible();
+  await expect(dialog).toHaveCount(0, COLD);
 
   // 3. Drop two photos onto the recorded visit (file input path = same upload).
   await page.getByLabel("사진 파일 고르기").setInputFiles(["tests/fixtures/face-a.jpg", "tests/fixtures/face-b.jpg"]);
@@ -55,13 +56,13 @@ test("consult → register → record → photos → next consult links and cont
   await expect(page.getByText("1064nm 2.5J/cm²")).toBeVisible();
   await expect(page.getByText(/이전 경과를 반영한 예시입니다/)).toBeVisible();
 
-  // 5. Record session 1 of the same course.
-  await page.getByRole("button", { name: /기록에 남기기/ }).click();
-  const next = page.getByRole("dialog", { name: /기록에 남기기/ });
+  // 5. Already recorded as session 1 of the same course, parameters carried over.
+  await expect(page.getByText(/1회차 방문으로 기록됐습니다/)).toBeVisible(COLD);
+  await page.getByRole("button", { name: /기록 수정/ }).click();
+  const next = page.getByRole("dialog", { name: /기록 수정/ });
   await expect(next.getByRole("spinbutton", { name: /Session · 회차/ })).toHaveValue("1", COLD);
   await expect(next.getByLabel(/Parameters · 파라미터/)).toHaveValue("1064nm 2.5J/cm²");
-  await next.getByRole("button", { name: "Save · 저장" }).click();
-  await expect(page.getByText(/1회차 방문으로 기록됐습니다/)).toBeVisible();
+  await next.getByRole("button", { name: /Cancel · 취소/ }).click();
 
   // 6. Records: find the patient by search, open the course, see the grid.
   await page.goto("/cases");
@@ -72,6 +73,10 @@ test("consult → register → record → photos → next consult links and cont
   await expect(page).toHaveURL(/\/courses\//, COLD);
   await expect(page.getByRole("columnheader", { name: /Baseline/ })).toBeVisible(COLD);
   await expect(page.getByRole("columnheader", { name: /S1/ })).toBeVisible();
+  // The key brief of each consult is kept as the visit's result.
+  await expect(page.getByText("Consult result · 진료 결과").first()).toBeVisible();
+  await page.getByText("Consult result · 진료 결과").first().click();
+  await expect(page.getByText(/핵심 브리핑 예시입니다/).first()).toBeVisible();
   await noBlockingA11y(page);
 });
 

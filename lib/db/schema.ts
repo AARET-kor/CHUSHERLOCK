@@ -422,6 +422,8 @@ export const visits = sqliteTable(
     gaisPatient: integer("gais_patient"),
     score: integer("score"),
     nextFuDate: text("next_fu_date"),
+    /** Plain-text key brief of the linked consult, filled automatically. */
+    result: text("result").notNull().default(""),
     sessionId: text("session_id").references(() => bbipSessions.id, { onDelete: "set null" }),
     createdAt: text("created_at").notNull(),
   },

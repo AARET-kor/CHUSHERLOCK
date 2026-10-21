@@ -91,6 +91,8 @@ export interface Visit {
   gaisPatient: number | null;
   score: number | null;
   nextFuDate: string | null;
+  /** The linked consult's key brief as plain text (saved automatically). */
+  result: string;
   /** BBIP consult session this visit came from, if any. */
   sessionId: string | null;
   createdAt: string;
