@@ -3,6 +3,7 @@
 // the domain (same convention as lib/codex/types.ts).
 
 import type { CareOrder } from "./care/types";
+import type { PatientCandidate, PatientSummary, Visit } from "../records/types";
 
 export type FlagLevel = "contraindication" | "caution";
 
@@ -123,6 +124,18 @@ export interface SessionView {
   notes: NoteRef[];
   /** The session's 처방·드레싱·F/U order, once drafted. */
   care?: CareOrder | null;
+  link?: SessionLink;
+  /** The records visit made from this consult, once recorded. */
+  visit?: Visit | null;
+}
+
+/** Which records patient a consult belongs to (Plan 5). */
+export interface SessionLink {
+  patient: PatientSummary | null;
+  /** A typed #chart number with no patient yet — offered for registration. */
+  pendingChartNo: string | null;
+  /** Similar previous patients when nothing is linked. */
+  candidates: PatientCandidate[];
 }
 
 export type StreamEvent =
