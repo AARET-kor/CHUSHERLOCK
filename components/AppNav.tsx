@@ -28,7 +28,7 @@ export function isKnowledgePath(pathname: string): boolean {
 type Section = "consult" | "cases" | "knowledge";
 
 function sectionOf(pathname: string): Section {
-  if (pathname.startsWith("/cases")) return "cases";
+  if (pathname.startsWith("/cases") || pathname.startsWith("/patients")) return "cases";
   if (isKnowledgePath(pathname)) return "knowledge";
   return "consult";
 }
@@ -66,7 +66,7 @@ export function AppNav({ due }: { due: number }) {
           <img src="/brand/bbip-mark.svg" alt="" aria-hidden="true" className="h-[18px] w-auto sm:h-[28px]" />
           <span className="font-serifa text-2xl font-bold tracking-tight sm:text-[32px]">BBIP</span>
         </Link>
-        <div className="flex items-center gap-1 rounded-full bg-mist p-1 text-[15.5px] sm:text-[17px]">
+        <div className="flex items-center gap-1 rounded-full bg-mist p-1 text-[14.5px] min-[400px]:text-[15.5px] sm:text-[17px]">
           {primary.map((item) => {
             const active = item.key === section;
             return (
