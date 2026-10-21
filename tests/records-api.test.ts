@@ -12,6 +12,8 @@ let visitsRoute: typeof import("../app/api/records/visits/route");
 let visitRoute: typeof import("../app/api/records/visits/[id]/route");
 let uploadRoute: typeof import("../app/api/records/visits/[id]/photos/route");
 let photoRoute: typeof import("../app/api/records/photos/[id]/route");
+let sessionPatientRoute: typeof import("../app/api/bbip/sessions/[id]/patient/route");
+let recordRoute: typeof import("../app/api/bbip/sessions/[id]/record/route");
 
 beforeAll(async () => {
   env = await setupTempDb("records-api");
@@ -22,6 +24,8 @@ beforeAll(async () => {
   visitRoute = await import("../app/api/records/visits/[id]/route");
   uploadRoute = await import("../app/api/records/visits/[id]/photos/route");
   photoRoute = await import("../app/api/records/photos/[id]/route");
+  sessionPatientRoute = await import("../app/api/bbip/sessions/[id]/patient/route");
+  recordRoute = await import("../app/api/bbip/sessions/[id]/record/route");
 });
 afterAll(() => env.cleanup());
 
@@ -75,5 +79,36 @@ describe("records API", () => {
     expect(fs.readdirSync(dir).length).toBe(4);
     expect((await visitRoute.DELETE(new Request("http://test.local/api", { method: "DELETE" }), params(visit.id))).status).toBe(200);
     expect(fs.readdirSync(dir).filter((f) => f.endsWith(".jpg"))).toEqual([]);
+  });
+});
+
+describe("consult → record", () => {
+  it("registers a chart number, suggests a course and records the next session", async () => {
+    const bbip = await import("../lib/services/bbipService");
+    const session = bbip.createSession({
+      chips: { patient: ["40대 여성"], conditions: ["기미"], meds: [], procedures: ["피코토닝"] },
+      flags: [],
+      sourceNoteIds: [],
+    });
+    expect((await recordRoute.GET(new Request("http://test.local/api"), params(session.id))).status).toBe(404);
+
+    const linked = await (await sessionPatientRoute.PUT(json("PUT", { chartNo: "N-501" }), params(session.id))).json();
+    expect(linked.patient.patient.features).toBe("40대 여성 · 기미");
+
+    const first = await (await recordRoute.GET(new Request("http://test.local/api"), params(session.id))).json();
+    expect(first.suggestedCourseId).toBeNull();
+    expect(first.newCourse).toMatchObject({ procedure: "피코토닝", defaults: { kind: "baseline" } });
+    const created = await recordRoute.POST(
+      json("POST", { courseId: null, newCourse: { procedure: "피코토닝", scoreKind: "mmasi" }, visit: { ...first.newCourse.defaults, score: 18 } }),
+      params(session.id)
+    );
+    expect(created.status).toBe(201);
+
+    const second = await (await recordRoute.GET(new Request("http://test.local/api"), params(session.id))).json();
+    expect(second.suggestedCourseId).toBe(second.courses[0].id);
+    expect(second.courses[0].defaults).toMatchObject({ kind: "session", sessionNo: 1 });
+
+    expect((await sessionPatientRoute.DELETE(new Request("http://test.local/api", { method: "DELETE" }), params(session.id))).status).toBe(200);
+    expect(bbip.getSession(session.id)?.patientId).toBeUndefined();
   });
 });
