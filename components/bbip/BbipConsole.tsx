@@ -27,6 +27,11 @@ import { TurnCard } from "./TurnCard";
 import { useRecentSessions } from "./useRecentSessions";
 import { CareSection } from "./care/CareSection";
 import { useCareOrder } from "./care/useCareOrder";
+import { PatientHistoryPanel } from "../records/PatientHistoryPanel";
+import { PatientLinkBar } from "../records/PatientLinkBar";
+import { RecordDialog } from "../records/RecordDialog";
+import type { SessionLink } from "../../lib/bbip/types";
+import type { Visit } from "../../lib/records/types";
 
 const EXAMPLES = [
   "20대 여성, 여드름 흉터, 이소트레티노인 복용, 레이저 상담",
@@ -59,6 +64,11 @@ export function BbipConsole({
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promoteTurnId, setPromoteTurnId] = useState<string | null>(null);
+  const emptyLink: SessionLink = { patient: null, pendingChartNo: null, candidates: [] };
+  const [link, setLink] = useState<SessionLink>(initialView?.link ?? emptyLink);
+  const [visit, setVisit] = useState<Visit | null>(initialView?.visit ?? null);
+  const [recording, setRecording] = useState(false);
+  const [historyVersion, setHistoryVersion] = useState(0);
   const [draft, setDraft] = useState("");
   const care = useCareOrder(state.session?.id ?? null, initialView?.care ?? null);
   const keySeq = useRef(0);
@@ -178,6 +188,8 @@ export function BbipConsole({
         view: { session: data.session, turns: [], notes: data.notes },
         degraded: data.degraded,
       });
+      setLink(data.link ?? emptyLink);
+      setVisit(null);
       // Shareable URL without a server round trip (keeps this component mounted).
       window.history.replaceState(null, "", `/?s=${data.session.id}`);
       void runTurn(data.session.id, { kind: "brief" });
@@ -195,6 +207,13 @@ export function BbipConsole({
     if (!state.session) return;
     dispatch({ type: "turn-remove", key: turn.key });
     void runTurn(state.session.id, requestOf(turn));
+  }
+
+  /** A patient linked after the brief: write the brief again so it reads the history. */
+  function linkPatient(patient: NonNullable<SessionLink["patient"]>) {
+    setLink({ patient, pendingChartNo: null, candidates: [] });
+    const brief = state.turns.find((t) => t.kind === "brief");
+    if (brief && brief.status !== "streaming") retry(brief);
   }
 
   const session = state.session;
@@ -306,6 +325,22 @@ export function BbipConsole({
               onChange={(chips) => void openSession({ chips, baseSessionId: session.id })}
             />
             <FlagBanner flags={session.flags} />
+            {/* ── Records (Plan 5) ── */}
+            <PatientLinkBar
+              key={session.id}
+              sessionId={session.id}
+              link={link}
+              onLinked={linkPatient}
+              onUnlinked={() => setLink(emptyLink)}
+            />
+            {link.patient && (
+              <PatientHistoryPanel
+                patientId={link.patient.patient.id}
+                visit={visit}
+                version={historyVersion}
+                onRecord={() => setRecording(true)}
+              />
+            )}
           </SheetSection>
 
           {brief && (
@@ -373,6 +408,17 @@ export function BbipConsole({
             );
           })}
         </>
+      )}
+
+      {recording && session && (
+        <RecordDialog
+          sessionId={session.id}
+          onClose={() => setRecording(false)}
+          onSaved={(saved) => {
+            setVisit(saved);
+            setHistoryVersion((v) => v + 1);
+          }}
+        />
       )}
 
       {promoteTurnId && (
