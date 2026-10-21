@@ -19,7 +19,9 @@ import {
 } from "../../lib/records/types";
 import { T } from "../../lib/bbip/terms";
 import { Term } from "../bbip/Term";
+import { CompareView } from "./CompareView";
 import { PhotoDropZone } from "./PhotoDropZone";
+import { ProgressCharts } from "./ProgressChart";
 import { PhotoStrip } from "./PhotoStrip";
 import { emptyVisitDraft, VisitForm, type VisitDraft } from "./VisitForm";
 
@@ -111,6 +113,8 @@ export function CoursePage({ patient, initial, today }: { patient: Patient; init
         </div>
       </header>
 
+      <ProgressCharts course={course} />
+
       {latest && (
         <PhotoDropZone visitId={latest.id} onUploaded={(photos) => addPhotos(latest.id, photos)} className="border-t border-ink/10 pb-8 pt-6">
           <h2 className="mb-3 text-[14.5px] font-semibold text-ink/70"><Term term={T.photos} /></h2>
@@ -152,6 +156,8 @@ export function CoursePage({ patient, initial, today }: { patient: Patient; init
         </PhotoDropZone>
       )}
 
+      <CompareView course={course} onVisit={(saved) => updateVisit(saved.id, (x) => ({ ...x, ...saved }))} />
+
       <section aria-labelledby="course-visits" className="border-t border-ink/10 pt-6">
         <h2 id="course-visits" className="mb-3 text-[14.5px] font-semibold text-ink/70"><Term term={T.visits} /></h2>
         <ul>
@@ -174,6 +180,14 @@ export function CoursePage({ patient, initial, today }: { patient: Patient; init
                     </span>
                   </div>
                   {v.note && <p className="mt-1 text-[14.5px] text-ink/70">{v.note}</p>}
+                  {v.aiAnalysis && (
+                    <details className="mt-2 rounded-[4px] bg-mist/60 px-3 py-2">
+                      <summary className="cursor-pointer text-[13.5px] font-semibold text-[#8a5a00]">
+                        AI change analysis · AI 변화 분석 <span className="font-normal italic">(AI 초안)</span>
+                      </summary>
+                      <p className="mt-2 whitespace-pre-wrap text-[14.5px] leading-relaxed text-ink/85">{v.aiAnalysis.text}</p>
+                    </details>
+                  )}
                   {v.result && (
                     <details className="mt-2 rounded-[4px] bg-mist/60 px-3 py-2">
                       <summary className="cursor-pointer text-[13.5px] font-semibold text-ink/75">

@@ -300,9 +300,9 @@ export function listPatientSummaries(): PatientSummary[] {
       nextFu: nextFus[0] ?? null,
     };
   });
-  return summaries.sort((a, b) =>
-    (b.lastVisit ?? b.patient.updatedAt).localeCompare(a.lastVisit ?? a.patient.updatedAt)
-  );
+  // Most recently seen first; on the same visit day, the one touched last.
+  const seen = (s: PatientSummary) => s.lastVisit ?? s.patient.updatedAt.slice(0, 10);
+  return summaries.sort((a, b) => seen(b).localeCompare(seen(a)) || b.patient.updatedAt.localeCompare(a.patient.updatedAt));
 }
 
 export function patientSummary(id: string): PatientSummary | null {

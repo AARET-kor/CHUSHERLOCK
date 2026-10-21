@@ -62,7 +62,11 @@ test("consult → register → record → photos → next consult links and cont
   const next = page.getByRole("dialog", { name: /기록 수정/ });
   await expect(next.getByRole("spinbutton", { name: /Session · 회차/ })).toHaveValue("1", COLD);
   await expect(next.getByLabel(/Parameters · 파라미터/)).toHaveValue("1064nm 2.5J/cm²");
-  await next.getByRole("button", { name: /Cancel · 취소/ }).click();
+  await next.getByLabel("GAIS · 원장").selectOption("2");
+  await next.getByRole("button", { name: "Save · 저장" }).click();
+  await expect(next).toHaveCount(0, COLD);
+  await page.getByLabel("사진 파일 고르기").setInputFiles(["tests/fixtures/face-a.jpg", "tests/fixtures/face-b.jpg"]);
+  await expect(page.getByRole("img", { name: /정면 사진/ })).toBeVisible(COLD);
 
   // 6. Records: find the patient by search, open the course, see the grid.
   await page.goto("/cases");
@@ -77,6 +81,24 @@ test("consult → register → record → photos → next consult links and cont
   await expect(page.getByText("Consult result · 진료 결과").first()).toBeVisible();
   await page.getByText("Consult result · 진료 결과").first().click();
   await expect(page.getByText(/핵심 브리핑 예시입니다/).first()).toBeVisible();
+
+  // 7. Progress chart, photo comparison and the AI change analysis.
+  await expect(page.getByRole("group", { name: "GAIS 경과 그래프" })).toBeVisible();
+  await page.getByText("Table view · 표로 보기").click();
+  await expect(page.getByRole("cell", { name: "2 많이 좋아짐" })).toBeVisible();
+  const compare = page.locator("section[aria-labelledby='course-compare']");
+  await expect(compare.getByRole("img", { name: /Baseline 정면 사진/ })).toBeVisible();
+  await expect(compare.getByRole("img", { name: /S1 정면 사진/ })).toBeVisible();
+  await compare.getByRole("button", { name: /Slider · 슬라이더/ }).click();
+  await expect(compare.getByLabel(/비교 슬라이더/)).toBeVisible();
+  await compare.getByRole("button", { name: /AI 변화 분석/ }).click();
+  await expect(compare.getByText("이 사진 2장과 아래 정보가 Claude로 전송됩니다.")).toBeVisible();
+  await expect(compare.getByText(/시술: 피코토닝/)).toBeVisible();
+  await expect(compare.getByText(CHART)).toHaveCount(0);
+  await compare.getByRole("button", { name: "Send · 보내기" }).click();
+  await expect(compare.getByText(/\[FAKE\] 이전보다 색소가 옅어진/)).toBeVisible(COLD);
+  await compare.getByRole("button", { name: /메모에 합치기/ }).click();
+  await expect(page.getByText(/\[AI 변화 분석 초안\]/)).toBeVisible(COLD);
   await noBlockingA11y(page);
 });
 
