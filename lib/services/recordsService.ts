@@ -296,6 +296,15 @@ export function listPatientSummaries(): PatientSummary[] {
         planned: c.plannedSessions,
       })),
       procedures: own.map((c) => c.procedure),
+      courses: [...own]
+        .sort((a, b) => Number(a.status !== "active") - Number(b.status !== "active") || b.startedAt.localeCompare(a.startedAt))
+        .map((c) => ({
+          id: c.id,
+          procedure: c.procedure,
+          status: c.status,
+          done: ownVisits.filter((v) => v.courseId === c.id && v.kind === "session").length,
+          planned: c.plannedSessions,
+        })),
       lastVisit: ownVisits.at(-1)?.date ?? null,
       nextFu: nextFus[0] ?? null,
     };

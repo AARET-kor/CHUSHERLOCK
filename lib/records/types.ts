@@ -145,6 +145,8 @@ export interface PatientSummary {
   activeCourses: Array<{ id: string; procedure: string; done: number; planned: number | null }>;
   /** Every course's procedure, for search and matching. */
   procedures: string[];
+  /** Every course, active first then most recent — for category tags. */
+  courses: Array<{ id: string; procedure: string; status: CourseStatus; done: number; planned: number | null }>;
   lastVisit: string | null;
   nextFu: string | null;
 }

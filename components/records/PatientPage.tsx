@@ -7,6 +7,7 @@ import { useState } from "react";
 import { SCORE_KINDS, STATUS_LABEL, VISIT_KIND_LABEL, type PatientRecord, type ScoreKind } from "../../lib/records/types";
 import { T } from "../../lib/bbip/terms";
 import { Term } from "../bbip/Term";
+import { CategoryTag, FeatureTags } from "./CategoryTag";
 
 const LINK = "underline decoration-ink/25 underline-offset-4 hover:decoration-ink";
 
@@ -87,7 +88,13 @@ export function PatientPage({ initial }: { initial: PatientRecord }) {
           <div className="mt-6">
             <p className="font-mono text-[15px] text-ink/70">#{p.chartNo}</p>
             <h1 className="font-serifa text-[2.4rem] font-bold leading-tight text-inkdeep">{p.alias || "별칭 없음"}</h1>
-            <p className="mt-1 text-[16px] text-ink/75">{p.features || "특징 없음"}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {record.courses.map((c) => (
+                <CategoryTag key={c.id} procedure={c.procedure} done={c.status !== "active"} />
+              ))}
+              <FeatureTags features={p.features} />
+              {record.courses.length === 0 && !p.features && <span className="text-[15px] text-ink/60">특징 없음</span>}
+            </div>
             {p.memo && <p className="mt-2 max-w-[640px] text-[15px] text-ink/70">{p.memo}</p>}
             <div className="mt-3 flex gap-5 text-[14px]">
               <button type="button" onClick={() => setEditing(true)} className={`text-ink/70 ${LINK}`}>Edit · 수정</button>
@@ -107,8 +114,11 @@ export function PatientPage({ initial }: { initial: PatientRecord }) {
             return (
               <li key={c.id}>
                 <Link href={`/patients/${p.id}/courses/${c.id}`} className="group block rounded-[6px] border border-ink/10 p-4 hover:border-ink/30">
-                  <p className="text-[12.5px] text-ink/60">{STATUS_LABEL[c.status].en} · {STATUS_LABEL[c.status].ko}</p>
-                  <p className="font-serifa text-[20px] font-bold text-inkdeep group-hover:underline">{c.procedure}</p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <CategoryTag procedure={c.procedure} done={c.status !== "active"} size="sm" />
+                    <span className="text-[12.5px] text-ink/60">{STATUS_LABEL[c.status].en} · {STATUS_LABEL[c.status].ko}</span>
+                  </div>
+                  <p className="mt-2 font-serifa text-[20px] font-bold text-inkdeep group-hover:underline">{c.procedure}</p>
                   <p className="text-[14px] text-ink/70">{[c.indication, SCORE_KINDS[c.scoreKind].en].filter(Boolean).join(" · ")}</p>
                   <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
                     <div className="h-full bg-[#0f5132]" style={{ width: `${c.plannedSessions ? Math.min(100, (done / c.plannedSessions) * 100) : 0}%` }} />

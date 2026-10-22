@@ -18,6 +18,7 @@ import {
   type VisitWithPhotos,
 } from "../../lib/records/types";
 import { T } from "../../lib/bbip/terms";
+import { CategoryTag, FeatureTags } from "./CategoryTag";
 import { Term } from "../bbip/Term";
 import { CompareView } from "./CompareView";
 import { PhotoDropZone } from "./PhotoDropZone";
@@ -93,7 +94,10 @@ export function CoursePage({ patient, initial, today }: { patient: Patient; init
         </Link>
         <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
           <div>
-            <p className="text-[14px] text-ink/65">{patient.features}</p>
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              <CategoryTag procedure={course.procedure} done={course.status !== "active"} />
+              <FeatureTags features={patient.features} size="sm" />
+            </div>
             <h1 className="font-serifa text-[2.4rem] font-bold leading-tight text-inkdeep">{course.procedure}</h1>
             <p className="text-[16px] text-ink/75">{[course.indication, `${SCORE_KINDS[course.scoreKind].en} · ${SCORE_KINDS[course.scoreKind].ko}`].filter(Boolean).join(" · ")}</p>
           </div>

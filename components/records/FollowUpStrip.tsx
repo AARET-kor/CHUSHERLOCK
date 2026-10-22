@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { FollowUpItem } from "../../lib/records/types";
 import { Term } from "../bbip/Term";
 import { T } from "../../lib/bbip/terms";
+import { CategoryTag } from "./CategoryTag";
 
 const STATUS = {
   overdue: { label: "Overdue · 지남", className: "text-red-800" },
@@ -27,8 +28,13 @@ export function FollowUpStrip({ items }: { items: FollowUpItem[] }) {
               <li key={`${item.courseId}-${item.date}`} className="border-b border-ink/[0.07]">
                 <Link href={`/patients/${item.patient.id}/courses/${item.courseId}`} className="group flex items-baseline gap-3 py-2.5">
                   <span className="w-14 shrink-0 font-mono text-[12.5px] tabular-nums text-ink/60">{item.date.slice(5)}</span>
-                  <span className="min-w-0 flex-1 truncate text-[15.5px] text-inkdeep group-hover:underline">
-                    #{item.patient.chartNo} {item.patient.alias} · {item.procedure}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15.5px] text-inkdeep group-hover:underline">
+                      #{item.patient.chartNo} {item.patient.alias}
+                    </span>
+                    <span className="mt-1 flex">
+                      <CategoryTag procedure={item.procedure} size="sm" compact />
+                    </span>
                   </span>
                   <span className={`shrink-0 text-[12.5px] ${status?.className ?? ""}`}>{status?.label}</span>
                 </Link>
