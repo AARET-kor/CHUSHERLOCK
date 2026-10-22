@@ -106,7 +106,15 @@ export interface AiAnalysis {
   fromVisitId: string;
   angle: Angle;
   createdAt: string;
+  id?: string;
+  fromPhotoId?: string;
+  toPhotoId?: string;
+  facts?: string;
+  mergedAt?: string;
+  history?: AiAnalysis[];
 }
+
+export const VISIT_NOTE_MAX = 4000;
 
 export interface Photo {
   id: string;

@@ -1,3 +1,9 @@
+import { AnatomyNoteLinks } from "../../../components/AnatomyNoteLinks";
+import { db } from "../../../lib/db/client";
+import { figures } from "../../../lib/db/schema";
+import { eq } from "drizzle-orm";
+import { EntryVisitTracker } from "../../../components/EntryVisitTracker";
+import { noteExcerpt } from "../../../lib/knowledge/preview";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEntry, listEntries } from "../../../lib/services/entryService";
@@ -24,6 +30,7 @@ export default async function EntryDetailPage({
     .map((relatedId) => allEntries.find((e) => e.id === relatedId))
     .filter((e): e is NonNullable<typeof e> => Boolean(e));
 
+  const images = db.select().from(figures).where(eq(figures.entryId, id)).all();
   const nav = await clusterNavForEntry(id);
   const cards = await listCardsForEntry(id);
   const now = Date.now();
@@ -35,6 +42,7 @@ export default async function EntryDetailPage({
 
   return (
     <div>
+      <EntryVisitTracker id={id} />
       {nav && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-ink/10 bg-mist/50 px-4 py-2.5 text-xs">
           <Link href="/study" className="min-w-0 truncate text-ink/70 hover:text-ink">
@@ -109,10 +117,24 @@ export default async function EntryDetailPage({
 
       <h1 className="mb-4 font-serifa text-2xl font-bold tracking-tight text-inkdeep md:text-3xl">{entry.title}</h1>
 
-      <article className="card mb-8 p-6">
+      <section className="card mb-5 p-6" aria-label="빠른 확인">
+        <h2 className="mb-2 font-semibold">빠른 확인 · 본문 발췌</h2>
+        <p className="leading-relaxed">{noteExcerpt(entry.content, 420)}</p>
+        <p className="mt-3 text-xs text-ink/65">자동 요약이 아닌 본문 앞부분입니다. 상세 내용과 근거를 함께 확인하세요.</p>
+        <a href="#entry-evidence" className="mt-3 inline-block text-sm underline">출처·근거 보기 →</a>
+      </section>
+      <details className="card mb-8 p-6">
+        <summary className="cursor-pointer font-semibold">전체 내용 펼치기</summary>
+      <article className="mt-4">
         <MarkdownContent content={entry.content} />
       </article>
+      </details>
 
+      <div id="entry-evidence" className="scroll-mt-32" />
+      {entry.sources.length === 0 && <p className="mb-6 text-sm text-amber-800">등록된 출처가 없습니다.</p>}
+
+      {images.length > 0 && <section className="mb-8"><h2 className="mb-3 font-semibold">원문 도판</h2><div className="grid gap-4 sm:grid-cols-2">{images.map(f => <a key={f.id} href={`/api/figures/${f.id}`} target="_blank" rel="noreferrer" className="rounded-lg border p-3"><img src={`/api/figures/${f.id}`} alt={f.caption} className="max-h-64 w-full object-contain" loading="lazy" /><p className="mt-2 text-sm">{f.caption}{f.page ? ` · p.${f.page}` : ""}</p></a>)}</div></section>}
+      <AnatomyNoteLinks entryId={id} tags={entry.tags} />
       {/* Spaced-repetition flashcards from this note */}
       <section className="mb-8 rounded-2xl border border-ink/10 bg-mist/40 p-4">
         <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-ink/40">
@@ -162,7 +184,7 @@ export default async function EntryDetailPage({
               >
                 <div className="mb-1 flex flex-wrap gap-1.5 text-[10px]">
                   <span className="rounded bg-white px-1.5 py-0.5">
-                    {claim.representation === "verbatim" ? "원문 보존" : "AI 재서술"}
+                    {claim.representation === "verbatim" ? "원문 보존" : claim.representation === "author_note" ? "작성자 메모" : "AI 재서술"}
                   </span>
                   <span className="rounded bg-white px-1.5 py-0.5">{claim.evidenceLevel}</span>
                   {claim.conflictStatus !== "none" && (

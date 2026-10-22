@@ -18,6 +18,7 @@ import { SheetSection } from "../SheetSection";
 import { DepthCrossSection } from "./DepthCrossSection";
 import { FaceMap } from "./FaceMap";
 import { ExplorerControls, type ExplorerMode } from "./ExplorerControls";
+import { StructureNotes } from "./StructureNotes";
 import { MyFigures } from "./MyFigures";
 import { StructureTable } from "./StructureTable";
 import { sortByRisk, textToggleClass } from "./vocab";
@@ -264,6 +265,7 @@ function AnatomyMap({
             onFocus={(id) => focusStructure(id, false)}
           />
         </div>
+        <StructureNotes id={focusId} />
         <MyFigures sessionId={sessionId} />
       </div>
     </SheetSection>

@@ -123,7 +123,7 @@ export function AppNav({ due }: { due: number }) {
 /** The "+ 자료 넣기" shortcut belongs to the knowledge base, not the console. */
 export function KnowledgePill() {
   const pathname = usePathname() ?? "/";
-  if (!isKnowledgePath(pathname)) return null;
+  if (!isKnowledgePath(pathname) || pathname === "/kb") return null;
   return (
     <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
       <div

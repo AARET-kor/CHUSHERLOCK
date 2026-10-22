@@ -5,9 +5,6 @@ import { getCareOrder } from "../services/careService";
 import {
   createCourse,
   createVisit,
-  deleteCourse,
-  deleteVisit,
-  getCourse,
   getPatientRecord,
   updateVisit,
   visitForSession,
@@ -81,14 +78,8 @@ export function recordBriefResult(sessionId: string, output: string): void {
   if (visit) updateVisit(visit.id, { result: briefResult(output) });
 }
 
-/** "이 환자가 아님": drop the visit this consult made, and its course when
- * nothing else is left in it. */
+/** Unlink the consult while preserving the visit, annotations and photos. */
 export function removeSessionVisit(sessionId: string): void {
   const visit = visitForSession(sessionId);
-  if (!visit) return;
-  deleteVisit(visit.id);
-  const course = getCourse(visit.courseId);
-  if (!course) return;
-  const left = getPatientRecord(course.patientId)?.courses.find((c) => c.id === course.id)?.visits.length ?? 0;
-  if (left === 0) deleteCourse(course.id);
+  if (visit) updateVisit(visit.id, { sessionId: null });
 }

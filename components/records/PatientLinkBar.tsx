@@ -50,7 +50,7 @@ export function PatientLinkBar({
         <Link href={`/patients/${p.patient.id}`} className={`font-mono text-[15px] text-inkdeep ${LINK}`}>#{p.patient.chartNo}</Link>
         <span className="text-[15.5px] text-inkdeep">{p.patient.alias || p.patient.features}</span>
         <span className="text-[14px] text-ink/65">{p.activeCourses.map((c) => `${c.procedure} ${c.done}${c.planned ? `/${c.planned}` : "회"}`).join(" · ")}</span>
-        <button type="button" onClick={() => void unlink()} className={`ml-auto text-[13.5px] text-ink/60 ${LINK}`}>Not this patient · 이 환자가 아님</button>
+        <button type="button" onClick={() => void unlink()} className={`ml-auto text-[13.5px] text-ink/60 ${LINK}`}>Unlink · 연결 해제 (기록 보존)</button>
       </div>
     );
   }

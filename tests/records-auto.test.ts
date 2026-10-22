@@ -67,13 +67,18 @@ describe("auto record", () => {
     expect(auto.ensureSessionVisit(unlinked.id)).toBeNull();
   });
 
-  it("removes the consult's visit on unlink, and a course left empty", () => {
+  it("preserves the visit and course on unlink", () => {
     const p = records.createPatient({ chartNo: "AUTO-4", alias: "", features: "", memo: "" });
     const s1 = bbip.createSession({ chips: chips(["보톡스"]), flags: [], sourceNoteIds: [], patientId: p.id });
     const v1 = auto.ensureSessionVisit(s1.id)!;
+    records.updateVisit(v1.id, { note: "보존할 메모" });
+    const photo = records.addPhoto({ visitId: v1.id, angle: "front", file: "kept.jpg", thumb: "kept-thumb.jpg", width: 1, height: 1 });
     auto.removeSessionVisit(s1.id);
-    expect(records.getVisit(v1.id)).toBeNull();
-    expect(records.getCourse(v1.courseId)).toBeNull();
+    expect(records.getVisit(v1.id)?.note).toBe("보존할 메모");
+    expect(records.getPhoto(photo.id)).not.toBeNull();
+    expect(records.getVisit(v1.id)?.sessionId).toBeNull();
+    expect(records.getVisit(v1.id)).not.toBeNull();
+    expect(records.getCourse(v1.courseId)).not.toBeNull();
 
     const s2 = bbip.createSession({ chips: chips(["보톡스"]), flags: [], sourceNoteIds: [], patientId: p.id });
     const kept = auto.ensureSessionVisit(s2.id)!;

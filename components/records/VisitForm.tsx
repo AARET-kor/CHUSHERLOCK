@@ -1,5 +1,6 @@
 // components/records/VisitForm.tsx
 "use client";
+import { VISIT_NOTE_MAX } from "../../lib/records/types";
 
 import { useState } from "react";
 import { GAIS_LABEL, SCORE_KINDS, VISIT_KIND_LABEL, type ScoreKind, type Visit, type VisitKind } from "../../lib/records/types";
@@ -100,7 +101,7 @@ export function VisitForm({
       </label>
       <label className={`${LABEL} sm:col-span-2`}>
         Note · 메모 (이름·연락처는 쓰지 마세요)
-        <textarea rows={2} maxLength={2000} value={draft.note} onChange={(e) => set("note", e.target.value)} className="mt-1 block w-full border border-ink/15 bg-transparent p-2 text-[15px] text-ink" />
+        <textarea rows={2} maxLength={VISIT_NOTE_MAX} value={draft.note} onChange={(e) => set("note", e.target.value)} className="mt-1 block w-full border border-ink/15 bg-transparent p-2 text-[15px] text-ink" />
       </label>
       {error && (
         <p role="alert" className="text-[14px] text-red-800 sm:col-span-2">

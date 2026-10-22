@@ -1,5 +1,7 @@
 "use client";
 
+import { PhotoCompareCanvas } from "./PhotoCompareCanvas";
+import { analysisIsCurrent } from "../../lib/records/analysis";
 import { useState } from "react";
 import { compareFacts } from "../../lib/records/compareFacts";
 import { comparePair, sharedAngles, visitLabel } from "../../lib/records/progress";
@@ -7,27 +9,6 @@ import { ANGLE_LABEL, type Angle, type CourseRecord, type Visit, type VisitWithP
 
 const LINK = "underline decoration-ink/25 underline-offset-4 hover:decoration-ink";
 const SELECT = "border-b border-ink/20 bg-transparent py-1 text-[15px] text-ink";
-
-function PhotoFigure({ visit, angle }: { visit: VisitWithPhotos; angle: Angle }) {
-  const photo = visit.photos.find((p) => p.angle === angle);
-  return (
-    <figure className="min-w-0">
-      {photo ? (
-        // Full-size image: the comparison is the point.
-        <img
-          src={`/api/records/photos/${photo.id}`}
-          alt={`${visitLabel(visit)} ${ANGLE_LABEL[angle].ko} 사진`}
-          className="aspect-[3/4] w-full rounded-[4px] bg-mist object-cover"
-        />
-      ) : (
-        <div className="aspect-[3/4] w-full rounded-[4px] border border-dashed border-ink/20" />
-      )}
-      <figcaption className="mt-1 text-[13.5px] text-ink/70">
-        {visitLabel(visit)} · {visit.date}
-      </figcaption>
-    </figure>
-  );
-}
 
 /** Two visits at one angle: side by side or under a slider, plus the
  * on-request AI change analysis with a confirm step showing what is sent. */
@@ -37,7 +18,7 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
   const [toId, setToId] = useState(initial?.toId ?? "");
   const [chosenAngle, setAngle] = useState<Angle | null>(initial?.angle ?? null);
   const [mode, setMode] = useState<"side" | "slider">("side");
-  const [split, setSplit] = useState(50);
+  const [photoChoices, setPhotoChoices] = useState<Record<string, string>>({});
   const [confirming, setConfirming] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +29,11 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
   const to = withPhotos.find((v) => v.id === toId) ?? withPhotos.at(-1)!;
   const angles = from.id === to.id ? [] : sharedAngles(from, to);
   const angle = chosenAngle && angles.includes(chosenAngle) ? chosenAngle : (angles[0] ?? null);
+  const thumb = (v: VisitWithPhotos) => v.photos.find(p => p.angle === angle && p.id === photoChoices[`${v.id}:${angle}`]) ?? v.photos.find(p => p.angle === angle);
   const analysis = to.aiAnalysis && to.aiAnalysis.fromVisitId === from.id && to.aiAnalysis.angle === angle ? to.aiAnalysis : null;
+  const stale = analysis ? (!analysisIsCurrent(course, to.id, analysis) || analysis.fromPhotoId !== thumb(from)?.id || analysis.toPhotoId !== thumb(to)?.id) : false;
   const facts = angle ? compareFacts(course, from.id, to.id, angle) : "";
-  const thumb = (v: VisitWithPhotos) => v.photos.find((p) => p.angle === angle);
+
 
   async function analyze() {
     if (!angle) return;
@@ -59,7 +42,7 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
     const res = await fetch("/api/records/compare", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fromVisitId: from.id, toVisitId: to.id, angle }),
+      body: JSON.stringify({ fromVisitId: from.id, toVisitId: to.id, angle, fromPhotoId: thumb(from)?.id, toPhotoId: thumb(to)?.id }),
     }).catch(() => null);
     const data = await res?.json().catch(() => ({}));
     setRunning(false);
@@ -69,7 +52,8 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
   }
 
   async function mergeIntoNote() {
-    const res = await fetch(`/api/records/visits/${to.id}/merge-analysis`, { method: "POST" });
+    const res = await fetch(`/api/records/visits/${to.id}/merge-analysis`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ analysisId: analysis?.id }) }).catch(() => null);
+    if (!res) return setError("연결에 실패했습니다. 다시 시도해 주세요.");
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.visit) onVisit(data.visit);
     else setError(data.error ?? "메모에 합치지 못했습니다.");
@@ -83,7 +67,7 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
       <div className="mb-4 flex flex-wrap items-end gap-x-6 gap-y-3">
         <label className="block text-[13px] text-ink/70">
           Before · 이전
-          <select value={from.id} onChange={(e) => setFromId(e.target.value)} className={`mt-1 block ${SELECT}`}>
+          <select disabled={running} value={from.id} onChange={(e) => (setFromId(e.target.value), setConfirming(false))} className={`mt-1 block ${SELECT}`}>
             {withPhotos.map((v) => (
               <option key={v.id} value={v.id}>
                 {visitLabel(v)} · {v.date}
@@ -93,7 +77,7 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
         </label>
         <label className="block text-[13px] text-ink/70">
           After · 이후
-          <select value={to.id} onChange={(e) => setToId(e.target.value)} className={`mt-1 block ${SELECT}`}>
+          <select disabled={running} value={to.id} onChange={(e) => (setToId(e.target.value), setConfirming(false))} className={`mt-1 block ${SELECT}`}>
             {withPhotos.map((v) => (
               <option key={v.id} value={v.id}>
                 {visitLabel(v)} · {v.date}
@@ -107,7 +91,7 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
               key={a}
               type="button"
               aria-pressed={a === angle}
-              onClick={() => setAngle(a)}
+              disabled={running} onClick={() => { setAngle(a); setConfirming(false); }}
               className={`rounded-full px-3 py-1 text-[13.5px] ${a === angle ? "bg-inkdeep text-white" : "bg-mist text-ink hover:bg-ink/10"}`}
             >
               {ANGLE_LABEL[a].en} · {ANGLE_LABEL[a].ko}
@@ -129,33 +113,8 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
         </div>
       </div>
 
-      {!angle ? (
-        <p className="text-[14.5px] text-ink/65">두 방문에 같은 각도의 사진이 없습니다. 다른 방문을 골라 보세요.</p>
-      ) : mode === "side" ? (
-        <div className="grid max-w-[760px] grid-cols-2 gap-4">
-          <PhotoFigure visit={from} angle={angle} />
-          <PhotoFigure visit={to} angle={angle} />
-        </div>
-      ) : (
-        <div className="max-w-[420px]">
-          <div className="relative aspect-[3/4] overflow-hidden rounded-[4px] bg-mist">
-            <img src={`/api/records/photos/${thumb(to)!.id}`} alt={`${visitLabel(to)} 사진`} className="absolute inset-0 h-full w-full object-cover" />
-            <img
-              src={`/api/records/photos/${thumb(from)!.id}`}
-              alt={`${visitLabel(from)} 사진`}
-              className="absolute inset-0 h-full w-full object-cover"
-              style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
-            />
-            <div aria-hidden="true" className="absolute inset-y-0 w-[2px] bg-white shadow" style={{ left: `${split}%` }} />
-            <span className="absolute left-2 top-2 rounded bg-white/85 px-1.5 text-[12px] text-ink">{visitLabel(from)}</span>
-            <span className="absolute right-2 top-2 rounded bg-white/85 px-1.5 text-[12px] text-ink">{visitLabel(to)}</span>
-          </div>
-          <label className="mt-2 block text-[13px] text-ink/70">
-            Before ↔ After · 비교 슬라이더
-            <input type="range" min={0} max={100} value={split} onChange={(e) => setSplit(Number(e.target.value))} className="mt-1 w-full" />
-          </label>
-        </div>
-      )}
+      {angle && <div className="mb-4 flex flex-wrap gap-4">{[from, to].map((v, i) => <label key={i} className="text-sm">{i ? "이후 사진 선택" : "이전 사진 선택"}<select disabled={running} aria-label={i ? "이후 사진 선택" : "이전 사진 선택"} className="ml-2 border-b bg-transparent" value={thumb(v)?.id} onChange={e => { setPhotoChoices(old => ({ ...old, [`${v.id}:${angle}`]: e.target.value })); setConfirming(false); }}>{v.photos.filter(p => p.angle === angle).map((p, n) => <option key={p.id} value={p.id}>사진 {n + 1} · {p.createdAt.slice(0, 10)}</option>)}</select></label>)}</div>}
+      {!angle ? <p className="text-sm text-ink/65">두 방문에 같은 각도의 사진이 없습니다. 다른 방문을 골라 보세요.</p> : <PhotoCompareCanvas key={`${thumb(from)!.id}:${thumb(to)!.id}`} before={thumb(from)!} after={thumb(to)!} mode={mode} beforeLabel={`${visitLabel(from)} · ${from.date}`} afterLabel={`${visitLabel(to)} · ${to.date}`} />}
 
       {angle && (
         <div className="mt-5 max-w-[760px]">
@@ -190,14 +149,16 @@ export function CompareView({ course, onVisit }: { course: CourseRecord; onVisit
               <p className="text-[13px] font-semibold text-[#8a5a00]">
                 AI change analysis · AI 변화 분석 <span className="font-normal italic">— AI 초안, 원장 확인 필요</span>
               </p>
+              {stale && <p role="status" className="mt-2 text-amber-800">사진 또는 시술 정보가 달라졌습니다. 다시 분석해 주세요.</p>}
               <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-ink/85">{analysis.text}</p>
-              <button type="button" onClick={() => void mergeIntoNote()} className={`mt-2 text-[14px] text-ink/75 ${LINK}`}>
-                Add to note · 메모에 합치기
+              <button type="button" disabled={stale || Boolean(analysis.mergedAt)} onClick={() => void mergeIntoNote()} className={`mt-2 text-[14px] text-ink/75 ${LINK}`}>
+                {analysis.mergedAt ? "메모에 반영됨" : "Add to note · 메모에 합치기"}
               </button>
             </div>
           )}
         </div>
       )}
+      {to.aiAnalysis && <details className="mt-5 rounded border border-ink/15 p-4"><summary className="cursor-pointer text-sm font-medium">분석 이력 ({1 + (to.aiAnalysis.history?.length ?? 0)})</summary><div className="mt-3 space-y-4">{[to.aiAnalysis, ...(to.aiAnalysis.history ?? [])].map((a, i) => <article key={a.id ?? i} className="border-t border-ink/10 pt-3"><p className="text-xs text-ink/65">{a.createdAt} · {ANGLE_LABEL[a.angle].ko} · {a.model}{a.mergedAt ? " · 메모 반영됨" : " · AI 초안"}</p><p className="mt-2 whitespace-pre-wrap text-sm">{a.text}</p><details className="mt-2 text-xs"><summary className="cursor-pointer">분석 당시 정보</summary><pre className="whitespace-pre-wrap">{a.facts ?? "이전 버전: 입력 정보가 저장되지 않았습니다."}</pre></details></article>)}</div></details>}
     </section>
   );
 }

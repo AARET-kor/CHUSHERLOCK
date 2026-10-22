@@ -93,6 +93,7 @@ describe("compare API (fake mode)", () => {
       compareRoute.POST(new Request("http://t/api", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }));
 
     expect((await post({ fromVisitId: v1.id, toVisitId: v2.id, angle: "left45" })).status).toBe(400);
+    expect((await post({ fromVisitId: v1.id, toVisitId: v2.id, angle: "front", toPhotoId: "other-visit-photo" })).status).toBe(400);
     const res = await post({ fromVisitId: v1.id, toVisitId: v2.id, angle: "front" });
     expect(res.status).toBe(200);
     const { visit } = await res.json();
@@ -103,5 +104,24 @@ describe("compare API (fake mode)", () => {
     const after = (await merged.json()).visit;
     expect(after.note).toContain("홍반 없음");
     expect(after.note).toContain("[AI 변화 분석 초안]");
+    const merge = () => mergeRoute.POST(new Request("http://t/api", { method: "POST" }), { params: Promise.resolve({ id: v2.id }) });
+    expect((await (await merge()).json()).visit.note).toBe(after.note);
+    records.updateVisit(v2.id, { note: "가".repeat(1950) });
+    await post({ fromVisitId: v1.id, toVisitId: v2.id, angle: "front" });
+    const long = (await (await merge()).json()).visit;
+    const { visitPatchSchema } = await import("../lib/records/schemas");
+    expect(visitPatchSchema.safeParse({ note: long.note }).success).toBe(true);
+    records.updateVisit(v2.id, { note: "가".repeat(4000) });
+    await post({ fromVisitId: v1.id, toVisitId: v2.id, angle: "front" });
+    expect((await merge()).status).toBe(400);
+    expect(records.getVisit(v2.id)?.note).toHaveLength(4000);
+    records.updateVisit(v2.id, { note: "", params: "changed" });
+    expect((await merge()).status).toBe(409);
+    await post({ fromVisitId: v1.id, toVisitId: v2.id, angle: "front" });
+    const saved = records.getVisit(v2.id)!.aiAnalysis!;
+    expect(saved.history!.length).toBeGreaterThan(0);
+    records.setPhotoAngle(saved.toPhotoId!, "left");
+    expect((await merge()).status).toBe(409);
+
   });
 });

@@ -33,15 +33,14 @@ export async function PUT(request: Request, { params }: Ctx) {
       existing?.id ??
       createPatient({ chartNo: parsed.data.chartNo, alias: parsed.data.alias, features: featuresFromChips(session.chips), memo: "" }).id;
   }
-  // Re-linking to someone else first drops the visit made for the old patient.
+  // Preserve the old patient record and detach only its consult link.
   if (session.patientId && session.patientId !== patientId) removeSessionVisit(session.id);
   linkSessionPatient(session.id, patientId);
   const visit = ensureSessionVisit(session.id);
   return Response.json({ patient: patientSummary(patientId), visit });
 }
 
-/** DELETE → unlink ("이 환자가 아님"). The visit this consult made goes with
- * it (and its course, if left empty); the patient's other records stay. */
+/** DELETE detaches the consult; all recorded visits and photos stay. */
 export async function DELETE(_request: Request, { params }: Ctx) {
   const id = (await params).id;
   if (!getSession(id)) return notFound("세션");

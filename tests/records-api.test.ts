@@ -83,7 +83,7 @@ describe("records API", () => {
 });
 
 describe("consult → record", () => {
-  it("registers a chart number, records the consult at once, and drops it on unlink", async () => {
+  it("registers a chart number, records the consult at once, and preserves it on unlink", async () => {
     const bbip = await import("../lib/services/bbipService");
     const session = bbip.createSession({
       chips: { patient: ["40대 여성"], conditions: ["기미"], meds: [], procedures: ["피코토닝"] },
@@ -107,9 +107,9 @@ describe("consult → record", () => {
 
     expect((await sessionPatientRoute.DELETE(new Request("http://test.local/api", { method: "DELETE" }), params(session.id))).status).toBe(200);
     expect(bbip.getSession(session.id)?.patientId).toBeUndefined();
-    // Unlinking drops the visit (and the course it alone was in).
+    // Unlinking preserves the visit and its course.
     const records = await import("../lib/services/recordsService");
-    expect(records.getVisit(linked.visit.id)).toBeNull();
-    expect(records.getCourse(linked.visit.courseId)).toBeNull();
+    expect(records.getVisit(linked.visit.id)).toMatchObject({ sessionId: null });
+    expect(records.getCourse(linked.visit.courseId)).not.toBeNull();
   });
 });

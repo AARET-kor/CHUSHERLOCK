@@ -1,5 +1,6 @@
 // lib/records/schemas.ts
 import { z } from "zod";
+import { VISIT_NOTE_MAX } from "./types";
 import { normalizeChartNo } from "./chart";
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식은 YYYY-MM-DD입니다.");
@@ -39,7 +40,7 @@ const visitFields = {
   sessionNo: z.number().int().min(0).max(500).nullable().default(null),
   product: z.string().trim().max(120).default(""),
   params: z.string().trim().max(200).default(""),
-  note: z.string().trim().max(2000).default(""),
+  note: z.string().trim().max(VISIT_NOTE_MAX).default(""),
   gaisDoctor: gais.default(null),
   gaisPatient: gais.default(null),
   score: z.number().int().min(0).max(100).nullable().default(null),
