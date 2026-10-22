@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { chipSummary } from "../../lib/bbip/format";
 import type { BbipSession } from "../../lib/bbip/types";
+import { CategoryTag } from "./CategoryTag";
 
 // The day-grouped consult sessions that used to be the 기록 page; now the
 // Records page's "Consult Log" tab.
@@ -60,8 +61,17 @@ export function ConsultLog({ sessions }: { sessions: BbipSession[] }) {
                       <span className="w-11 shrink-0 font-mono text-[12.5px] tabular-nums text-ink/50">
                         {timeOf(session.createdAt)}
                       </span>
-                      <span className="min-w-0 flex-1 truncate font-serifa text-[19px] text-inkdeep underline-offset-[5px] group-hover:underline">
-                        {chipSummary(session.chips) || "케이스"}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-serifa text-[19px] text-inkdeep underline-offset-[5px] group-hover:underline">
+                          {chipSummary(session.chips) || "케이스"}
+                        </span>
+                        {session.chips.procedures.length > 0 && (
+                          <span className="mt-1.5 flex flex-wrap gap-1.5">
+                            {session.chips.procedures.map((proc) => (
+                              <CategoryTag key={proc} procedure={proc} size="sm" />
+                            ))}
+                          </span>
+                        )}
                       </span>
                       <span className="hidden shrink-0 font-mono text-[12px] sm:inline">
                         {contra > 0 && <span className="text-red-800">Contraindication 금기 {contra}</span>}

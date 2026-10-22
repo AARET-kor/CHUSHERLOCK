@@ -7,6 +7,7 @@ const summary = (id: string, features: string, procedures: string[], lastVisit: 
   patient: { id, chartNo: id, alias: "", features, memo: "", createdAt: "", updatedAt: "" },
   activeCourses: [],
   procedures,
+  courses: [],
   lastVisit,
   nextFu: null,
 });

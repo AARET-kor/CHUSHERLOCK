@@ -71,7 +71,18 @@ test("consult → register → record → photos → next consult links and cont
   // 6. Records: find the patient by search, open the course, see the grid.
   await page.goto("/cases");
   await page.getByPlaceholder(/차트번호, 별칭/).fill(CHART);
-  await page.getByRole("link", { name: new RegExp(`#${CHART}`) }).click();
+  const row = page.getByRole("link", { name: new RegExp(`#${CHART}`) });
+  // Colored category tag: Laser › 토닝 › 피코; filter and group by category.
+  await expect(row).toContainText(/Laser\s*레이저\s*›\s*토닝\s*›\s*피코/);
+  const categories = page.getByRole("group", { name: "시술 카테고리" });
+  await categories.getByRole("button", { name: /Laser/ }).click();
+  await page.getByRole("group", { name: /레이저 세부 분류/ }).getByRole("button", { name: /토닝/ }).click();
+  await expect(row).toBeVisible();
+  await page.getByLabel(/Sort · 정렬/).selectOption("category");
+  await expect(page.getByText("Laser · 레이저", { exact: true })).toBeVisible();
+  await categories.getByRole("button", { name: /All · 전체/ }).click();
+  await noBlockingA11y(page, "section[aria-labelledby='records-patients']");
+  await row.click();
   await expect(page).toHaveURL(/\/patients\/[^/]+$/, COLD);
   await page.getByRole("link", { name: /진행 중 피코토닝/ }).click();
   await expect(page).toHaveURL(/\/courses\//, COLD);
