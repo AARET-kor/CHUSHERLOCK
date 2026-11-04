@@ -5,6 +5,7 @@
 set -e
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
+NODE=$(command -v node)
 PLIST="$HOME/Library/LaunchAgents/lab.aret.bbip-papers.plist"
 mkdir -p "$HOME/Library/Logs/bbip"
 cat > "$PLIST" <<EOF
@@ -16,8 +17,8 @@ cat > "$PLIST" <<EOF
 	<string>lab.aret.bbip-papers</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/bin/sh</string>
-		<string>$ROOT/scripts/run-papers-sync.sh</string>
+		<string>$NODE</string>
+		<string>$ROOT/scripts/run-papers-sync.mjs</string>
 	</array>
 	<key>StartCalendarInterval</key>
 	<dict>
