@@ -356,7 +356,9 @@ export function BbipConsole({
               note={
                 verifiedNotes > 0
                   ? `내 노트 ${verifiedNotes}개를 근거로 작성`
-                  : "관련 노트가 없어 일반 지식(AI) 위주로 작성"
+                  : session.literature?.papers.some((paper) => paper.library)
+                    ? "관련 노트가 없어 논문과 일반 지식(AI)으로 작성"
+                    : "관련 노트가 없어 일반 지식(AI) 위주로 작성"
               }
             >
               <TurnCard

@@ -3,12 +3,18 @@
 import { useMemo } from "react";
 import { citedLiterature } from "../../lib/bbip/evidence";
 import { authorsShort, hostOf, LEVEL_LABEL, pubmedUrl } from "../../lib/bbip/literature/refs";
-import type { LiteratureBlock, TurnRequest } from "../../lib/bbip/types";
+import type { LiteratureBlock, PaperHit, TurnRequest } from "../../lib/bbip/types";
 import { GROUP_TERMS, T } from "../../lib/bbip/terms";
 import { Term } from "./Term";
 
 // 🔬 literature pieces of the consult sheet, kept out of the shared sheet
 // components: TurnCard, MoreMenu and BbipConsole only mount these.
+
+function libraryLabel(paper: PaperHit): string | null {
+  if (!paper.library) return null;
+  if (!paper.analysis) return "미분석";
+  return paper.reviewStatus === "reviewed" ? "AI 분석·검토함" : "AI 분석·미검토";
+}
 
 /** Footnote list entries for the P#/W# a card cites (inside TurnCard's <ol>). */
 export function LiteratureFootnoteItems({
@@ -48,6 +54,10 @@ export function LiteratureFootnoteItems({
               {" · "}
             </span>
             <span className="font-medium text-[#1d4e89]">{LEVEL_LABEL[paper.level]}</span>
+            {libraryLabel(paper) && <span className="font-medium text-[#8a5a00]"> · {libraryLabel(paper)}</span>}
+            {paper.impactFactor !== undefined && (
+              <span className="font-mono text-[12.5px] text-ink/65"> · IF ≈ {paper.impactFactor.toFixed(1)}</span>
+            )}
           </span>
         </li>
       ))}

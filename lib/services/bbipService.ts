@@ -59,13 +59,14 @@ export function createSession(input: {
   flags: Flag[];
   sourceNoteIds: string[];
   patientId?: string | null;
+  literature?: LiteratureBlock;
 }): BbipSession {
   const row: SessionRow = {
     id: randomUUID(),
     chips: input.chips,
     flags: input.flags,
     sourceNoteIds: input.sourceNoteIds,
-    literature: null,
+    literature: input.literature ?? null,
     patientId: input.patientId ?? null,
     promptVersion: BBIP_PROMPT_VERSION,
     createdAt: nowIso(),

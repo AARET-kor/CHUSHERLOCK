@@ -13,6 +13,7 @@ import { Term } from "./bbip/Term";
 const KNOWLEDGE_PREFIXES = [
   "/kb",
   "/library",
+  "/papers",
   "/study",
   "/review",
   "/ask",
@@ -36,6 +37,7 @@ function sectionOf(pathname: string): Section {
 const KNOWLEDGE_LINKS = [
   { href: "/kb", label: "HOME" },
   { href: "/library", label: "LIBRARY" },
+  { href: "/papers", label: "PAPERS" },
   { href: "/study", label: "CHUNK!" },
   { href: "/review", label: "ANKI's", badge: true },
   { href: "/categories", label: "Sort" },
@@ -123,7 +125,7 @@ export function AppNav({ due }: { due: number }) {
 /** The "+ 자료 넣기" shortcut belongs to the knowledge base, not the console. */
 export function KnowledgePill() {
   const pathname = usePathname() ?? "/";
-  if (!isKnowledgePath(pathname) || pathname === "/kb") return null;
+  if (!isKnowledgePath(pathname) || pathname === "/kb" || pathname.startsWith("/papers")) return null;
   return (
     <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
       <div

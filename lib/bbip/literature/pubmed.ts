@@ -6,7 +6,7 @@ import { levelFromTypes } from "./refs";
 // The XML is parsed with small tag regexes — the PubMed DTD is stable and
 // only a handful of elements are read, so no XML dependency is needed.
 
-const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
+export const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 export const PUBMED_RETMAX = 8;
 const ABSTRACT_MAX = 2000;
 const TIMEOUT_MS = 10_000;
@@ -17,9 +17,9 @@ function eutilsParams(entries: Record<string, string>, apiKey?: string): URLSear
   return params;
 }
 
-export function esearchUrl(term: string, apiKey?: string): string {
+export function esearchUrl(term: string, apiKey?: string, retmax: number = PUBMED_RETMAX): string {
   const params = eutilsParams(
-    { term, retmode: "json", sort: "relevance", retmax: String(PUBMED_RETMAX) },
+    { term, retmode: "json", sort: "relevance", retmax: String(retmax) },
     apiKey
   );
   return `${EUTILS}/esearch.fcgi?${params}`;
@@ -56,16 +56,16 @@ export function decodeXml(value: string): string {
     .trim();
 }
 
-function elements(xml: string, tag: string): Array<{ attrs: string; body: string }> {
+export function elements(xml: string, tag: string): Array<{ attrs: string; body: string }> {
   const pattern = new RegExp(`<${tag}(\\s[^>]*)?>([\\s\\S]*?)</${tag}>`, "g");
   return Array.from(xml.matchAll(pattern), (m) => ({ attrs: m[1] ?? "", body: m[2] ?? "" }));
 }
 
-function first(xml: string, tag: string): string | undefined {
+export function first(xml: string, tag: string): string | undefined {
   return elements(xml, tag)[0]?.body;
 }
 
-function parseArticle(xml: string): PaperHit | null {
+export function parseArticle(xml: string, abstractMax: number = ABSTRACT_MAX): PaperHit | null {
   const pmid = decodeXml(first(xml, "PMID") ?? "");
   const title = decodeXml(first(xml, "ArticleTitle") ?? "");
   if (!/^\d+$/.test(pmid) || !title) return null;
@@ -91,7 +91,7 @@ function parseArticle(xml: string): PaperHit | null {
     })
     .filter(Boolean)
     .join("\n")
-    .slice(0, ABSTRACT_MAX);
+    .slice(0, abstractMax);
   const publicationTypes = elements(first(xml, "PublicationTypeList") ?? "", "PublicationType")
     .map(({ body }) => decodeXml(body))
     .filter(Boolean);
@@ -153,7 +153,7 @@ export interface PubMedDeps {
   apiKey?: string;
 }
 
-function defaultPubMedDeps(): PubMedDeps {
+export function defaultPubMedDeps(): PubMedDeps {
   const apiKey = process.env.NCBI_API_KEY || undefined;
   // One limiter per process (route modules are bundled separately).
   const limiter = (globalThis.__bbipPubmedLimiter ??= createRateLimiter(apiKey ? 10 : 3));

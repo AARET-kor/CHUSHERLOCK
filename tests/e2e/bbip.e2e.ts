@@ -66,7 +66,8 @@ test("literature button adds a cited 문헌 근거 card that promotes with sourc
   await button.click();
   const card = page.locator("article").filter({ hasText: "문헌 근거 (FAKE)" });
   await expect(card).toBeVisible(COLD);
-  await expect(card.getByRole("link", { name: "P1", exact: true }).first()).toHaveAttribute(
+  // Library papers may hold the first [P#] numbers, so the number varies.
+  await expect(card.getByRole("link", { name: /^P\d+$/ }).first()).toHaveAttribute(
     "href",
     /^https:\/\/pubmed\.ncbi\.nlm\.nih\.gov\/\d+\/$/
   );
