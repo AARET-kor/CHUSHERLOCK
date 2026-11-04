@@ -66,6 +66,9 @@ export function fakeTurnText(args: GenerateArgs): string {
       `- ${proc}: 실제 모드에서는 ==노트 근거 팁==이 표시됩니다 ${cite}`,
       ...(watch ? [`- 주의 구조물: {{atlas:${watch.id}}} [AI]`] : []),
       "- 회차·업셀 제안이 여기에 표시됩니다 [AI]",
+      ...(session.literature?.papers.some((paper) => paper.library)
+        ? ["- 논문 시사점 예시입니다: 용해 후 꺼짐 가능성을 설명 [P1]"]
+        : []),
       ...(args.history ? ["- 이전 경과를 반영한 예시입니다 (이전 경과)"] : []),
       `<followups>${followups}</followups>`,
     ].join("\n");

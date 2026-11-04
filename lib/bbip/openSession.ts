@@ -1,6 +1,7 @@
 import { retrieve } from "../ai/retrieval";
 import type { CodexEntry } from "../codex/types";
 import { listEntries } from "../services/entryService";
+import { literatureForCase } from "../services/paperService";
 import { createSession, failOrphanedTurns, getSession, listTurns } from "../services/bbipService";
 import { getCareOrder } from "../services/careService";
 import { noteRefsFor, selectPromptNotes } from "./context";
@@ -19,7 +20,7 @@ import { normalizeChips, parseCase, sanitizeInput, type ParseResult } from "./pa
 import { activeTurnIds } from "./runTurn";
 import type { CreateSessionBody } from "./schemas";
 import type { Visit } from "../records/types";
-import type { BbipSession, NoteRef, ParsedCase, SessionLink, SessionView } from "./types";
+import type { BbipSession, LiteratureBlock, NoteRef, ParsedCase, SessionLink, SessionView } from "./types";
 
 export const RETRIEVE_LIMIT = 12;
 
@@ -42,6 +43,18 @@ export function chipQuery(chips: ParsedCase): string {
 export interface OpenSessionDeps {
   listEntries: () => Promise<CodexEntry[]>;
   parse: (input: string) => Promise<ParseResult>;
+  /** Library papers for this case. Defaults to the Papers library. */
+  papers?: (chips: ParsedCase, now: string) => LiteratureBlock | undefined;
+}
+
+/** Papers are a bonus: failing to pick them must never block a consult. */
+function attachPapers(chips: ParsedCase, deps: OpenSessionDeps): LiteratureBlock | undefined {
+  try {
+    return (deps.papers ?? literatureForCase)(chips, new Date().toISOString());
+  } catch (error) {
+    console.warn("[bbip] paper selection failed:", error instanceof Error ? error.message : "unknown");
+    return undefined;
+  }
 }
 
 const defaultDeps: OpenSessionDeps = {
@@ -86,6 +99,7 @@ export async function openSession(
     flags: parsed.flags,
     sourceNoteIds: retrieved.map((note) => note.id),
     patientId,
+    literature: attachPapers(parsed.chips, deps),
   });
   const link: SessionLink = {
     patient: patientId ? patientSummary(patientId) : null,
