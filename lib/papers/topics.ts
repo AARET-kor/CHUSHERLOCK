@@ -28,7 +28,7 @@ export const TOPICS: Record<TopicKey, TopicDef> = {
     ko: "실리프팅",
     major: "lifting",
     query:
-      '("thread lift"[tiab] OR "thread lifting"[tiab] OR threadlift[tiab] OR thread[ti] OR threads[ti] OR (("barbed suture"[tiab] OR "barbed sutures"[tiab]) AND (rhytidectomy[tiab] OR facelift[tiab] OR "face lift"[tiab] OR midface[tiab])))',
+      '("thread lift"[tiab] OR "thread lifting"[tiab] OR threadlift[tiab] OR thread[ti] OR threads[ti] OR (("barbed suture"[tiab] OR "barbed sutures"[tiab]) AND (rhytidectomy[tiab] OR facelift[tiab] OR "face lift"[tiab] OR midface[tiab]))) NOT (abdomen[ti] OR abdominal[ti] OR abdominoplasty[ti] OR liposuction[ti] OR breast[ti] OR buttock[ti] OR gluteal[ti])',
   },
   energy: {
     key: "energy",
