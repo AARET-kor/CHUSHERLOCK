@@ -2,6 +2,7 @@
 // Kept separate from the DB schema so storage can change without reshaping
 // the domain (same convention as lib/codex/types.ts).
 
+import type { PaperAnalysis, ReviewStatus } from "../papers/types";
 import type { CareOrder } from "./care/types";
 import type { PatientCandidate, PatientSummary, Visit } from "../records/types";
 
@@ -56,6 +57,11 @@ export interface PaperHit {
   abstract: string;
   publicationTypes: string[];
   level: LitLevel;
+  /** Came from the Papers library, attached when the session opened. */
+  library?: true;
+  analysis?: PaperAnalysis;
+  reviewStatus?: ReviewStatus;
+  impactFactor?: number;
 }
 
 export interface WebHit {
