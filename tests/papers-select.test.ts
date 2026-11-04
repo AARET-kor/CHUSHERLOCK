@@ -2,12 +2,13 @@
 import { describe, expect, it } from "vitest";
 import { pickForConsult, pickWeekly, type ConsultCandidate, type QueueItem } from "../lib/papers/select";
 
-const q = (pmid: string, topics: QueueItem["topics"], impactFactor: number | null, year = 2024, attempts = 0): QueueItem => ({
+const q = (pmid: string, topics: QueueItem["topics"], impactFactor: number | null, year = 2024, attempts = 0, hasFullText = true): QueueItem => ({
   pmid,
   topics,
   impactFactor,
   year,
   attempts,
+  hasFullText,
 });
 
 describe("pickWeekly", () => {
@@ -29,6 +30,17 @@ describe("pickWeekly", () => {
   it("orders ties by newest year, puts unknown IF last, and never exceeds the limit", () => {
     expect(pickWeekly([q("1", ["filler"], null, 2026), q("2", ["filler"], 3, 2020), q("3", ["filler"], 3, 2025)], 2)).toEqual(["3", "2"]);
     expect(pickWeekly([q("1", ["filler"], 3)], 0)).toEqual([]);
+  });
+
+  it("prefers full text over IF, because analyses are never redone", () => {
+    const paywalled = q("1", ["filler"], 11.8, 2026, 0, false);
+    const open = q("2", ["filler"], 2, 2020);
+    expect(pickWeekly([paywalled, open], 1)).toEqual(["2"]);
+    expect(pickWeekly([paywalled, open], 2)).toEqual(["2", "1"]);
+  });
+
+  it("still gives a topic its paper when only abstracts exist", () => {
+    expect(pickWeekly([q("1", ["filler"], 9), q("2", ["thread"], 1, 2024, 0, false)], 2)).toEqual(["1", "2"]);
   });
 
   it("stops retrying a paper after three failed attempts", () => {

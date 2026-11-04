@@ -13,15 +13,19 @@ export interface QueueItem {
   impactFactor: number | null;
   year: number | null;
   attempts: number;
+  /** Has a PMC id: only then can the authors' own limitations be read. */
+  hasFullText: boolean;
 }
 
 const byImpact = (a: { impactFactor: number | null; year: number | null; pmid: string }, b: typeof a) =>
   (b.impactFactor ?? -1) - (a.impactFactor ?? -1) || (b.year ?? 0) - (a.year ?? 0) || Number(b.pmid) - Number(a.pmid);
 
-/** One best paper per topic, then by IF: pure IF order would spend every week
- * on filler and pigment papers and never reach thread lifts. */
+/** One best paper per topic, then the rest. Pure IF order would spend every
+ * week on filler and pigment papers and never reach thread lifts. Full text
+ * goes first: analyses are never redone, so an abstract-only reading of a paper
+ * whose text we could have read would stay that way. */
 export function pickWeekly(items: QueueItem[], limit: number): string[] {
-  const queue = items.filter((item) => item.attempts < MAX_ATTEMPTS).sort(byImpact);
+  const queue = items.filter((item) => item.attempts < MAX_ATTEMPTS).sort((a, b) => Number(b.hasFullText) - Number(a.hasFullText) || byImpact(a, b));
   const picked: string[] = [];
   for (const topic of TOPIC_KEYS) {
     if (picked.length >= limit) break;

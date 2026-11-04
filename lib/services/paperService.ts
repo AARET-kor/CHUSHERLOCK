@@ -203,7 +203,14 @@ export function setReview(pmid: string, review: ReviewStatus, now: string): bool
 
 export function weeklyQueue(): QueueItem[] {
   return db
-    .select({ pmid: papers.pmid, topics: papers.topics, impactFactor: journals.impactFactor, year: papers.year, attempts: papers.attempts })
+    .select({
+      pmid: papers.pmid,
+      topics: papers.topics,
+      impactFactor: journals.impactFactor,
+      year: papers.year,
+      attempts: papers.attempts,
+      hasFullText: sql<number>`${papers.pmcid} IS NOT NULL`.mapWith(Boolean),
+    })
     .from(papers)
     .leftJoin(journals, eq(papers.journalTa, journals.ta))
     .where(and(inArray(papers.status, ["pending", "failed"]), sql`${papers.reviewStatus} <> 'excluded'`))
