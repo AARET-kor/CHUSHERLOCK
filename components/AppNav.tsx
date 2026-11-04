@@ -13,6 +13,7 @@ import { Term } from "./bbip/Term";
 const KNOWLEDGE_PREFIXES = [
   "/kb",
   "/library",
+  "/papers",
   "/study",
   "/review",
   "/ask",
@@ -36,6 +37,7 @@ function sectionOf(pathname: string): Section {
 const KNOWLEDGE_LINKS = [
   { href: "/kb", label: "HOME" },
   { href: "/library", label: "LIBRARY" },
+  { href: "/papers", label: "PAPERS" },
   { href: "/study", label: "CHUNK!" },
   { href: "/review", label: "ANKI's", badge: true },
   { href: "/categories", label: "Sort" },
