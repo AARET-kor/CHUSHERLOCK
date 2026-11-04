@@ -31,7 +31,8 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
   };
   const { rows, total } = listPapers(filters);
   // Only on the unfiltered first page: a filtered list must show just its matches.
-  const filtered = Boolean(filters.topic || filters.level || filters.subject || filters.analysis || filters.review);
+  const moreFilters = Boolean(filters.level || filters.subject || filters.analysis || filters.review);
+  const filtered = Boolean(filters.topic || moreFilters);
   const recent = filtered || filters.page! > 1 ? [] : recentlyAnalyzed(new Date(Date.now() - WEEK_MS).toISOString());
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -77,6 +78,15 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
           options={[{ value: undefined, text: "All · 전체" }, ...TOPIC_KEYS.map((key) => ({ value: key, text: `${TOPICS[key].en} · ${TOPICS[key].ko}` }))]}
         />
         <FilterChips
+          label="Sort · 정렬"
+          value={filters.sort}
+          hrefFor={(v) => hrefWith("sort", v)}
+          options={[{ value: "if", text: "IF · IF 높은 순" }, { value: "recent", text: "Recent · 최신순" }]}
+        />
+        <details open={moreFilters} className="text-[13.5px]">
+          <summary className="cursor-pointer py-1 text-ink/70">More filters · 필터 더 보기</summary>
+          <div className="mt-1 space-y-2">
+        <FilterChips
           label="Type · 유형"
           value={filters.level}
           hrefFor={(v) => hrefWith("level", v)}
@@ -100,12 +110,8 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
           hrefFor={(v) => hrefWith("review", v)}
           options={[{ value: undefined, text: "All · 전체" }, ...(Object.keys(REVIEW_LABEL) as ReviewStatus[]).map((key) => ({ value: key, text: `${REVIEW_LABEL[key].en} · ${REVIEW_LABEL[key].ko}` }))]}
         />
-        <FilterChips
-          label="Sort · 정렬"
-          value={filters.sort}
-          hrefFor={(v) => hrefWith("sort", v)}
-          options={[{ value: "if", text: "IF · IF 높은 순" }, { value: "recent", text: "Recent · 최신순" }]}
-        />
+          </div>
+        </details>
       </div>
 
       <p className="text-[14px] text-ink/65">{total.toLocaleString()} papers · 논문 {total.toLocaleString()}편</p>
