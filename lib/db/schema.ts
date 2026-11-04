@@ -1,7 +1,8 @@
-import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, primaryKey, index, real } from "drizzle-orm/sqlite-core";
 import type { CareItem } from "../bbip/care/types";
 import type { Flag, LiteratureBlock, ParsedCase } from "../bbip/types";
 import type { AiAnalysis, Angle, CourseStatus, ScoreKind, VisitKind } from "../records/types";
+import type { PaperAnalysis, TopicKey } from "../papers/types";
 
 // Categories are seeded from lib/codex/taxonomy.ts at migrate time, but kept
 // as a real table (not just the static list) so future user-added leaf
@@ -450,3 +451,55 @@ export const photos = sqliteTable(
   },
   (table) => ({ visitIdx: index("photos_visit_idx").on(table.visitId) })
 );
+
+// Papers library (Knowledge › PAPERS): kept apart from `entries` so AI-read
+// papers never rank as the doctor's own notes.
+export const journals = sqliteTable("journals", {
+  ta: text("ta").primaryKey(), // PubMed journal abbreviation ([ta])
+  name: text("name").notNull(),
+  impactFactor: real("impact_factor"),
+  ifYear: integer("if_year"),
+  edited: integer("edited", { mode: "boolean" }).notNull().default(false),
+});
+
+export const papers = sqliteTable(
+  "papers",
+  {
+    pmid: text("pmid").primaryKey(),
+    doi: text("doi").unique(),
+    pmcid: text("pmcid"),
+    title: text("title").notNull(),
+    authors: text("authors", { mode: "json" }).notNull().$type<string[]>(),
+    year: integer("year"),
+    journalTa: text("journal_ta").notNull(),
+    abstract: text("abstract").notNull(),
+    publicationTypes: text("publication_types", { mode: "json" }).notNull().$type<string[]>(),
+    level: text("level").notNull(),
+    topics: text("topics", { mode: "json" }).notNull().$type<TopicKey[]>(),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    analysis: text("analysis", { mode: "json" }).$type<PaperAnalysis>(),
+    analysisModel: text("analysis_model"),
+    analysisStartedAt: text("analysis_started_at"),
+    analyzedAt: text("analyzed_at"),
+    reviewStatus: text("review_status").notNull().default("unreviewed"),
+    reviewedAt: text("reviewed_at"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => ({
+    statusIdx: index("papers_status_idx").on(table.status),
+    journalIdx: index("papers_journal_idx").on(table.journalTa),
+    yearIdx: index("papers_year_idx").on(table.year),
+  })
+);
+
+export const paperSyncRuns = sqliteTable("paper_sync_runs", {
+  id: text("id").primaryKey(),
+  kind: text("kind").notNull(),
+  startedAt: text("started_at").notNull(),
+  finishedAt: text("finished_at"),
+  added: integer("added").notNull().default(0),
+  analyzed: integer("analyzed").notNull().default(0),
+  error: text("error"),
+});
