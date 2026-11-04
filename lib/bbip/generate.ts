@@ -74,7 +74,10 @@ export function fakeTurnText(args: GenerateArgs): string {
     ].join("\n");
   }
   if (request.kind === "literature") {
-    const paper = session.literature?.papers.length ? "[P1]" : "[AI]";
+    // Library papers hold the first numbers; this card is about the search.
+    const papers = session.literature?.papers ?? [];
+    const searched = papers.findIndex((hit) => !hit.library);
+    const paper = papers.length ? `[P${(searched < 0 ? 0 : searched) + 1}]` : "[AI]";
     const web = session.literature?.web.length ? "[W1]" : "[AI]";
     return [
       "## 문헌 근거 (FAKE)",
