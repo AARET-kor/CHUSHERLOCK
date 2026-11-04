@@ -34,6 +34,9 @@ test("collect → list by IF → analyze → review → cite in a brief → excl
   await expect(page.locator("blockquote").getByText("A key limitation of this study")).toBeVisible();
   await expect(page.getByText("인용 확인 안 됨")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Analyze/ })).toHaveCount(0);
+  // The model's pen marks: blue for what to use, red for what to watch.
+  await expect(page.locator('[data-pen="blue"]').getByText("꺼짐 가능성")).toBeVisible();
+  await expect(page.locator('[data-pen="red"]').getByText("인과관계를 증명하지는 못함")).toBeVisible();
   const paperUrl = page.url();
 
   // 4. A filler consult cites a library paper, labelled as an unreviewed AI analysis.

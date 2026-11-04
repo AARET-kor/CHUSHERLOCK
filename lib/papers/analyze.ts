@@ -17,9 +17,9 @@ export class AnalysisError extends Error {
   }
 }
 
-type StreamParams = Parameters<Anthropic["beta"]["messages"]["stream"]>[0];
+export type StreamParams = Parameters<Anthropic["beta"]["messages"]["stream"]>[0];
 // Same cast as lib/records/compareAi.ts: the SDK types only the array form.
-const DEFAULT_FALLBACKS = "default" as unknown as Anthropic.Beta.BetaFallbackParam[];
+export const DEFAULT_FALLBACKS = "default" as unknown as Anthropic.Beta.BetaFallbackParam[];
 
 const string = { type: "string" };
 const strings = { type: "array", items: string };

@@ -91,6 +91,53 @@ describe("analyzeOne", () => {
   });
 });
 
+describe("pen marks", () => {
+  const marksReply = (text: string) => async () => ({
+    text: JSON.stringify({ marks: [{ text, pen: "red" }] }),
+    model: "m",
+    stopReason: "end_turn",
+  });
+
+  it("saves verified marks with a new analysis", async () => {
+    s.upsertPaper(record("540"), "filler", "2026-11-01T00:00:00Z");
+    await run.analyzeOne("540", deps([], { callMarks: marksReply("추적 기간이 짧음") }).value);
+    expect(s.getPaper("540")?.analysis?.marks).toEqual([{ text: "추적 기간이 짧음", pen: "red" }]);
+  });
+
+  it("keeps the analysis when marking fails", async () => {
+    s.upsertPaper(record("541"), "filler", "2026-11-01T00:00:00Z");
+    const callMarks = async () => {
+      throw new Error("overloaded");
+    };
+    await run.analyzeOne("541", deps([], { callMarks }).value);
+    expect(s.getPaper("541")).toMatchObject({ status: "analyzed", error: null });
+    expect(s.getPaper("541")?.analysis?.marks).toBeUndefined();
+  });
+
+  it("marks older analyses without changing their text or date, and only once", async () => {
+    s.upsertPaper(record("542"), "filler", "2026-11-01T00:00:00Z");
+    const { value, calls } = deps([]);
+    await run.analyzeOne("542", value);
+    const before = s.getPaper("542")!;
+    let markCalls = 0;
+    const reply = marksReply("인과관계를 증명하지는 못함");
+    const callMarks = async () => {
+      markCalls += 1;
+      return reply();
+    };
+    const modelCalls = calls.model;
+    expect(await run.markUnmarked(deps([], { callMarks }).value)).toBeGreaterThanOrEqual(1);
+    const after = s.getPaper("542")!;
+    expect(after.analysis).toEqual({ ...before.analysis, marks: [{ text: "인과관계를 증명하지는 못함", pen: "red" }] });
+    expect(after.analyzedAt).toBe(before.analyzedAt);
+    expect(after.analysisModel).toBe(before.analysisModel);
+    expect(calls.model).toBe(modelCalls);
+    const firstPass = markCalls;
+    await run.markUnmarked(deps([], { callMarks }).value);
+    expect(markCalls).toBe(firstPass);
+  });
+});
+
 describe("collect", () => {
   it("searches every topic and fetches only papers it does not have", async () => {
     const { value, calls } = deps(["600", "601"]);

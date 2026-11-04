@@ -10,6 +10,7 @@ import { topicsForCase } from "../papers/topics";
 import type {
   Journal,
   PaperAnalysis,
+  PenMark,
   PaperFilters,
   PaperRecord,
   PaperRow,
@@ -181,6 +182,20 @@ export function claimPaper(pmid: string, now: string): boolean {
 
 export function saveAnalysis(pmid: string, analysis: PaperAnalysis, model: string, now: string): void {
   db.update(papers).set({ status: "analyzed", analysis, analysisModel: model, analyzedAt: now, error: null }).where(eq(papers.pmid, pmid)).run();
+}
+
+export function analyzedWithoutMarks(): Array<{ pmid: string; analysis: PaperAnalysis }> {
+  return db
+    .select({ pmid: papers.pmid, analysis: papers.analysis })
+    .from(papers)
+    .where(and(eq(papers.status, "analyzed"), sql`json_extract(${papers.analysis}, '$.marks') IS NULL`))
+    .all()
+    .flatMap((row) => (row.analysis ? [{ pmid: row.pmid, analysis: row.analysis }] : []));
+}
+
+/** Pen marks are display only: the analysis, its model and date stay as they are. */
+export function saveMarks(pmid: string, analysis: PaperAnalysis, marks: PenMark[]): void {
+  db.update(papers).set({ analysis: { ...analysis, marks } }).where(eq(papers.pmid, pmid)).run();
 }
 
 export function failAnalysis(pmid: string, message: string): void {

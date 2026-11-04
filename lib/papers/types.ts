@@ -9,6 +9,12 @@ export type ReviewStatus = "unreviewed" | "reviewed" | "excluded";
 export type SubjectKind = "human" | "animal" | "in_vitro" | "review" | "unclear";
 export type SyncKind = "weekly" | "manual";
 
+export type Pen = "blue" | "red";
+export interface PenMark {
+  text: string;
+  pen: Pen;
+}
+
 export interface PaperAnalysis {
   source: "fulltext" | "abstract";
   subject: { kind: SubjectKind; detail: string; n: number | null };
@@ -19,6 +25,8 @@ export interface PaperAnalysis {
   canClaim: string[];
   cannotClaim: string[];
   implications: Array<{ kind: "procedure" | "consult"; text: string }>;
+  /** Display only; older analyses have none until they are marked. */
+  marks?: PenMark[];
 }
 
 /** What PubMed gives us, before any analysis. */

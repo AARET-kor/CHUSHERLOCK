@@ -1,6 +1,6 @@
 // tests/papers-note.test.ts
 import { describe, expect, it } from "vitest";
-import { emphasize, splitSentences } from "../lib/papers/note";
+import { emphasize, noteParts, splitSentences } from "../lib/papers/note";
 
 const strong = (text: string) =>
   emphasize(text)
@@ -65,5 +65,35 @@ describe("emphasize", () => {
 
   it("does not take a unit out of a longer word", () => {
     expect(strong("Grade 2 mm 아님 3 millimeter")).toEqual(["2 mm"]);
+  });
+});
+
+describe("noteParts", () => {
+  const text = "증례 1: 2주 간격으로 주입했고 근거는 증례 수준임";
+  const joined = (marks: Parameters<typeof noteParts>[1]) =>
+    noteParts(text, marks)
+      .map((part) => part.text)
+      .join("");
+
+  it("never changes the text", () => {
+    expect(joined([{ text: "2주 간격으로", pen: "blue" }, { text: "증례 수준", pen: "red" }])).toBe(text);
+  });
+
+  it("colors only the marked phrase, keeping bold inside it", () => {
+    const parts = noteParts(text, [{ text: "2주 간격으로", pen: "blue" }]);
+    expect(parts.filter((part) => part.pen).map((part) => [part.text, part.strong])).toEqual([
+      ["2주", true],
+      [" 간격으로", false],
+    ]);
+    expect(parts.find((part) => part.text === "증례 1:")).toEqual({ text: "증례 1:", strong: true });
+  });
+
+  it("lets the longer phrase win an overlap", () => {
+    const parts = noteParts(text, [{ text: "증례 수준", pen: "blue" }, { text: "근거는 증례 수준임", pen: "red" }]);
+    expect(parts.filter((part) => part.pen).map((part) => part.pen)).toEqual(["red"]);
+  });
+
+  it("ignores a phrase that is not in this line", () => {
+    expect(noteParts(text, [{ text: "다른 문장", pen: "red" }]).some((part) => part.pen)).toBe(false);
   });
 });

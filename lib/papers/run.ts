@@ -13,7 +13,9 @@ import {
   lastSuccessfulStart,
   listJournals,
   recoverStuck,
+  analyzedWithoutMarks,
   saveAnalysis,
+  saveMarks,
   startRun,
   upsertPaper,
   weeklyAttemptsSince,
@@ -21,16 +23,19 @@ import {
 } from "../services/paperService";
 import { AnalysisError, analyzeText, anthropicPaperCaller, FAKE_QUOTE, fakeAnalysisJson, type PaperCaller } from "./analyze";
 import { capText, fetchFullText } from "./fulltext";
+import { fakeMarksJson, markAnalysis } from "./marks";
 import { fetchPaperRecords, searchPmids } from "./pubmed";
 import { pickWeekly, WEEKLY_ANALYSES } from "./select";
 import { topicTerm } from "./topics";
-import { TOPIC_KEYS, type PaperRecord, type SyncKind, type SyncRun } from "./types";
+import { TOPIC_KEYS, type PaperAnalysis, type PaperRecord, type PenMark, type SyncKind, type SyncRun } from "./types";
 
 export interface PaperDeps {
   search: (term: string) => Promise<string[]>;
   fetchRecords: (pmids: string[]) => Promise<PaperRecord[]>;
   fullText: (pmcid: string) => Promise<string | null>;
   callModel: PaperCaller;
+  /** Pen marks. Without it, or if it fails, the analysis stays unmarked. */
+  callMarks?: PaperCaller;
   now: () => Date;
 }
 
@@ -59,6 +64,7 @@ function fakeDeps(): PaperDeps {
       })),
     fullText: async () => null,
     callModel: async () => ({ text: fakeAnalysisJson(), model: "fake", stopReason: "end_turn" }),
+    callMarks: async () => ({ text: fakeMarksJson(), model: "fake", stopReason: "end_turn" }),
     now: () => new Date(),
   };
 }
@@ -70,6 +76,7 @@ export function defaultPaperDeps(): PaperDeps {
     fetchRecords: (pmids) => fetchPaperRecords(pmids),
     fullText: (pmcid) => fetchFullText(pmcid),
     callModel: anthropicPaperCaller,
+    callMarks: anthropicPaperCaller,
     now: () => new Date(),
   };
 }
@@ -93,6 +100,28 @@ export class SyncRunningError extends Error {
   }
 }
 
+/** A failed mark call must never cost a finished analysis. */
+async function penMarks(analysis: PaperAnalysis, deps: PaperDeps): Promise<PenMark[]> {
+  if (!deps.callMarks) return [];
+  try {
+    return await markAnalysis(analysis, deps.callMarks);
+  } catch {
+    return [];
+  }
+}
+
+/** Marks analyses that have none, without touching their text. Returns the count. */
+export async function markUnmarked(deps: PaperDeps = defaultPaperDeps()): Promise<number> {
+  let marked = 0;
+  for (const paper of analyzedWithoutMarks()) {
+    const marks = await penMarks(paper.analysis, deps);
+    if (marks.length === 0) continue;
+    saveMarks(paper.pmid, paper.analysis, marks);
+    marked += 1;
+  }
+  return marked;
+}
+
 export async function analyzeOne(pmid: string, deps: PaperDeps = defaultPaperDeps()): Promise<void> {
   const paper = getPaper(pmid);
   if (!paper) throw new PaperNotFoundError();
@@ -107,7 +136,8 @@ export async function analyzeOne(pmid: string, deps: PaperDeps = defaultPaperDep
       },
       deps.callModel
     );
-    saveAnalysis(pmid, analysis, model, deps.now().toISOString());
+    const marks = await penMarks(analysis, deps);
+    saveAnalysis(pmid, marks.length ? { ...analysis, marks } : analysis, model, deps.now().toISOString());
   } catch (error) {
     failAnalysis(pmid, error instanceof AnalysisError ? error.message : "분석에 실패했습니다.");
     throw error;
