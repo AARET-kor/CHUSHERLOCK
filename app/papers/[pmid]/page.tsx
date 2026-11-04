@@ -1,24 +1,86 @@
 // app/papers/[pmid]/page.tsx
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Fragment, type ReactNode } from "react";
 import { AnalyzeButton } from "../../../components/papers/AnalyzeButton";
 import { ReviewButtons } from "../../../components/papers/ReviewButtons";
 import { TopicTag } from "../../../components/papers/TopicTag";
 import { authorsShort, LEVEL_LABEL, pubmedUrl } from "../../../lib/bbip/literature/refs";
 import { ifText, SOURCE_LABEL, statusText, SUBJECT_LABEL } from "../../../lib/papers/labels";
+import { emphasize, splitSentences } from "../../../lib/papers/note";
 import { getPaper } from "../../../lib/services/paperService";
 
 export const dynamic = "force-dynamic";
 
-function Section({ en, ko, items }: { en: string; ko: string; items: string[] }) {
+const LIST = "mt-3 space-y-3 text-[16.5px] leading-[1.8] text-ink/90";
+
+/** Lead-ins and measures stand out; the words stay exactly as analyzed. */
+function NoteText({ text }: { text: string }) {
+  return (
+    <>
+      {emphasize(text).map((part, i) =>
+        part.strong ? (
+          <strong key={i} className="font-semibold text-inkdeep">{part.text}</strong>
+        ) : (
+          <Fragment key={i}>{part.text}</Fragment>
+        )
+      )}
+    </>
+  );
+}
+
+function NoteSection({ en, ko, marked, children }: { en: string; ko: string; marked?: boolean; children: ReactNode }) {
+  return (
+    <section className="mt-10">
+      <h2 className="font-serifa text-[1.3rem] font-bold leading-snug text-inkdeep">
+        <span className={marked ? "hl-yellow rounded-[2px] px-1" : undefined}>{en} · {ko}</span>
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function Bullets({ en, ko, items, marked }: { en: string; ko: string; items: string[]; marked?: boolean }) {
   if (items.length === 0) return null;
   return (
-    <section className="mt-7">
-      <h2 className="text-[14.5px] font-semibold text-ink/70">{en} · {ko}</h2>
-      <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[16px] leading-relaxed text-ink">
-        {items.map((item) => <li key={item}>{item}</li>)}
+    <NoteSection en={en} ko={ko} marked={marked}>
+      <ul className={`${LIST} list-disc pl-5 marker:text-ink/35`}>
+        {items.map((item) => <li key={item}><NoteText text={item} /></li>)}
       </ul>
-    </section>
+    </NoteSection>
+  );
+}
+
+function Claims({ en, ko, items, mark, color }: { en: string; ko: string; items: string[]; mark: string; color: string }) {
+  if (items.length === 0) return null;
+  return (
+    <NoteSection en={en} ko={ko}>
+      <ul className={LIST}>
+        {items.map((item) => (
+          <li key={item} className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-1">
+            <span aria-hidden="true" className="font-semibold" style={{ color }}>{mark}</span>
+            <span><NoteText text={item} /></span>
+          </li>
+        ))}
+      </ul>
+    </NoteSection>
+  );
+}
+
+/** One sentence per line: the first carries the point, the rest step back. */
+function Glance({ label, lead, text }: { label: string; lead?: string; text: string }) {
+  const [first, ...rest] = splitSentences(text);
+  return (
+    <div className="grid gap-x-5 gap-y-1 sm:grid-cols-[108px_minmax(0,1fr)]">
+      <dt className="pt-0.5 text-[13.5px] text-ink/65">{label}</dt>
+      <dd className="text-[15.5px] leading-[1.75] text-ink">
+        {lead && <strong className="mr-1.5 font-semibold text-inkdeep">{lead}</strong>}
+        {first && <NoteText text={first} />}
+        {rest.map((sentence) => (
+          <span key={sentence} className="mt-1 block text-ink/70"><NoteText text={sentence} /></span>
+        ))}
+      </dd>
+    </div>
   );
 }
 
@@ -28,45 +90,54 @@ export default async function PaperPage({ params }: { params: Promise<{ pmid: st
   if (!paper) notFound();
   const { analysis } = paper;
   return (
-    <article className="max-w-[820px]">
+    <article className="mx-auto max-w-[720px] break-words break-keep">
       <Link href="/papers" className="text-[14px] text-ink/60 hover:text-ink">← Papers · 논문</Link>
-      <h1 className="mt-5 font-serifa text-[1.9rem] font-bold leading-tight text-inkdeep">{paper.title}</h1>
-      <p className="mt-2 text-[15px] text-ink/70">
-        {[authorsShort(paper.authors), paper.journalName ?? paper.journalTa, paper.year, LEVEL_LABEL[paper.level], ifText(paper.impactFactor)].filter(Boolean).join(" · ")}
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {paper.topics.map((topic) => <TopicTag key={topic} topic={topic} />)}
-        <a href={pubmedUrl(paper.pmid)} target="_blank" rel="noopener noreferrer" className="text-[14px] underline underline-offset-4">PubMed</a>
-        {paper.doi && <a href={`https://doi.org/${encodeURI(paper.doi)}`} target="_blank" rel="noopener noreferrer" className="text-[14px] underline underline-offset-4">DOI</a>}
-      </div>
+
+      <header className="mt-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {paper.topics.map((topic) => <TopicTag key={topic} topic={topic} />)}
+        </div>
+        <h1 className="mt-3 font-serifa text-[1.9rem] font-bold leading-[1.3] tracking-tight text-inkdeep">{paper.title}</h1>
+        <p className="mt-3 text-[14.5px] leading-relaxed text-ink/70">
+          {[authorsShort(paper.authors), paper.journalName ?? paper.journalTa, paper.year, LEVEL_LABEL[paper.level], ifText(paper.impactFactor).replaceAll(" ", "\u00a0")].filter(Boolean).join(" · ")}
+          <a href={pubmedUrl(paper.pmid)} target="_blank" rel="noopener noreferrer" className="ml-3 underline underline-offset-4">PubMed</a>
+          {paper.doi && <a href={`https://doi.org/${encodeURI(paper.doi)}`} target="_blank" rel="noopener noreferrer" className="ml-3 underline underline-offset-4">DOI</a>}
+        </p>
+      </header>
 
       {analysis ? (
         <>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[6px] bg-mist p-3">
-            <p className="text-[14px] text-ink/80">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y border-ink/10 py-2.5">
+            <p className="text-[14px] text-ink/70">
               AI 분석 · {SOURCE_LABEL[analysis.source].ko}
               {analysis.source === "abstract" && " — 저자가 쓴 한계는 전문에 있을 수 있습니다."}
             </p>
             <ReviewButtons pmid={paper.pmid} value={paper.reviewStatus} />
           </div>
-          <dl className="mt-6 grid gap-x-6 gap-y-2 text-[15.5px] sm:grid-cols-[130px_minmax(0,1fr)]">
-            <dt className="text-ink/65">Subject · 대상</dt>
-            <dd>{SUBJECT_LABEL[analysis.subject.kind].ko} — {analysis.subject.detail}{analysis.subject.n ? ` (n=${analysis.subject.n})` : ""}</dd>
-            <dt className="text-ink/65">Material · 재료</dt>
-            <dd>{analysis.material}</dd>
-            <dt className="text-ink/65">Follow-up · 추적</dt>
-            <dd>{analysis.followUp ?? "명시 없음"}</dd>
-          </dl>
-          <Section en="Findings" ko="핵심 결과" items={analysis.findings} />
+
+          <section aria-labelledby="paper-glance" className="mt-6 rounded-xl bg-mist/70 px-5 py-4">
+            <h2 id="paper-glance" className="text-[14px] font-semibold text-inkdeep">At a glance · 한눈에 보기</h2>
+            <dl className="mt-3 space-y-3">
+              <Glance
+                label="Subject · 대상"
+                lead={`${SUBJECT_LABEL[analysis.subject.kind].ko}${analysis.subject.n ? ` n=${analysis.subject.n}` : ""}`}
+                text={analysis.subject.detail}
+              />
+              <Glance label="Material · 재료" text={analysis.material} />
+              <Glance label="Follow-up · 추적" text={analysis.followUp ?? "명시 없음"} />
+            </dl>
+          </section>
+
+          <Bullets en="Findings" ko="핵심 결과" items={analysis.findings} />
+
           {analysis.limitations.length > 0 && (
-            <section className="mt-7">
-              <h2 className="text-[14.5px] font-semibold text-ink/70">Limitations · 한계</h2>
-              <ul className="mt-2 space-y-3 text-[16px] leading-relaxed">
+            <NoteSection en="Limitations" ko="한계">
+              <ul className={`${LIST} list-disc pl-5 marker:text-ink/35`}>
                 {analysis.limitations.map((item) => (
                   <li key={item.text}>
-                    {item.text}
+                    <NoteText text={item.text} />
                     {item.quote && (
-                      <blockquote className="mt-1 border-l-2 border-ink/20 pl-3 text-[14.5px] text-ink/75">
+                      <blockquote className="mb-1 mt-2 border-l-2 border-ink/20 pl-3 text-[14.5px] leading-relaxed text-ink/70">
                         <span lang="en">“{item.quote}”</span>
                         {!item.quoteVerified && <span className="ml-2 font-semibold text-[#8a5a00]">인용 확인 안 됨</span>}
                       </blockquote>
@@ -74,15 +145,16 @@ export default async function PaperPage({ params }: { params: Promise<{ pmid: st
                   </li>
                 ))}
               </ul>
-            </section>
+            </NoteSection>
           )}
-          <Section en="Can claim" ko="말할 수 있는 것" items={analysis.canClaim} />
-          <Section en="Cannot claim" ko="말할 수 없는 것" items={analysis.cannotClaim} />
-          <Section en="For procedures" ko="시술 시사점" items={analysis.implications.filter((i) => i.kind === "procedure").map((i) => i.text)} />
-          <Section en="For consults" ko="상담 시사점" items={analysis.implications.filter((i) => i.kind === "consult").map((i) => i.text)} />
+
+          <Claims en="Can claim" ko="말할 수 있는 것" items={analysis.canClaim} mark="✓" color="#0f5132" />
+          <Claims en="Cannot claim" ko="말할 수 없는 것" items={analysis.cannotClaim} mark="✕" color="#9b1c1c" />
+          <Bullets marked en="For procedures" ko="시술 시사점" items={analysis.implications.filter((i) => i.kind === "procedure").map((i) => i.text)} />
+          <Bullets marked en="For consults" ko="상담 시사점" items={analysis.implications.filter((i) => i.kind === "consult").map((i) => i.text)} />
         </>
       ) : (
-        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-[6px] bg-mist p-3 text-[14.5px]">
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl bg-mist/70 px-5 py-4 text-[14.5px]">
           <span>{statusText(paper.status)}</span>
           {paper.error && <span role="alert" className="text-red-800">{paper.error}</span>}
           {paper.status !== "analyzing" && <AnalyzeButton pmid={paper.pmid} retry={paper.status === "failed"} />}
@@ -90,10 +162,12 @@ export default async function PaperPage({ params }: { params: Promise<{ pmid: st
         </div>
       )}
 
-      <section className="mt-8 border-t border-ink/10 pt-5">
-        <h2 className="text-[14.5px] font-semibold text-ink/70">Abstract · 초록</h2>
-        <p lang="en" className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-ink/85">{paper.abstract}</p>
-      </section>
+      {paper.abstract && (
+        <details open={!analysis} className="mt-10 border-t border-ink/10 pt-5">
+          <summary className="cursor-pointer text-[15px] font-semibold text-ink/70 hover:text-ink">Abstract · 초록</summary>
+          <p lang="en" className="mt-3 whitespace-pre-line text-[15px] leading-[1.75] text-ink/85">{paper.abstract}</p>
+        </details>
+      )}
     </article>
   );
 }
