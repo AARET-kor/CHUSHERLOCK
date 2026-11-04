@@ -2062,9 +2062,8 @@ const BUDGET_WINDOW_MS = 6 * 24 * 60 * 60 * 1000;
 
 /** Attempts still available this week. Failed attempts count, so a broken
  * prompt cannot spend more than the limit, and a double trigger spends nothing. */
-function weeklyBudget(now: Date, currentRunStart: string): number {
+function weeklyBudget(now: Date): number {
   const since = new Date(now.getTime() - BUDGET_WINDOW_MS).toISOString();
-  void currentRunStart;
   return Math.max(0, WEEKLY_ANALYSES - weeklyAttemptsSince(since));
 }
 
@@ -2076,7 +2075,7 @@ export async function runSync(run: SyncRun, deps: PaperDeps = defaultPaperDeps()
     recoverStuck(deps.now());
     added = await collect(deps);
     if (run.kind === "weekly") {
-      for (const pmid of pickWeekly(weeklyQueue(), weeklyBudget(deps.now(), run.startedAt))) {
+      for (const pmid of pickWeekly(weeklyQueue(), weeklyBudget(deps.now()))) {
         attempts += 1;
         // One paper failing must not stop the rest; it stays retryable.
         await analyzeOne(pmid, deps).catch((error: unknown) => {
@@ -2100,29 +2099,12 @@ export function startSync(kind: SyncKind, deps: PaperDeps = defaultPaperDeps()):
 }
 ```
 
-Remove the `currentRunStart` parameter before committing if the type checker flags nothing else needs it: `weeklyBudget(now)` is the final shape, and the call becomes `weeklyBudget(deps.now())`.
-
-- [ ] **Step 4: Simplify `weeklyBudget`**
-
-Replace the function and its call so no unused parameter remains:
-
-```ts
-function weeklyBudget(now: Date): number {
-  const since = new Date(now.getTime() - BUDGET_WINDOW_MS).toISOString();
-  return Math.max(0, WEEKLY_ANALYSES - weeklyAttemptsSince(since));
-}
-```
-
-```ts
-      for (const pmid of pickWeekly(weeklyQueue(), weeklyBudget(deps.now()))) {
-```
-
-- [ ] **Step 5: Run it to verify it passes**
+- [ ] **Step 4: Run it to verify it passes**
 
 Run: `npx vitest run tests/papers-run.test.ts && npx tsc --noEmit -p .`
 Expected: PASS. The first `runSync` test depends on `collect` seeing a 2026-11-02 clock and on no earlier weekly runs in this DB; the `deps` default clock and the fresh temp DB guarantee both.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add lib/papers/run.ts tests/papers-run.test.ts
@@ -2772,7 +2754,9 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
     page: Math.max(1, Number(params.page) || 1),
   };
   const { rows, total } = listPapers(filters);
-  const recent = recentlyAnalyzed(new Date(Date.now() - WEEK_MS).toISOString());
+  // Only on the unfiltered first page: a filtered list must show just its matches.
+  const filtered = Boolean(filters.topic || filters.level || filters.subject || filters.analysis || filters.review);
+  const recent = filtered || filters.page! > 1 ? [] : recentlyAnalyzed(new Date(Date.now() - WEEK_MS).toISOString());
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const hrefWith = (key: string, value: string | undefined) => {
@@ -3351,8 +3335,13 @@ test("collect → list by IF → analyze → review → cite in a brief → excl
   // 1. Collect (fake ids are new on every run; the e2e DB persists).
   await page.goto("/papers");
   await expect(page.getByRole("heading", { name: /미용 논문/ })).toBeVisible(COLD);
-  await page.getByRole("button", { name: /Sync now/ }).click();
-  await expect(page.getByText(/새 논문 [1-9]/)).toBeVisible(COLD);
+  await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith("/api/papers/sync") && r.request().method() === "POST", COLD),
+    page.getByRole("button", { name: /Sync now/ }).click(),
+  ]);
+  await expect
+    .poll(async () => (await (await page.request.get("/api/papers/sync")).json()).run?.finishedAt, COLD)
+    .toBeTruthy();
 
   // 2. Listed with an IF; the newest fake paper tops its equal-IF group.
   await page.goto("/papers?topic=filler&analysis=unanalyzed");
@@ -3362,6 +3351,8 @@ test("collect → list by IF → analyze → review → cite in a brief → excl
 
   // 3. Analyze once; the button is gone afterwards, so it cannot run twice.
   await row.getByRole("button", { name: /Analyze/ }).click();
+  // Refreshing moves it out of this unanalyzed list once the analysis is saved.
+  await expect(page.getByRole("link", { name: title })).toHaveCount(0, COLD);
   await page.goto("/papers?topic=filler&analysis=analyzed");
   await page.getByRole("link", { name: title }).first().click();
   await expect(page).toHaveURL(/\/papers\/\d+$/, COLD);
@@ -3615,4 +3606,4 @@ Expected once finished: `error: null`, `added` in the thousands, `analyzed: 5`. 
 | 8 Code structure | File map |
 | 9 Tests, real-API check | 3–10, 12, 13, 15 |
 
-**Type consistency:** `PaperRecord`, `PaperRow`, `QueueItem`, `ConsultCandidate`, `PaperDeps` and `PaperCaller` are defined once and used with the same fields. `CONSULT_PAPERS`, `WEEKLY_ANALYSES` and `MAX_ATTEMPTS` come from `select.ts`. `weeklyBudget` ends in its one-argument form (Task 9, Step 4).
+**Type consistency:** `PaperRecord`, `PaperRow`, `QueueItem`, `ConsultCandidate`, `PaperDeps` and `PaperCaller` are defined once and used with the same fields. `CONSULT_PAPERS`, `WEEKLY_ANALYSES` and `MAX_ATTEMPTS` come from `select.ts`.
