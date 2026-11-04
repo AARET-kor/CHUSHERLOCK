@@ -19,14 +19,16 @@ export const TOPICS: Record<TopicKey, TopicDef> = {
     en: "Filler",
     ko: "필러",
     major: "filler",
-    query: '("Dermal Fillers"[MeSH Terms] OR hyaluronidase[tiab] OR "hyaluronic acid filler"[tiab] OR "HA filler"[tiab])',
+    query:
+      '("Dermal Fillers"[Majr] OR filler[ti] OR fillers[ti] OR "dermal filler"[tiab] OR "dermal fillers"[tiab] OR "soft tissue filler"[tiab] OR "soft tissue fillers"[tiab] OR "hyaluronic acid filler"[tiab] OR "hyaluronic acid fillers"[tiab] OR "HA filler"[tiab] OR "HA fillers"[tiab] OR (hyaluronidase[tiab] AND (filler*[tiab] OR "hyaluronic acid"[tiab] OR occlusion[tiab])))',
   },
   thread: {
     key: "thread",
     en: "Thread lift",
     ko: "실리프팅",
     major: "lifting",
-    query: '("thread lift"[tiab] OR "thread lifting"[tiab] OR "barbed suture"[tiab] OR "barbed sutures"[tiab]) AND (face[tiab] OR facial[tiab] OR rejuvenation[tiab] OR lifting[tiab])',
+    query:
+      '("thread lift"[tiab] OR "thread lifting"[tiab] OR threadlift[tiab] OR thread[ti] OR threads[ti] OR (("barbed suture"[tiab] OR "barbed sutures"[tiab]) AND (rhytidectomy[tiab] OR facelift[tiab] OR "face lift"[tiab] OR midface[tiab])))',
   },
   energy: {
     key: "energy",
@@ -34,14 +36,15 @@ export const TOPICS: Record<TopicKey, TopicDef> = {
     ko: "에너지 리프팅",
     major: "lifting",
     query:
-      '(Ultherapy[tiab] OR "microfocused ultrasound"[tiab] OR "micro-focused ultrasound"[tiab] OR Thermage[tiab] OR (("high-intensity focused ultrasound"[tiab] OR HIFU[tiab] OR radiofrequency[tiab]) AND (skin[tiab] OR facial[tiab] OR lifting[tiab] OR tightening[tiab] OR rejuvenation[tiab])))',
+      '(Ultherapy[tiab] OR "microfocused ultrasound"[tiab] OR "micro-focused ultrasound"[tiab] OR Thermage[tiab] OR (("high-intensity focused ultrasound"[tiab] OR HIFU[tiab] OR radiofrequency[tiab]) AND (lifting[tiab] OR tightening[tiab] OR laxity[tiab] OR rejuvenation[tiab] OR wrinkle*[tiab])))',
   },
   pigment: {
     key: "pigment",
     en: "Pigment laser",
     ko: "색소 레이저",
     major: "laser",
-    query: '(((melasma[tiab] OR lentigo[tiab] OR lentigines[tiab] OR hyperpigmentation[tiab]) AND (laser[tiab] OR lasers[tiab])) OR "picosecond laser"[tiab] OR "laser toning"[tiab] OR "Q-switched"[tiab])',
+    query:
+      '(((melasma[tiab] OR lentigo[tiab] OR lentigines[tiab] OR "nevus of Ota"[tiab] OR "cafe-au-lait"[tiab] OR hyperpigmentation[ti]) AND (laser[tiab] OR lasers[tiab])) OR "laser toning"[tiab] OR (("picosecond laser"[tiab] OR "picosecond lasers"[tiab] OR "Q-switched"[tiab]) AND (pigment*[tiab] OR melasma[tiab] OR lentig*[tiab] OR nevus[tiab])))',
   },
 };
 

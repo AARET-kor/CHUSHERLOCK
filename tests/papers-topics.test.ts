@@ -11,6 +11,10 @@ describe("topicTerm", () => {
     expect(term).toContain('("Aesthet Surg J"[ta] OR "Dermatol Surg"[ta])');
     expect(term).toContain('("2021/11/04"[edat] : "3000"[edat])');
   });
+
+  it("only counts hyaluronidase when the paper is about fillers", () => {
+    expect(topicTerm("filler", ["J"], "2021/11/04")).toContain('hyaluronidase[tiab] AND (filler*[tiab]');
+  });
 });
 
 describe("topicsForCase", () => {

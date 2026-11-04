@@ -28,10 +28,10 @@
 
 | key | 라벨 | PubMed 검색 묶음 (요지) | 연결되는 시술 |
 |---|---|---|---|
-| `filler` | Filler · 필러 | Dermal Fillers[MeSH], hyaluronidase, hyaluronic acid filler | taxonomy major `filler` |
-| `thread` | Thread lift · 실리프팅 | thread lift, thread lifting, barbed suture (안면) | major `lifting`, mid `실리프팅` |
-| `energy` | HIFU·RF · 에너지 리프팅 | Ultherapy, microfocused ultrasound, HIFU(피부·안면), Thermage, 고주파 skin tightening | major `lifting`, mid `HIFU`·`RF` |
-| `pigment` | Pigment laser · 색소 레이저 | melasma, lentigo, picosecond laser, laser toning, Q-switched | major `laser`, mid `토닝`·`색소·점`, 또는 케이스 질환이 기미·색소 |
+| `filler` | Filler · 필러 | Dermal Fillers[Majr], 제목의 filler, dermal·HA filler, 필러 관련 hyaluronidase | taxonomy major `filler` |
+| `thread` | Thread lift · 실리프팅 | thread lift, 제목의 thread, 안면거상 관련 barbed suture | major `lifting`, mid `실리프팅` |
+| `energy` | HIFU·RF · 에너지 리프팅 | Ultherapy, microfocused ultrasound, Thermage, HIFU·고주파 중 lifting·tightening·laxity·rejuvenation·wrinkle | major `lifting`, mid `HIFU`·`RF` |
+| `pigment` | Pigment laser · 색소 레이저 | melasma·lentigo·nevus of Ota 등 + laser, laser toning, 색소 관련 picosecond·Q-switched | major `laser`, mid `토닝`·`색소·점`, 또는 케이스 질환이 기미·색소 |
 
 주제별 색은 카테고리 태그 팔레트를 재사용한다(`lib/records/taxonomy.ts`).
 

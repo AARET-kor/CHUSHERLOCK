@@ -6,9 +6,11 @@ import type { PaperRecord } from "./types";
 
 const SEARCH_MAX = 5000;
 const FETCH_BATCH = 200;
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 60_000;
+const ATTEMPTS = 3;
+const RETRY_DELAY_MS = 3000;
 
-export type PaperPubMedDeps = Pick<PubMedDeps, "fetch" | "limiter"> & { apiKey?: string };
+export type PaperPubMedDeps = Pick<PubMedDeps, "fetch" | "limiter"> & { apiKey?: string; retryDelayMs?: number };
 
 const EXCLUDED_TYPES = new Set(["comment", "editorial", "erratum", "published erratum", "retracted publication", "retraction of publication"]);
 
@@ -41,19 +43,35 @@ export function parsePaperRecords(xml: string): PaperRecord[] {
   });
 }
 
+/** Long id lists and journal filters fail intermittently as GET URLs (NCBI
+ * asks for POST on large requests), and one 5xx must not sink a whole run. */
+async function eutilsPost(url: string, deps: PaperPubMedDeps): Promise<Response> {
+  const [endpoint, query] = url.split("?");
+  let status = 0;
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, deps.retryDelayMs ?? RETRY_DELAY_MS));
+    await deps.limiter.wait();
+    const res = await deps.fetch(endpoint!, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: query,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (res.ok) return res;
+    status = res.status;
+  }
+  throw new Error(`PubMed HTTP ${status}`);
+}
+
 export async function searchPmids(term: string, deps: PaperPubMedDeps = defaultPubMedDeps()): Promise<string[]> {
-  await deps.limiter.wait();
-  const res = await deps.fetch(esearchUrl(term, deps.apiKey, SEARCH_MAX), { signal: AbortSignal.timeout(TIMEOUT_MS) });
-  if (!res.ok) throw new Error(`PubMed esearch HTTP ${res.status}`);
+  const res = await eutilsPost(esearchUrl(term, deps.apiKey, SEARCH_MAX), deps);
   return parseEsearch(await res.json());
 }
 
 export async function fetchPaperRecords(pmids: string[], deps: PaperPubMedDeps = defaultPubMedDeps()): Promise<PaperRecord[]> {
   const records: PaperRecord[] = [];
   for (let i = 0; i < pmids.length; i += FETCH_BATCH) {
-    await deps.limiter.wait();
-    const res = await deps.fetch(efetchUrl(pmids.slice(i, i + FETCH_BATCH), deps.apiKey), { signal: AbortSignal.timeout(TIMEOUT_MS) });
-    if (!res.ok) throw new Error(`PubMed efetch HTTP ${res.status}`);
+    const res = await eutilsPost(efetchUrl(pmids.slice(i, i + FETCH_BATCH), deps.apiKey), deps);
     records.push(...parsePaperRecords(await res.text()));
   }
   return records;

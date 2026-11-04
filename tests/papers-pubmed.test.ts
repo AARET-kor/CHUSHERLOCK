@@ -42,34 +42,61 @@ describe("parsePaperRecords", () => {
 
 describe("network helpers", () => {
   const limiter = createRateLimiter(1000);
+  const base = { limiter, retryDelayMs: 0 };
 
-  it("asks for up to 5000 ids", async () => {
-    const urls: string[] = [];
+  it("posts the search and asks for up to 5000 ids", async () => {
+    const bodies: string[] = [];
     const ids = await searchPmids("term", {
-      limiter,
-      fetch: async (url) => {
-        urls.push(url);
+      ...base,
+      fetch: async (_url, init) => {
+        expect(init?.method).toBe("POST");
+        bodies.push(String(init?.body));
         return Response.json({ esearchresult: { idlist: ["1", "2"] } });
       },
     });
     expect(ids).toEqual(["1", "2"]);
-    expect(urls[0]).toContain("retmax=5000");
+    expect(bodies[0]).toContain("retmax=5000");
   });
 
-  it("fetches in batches of 200", async () => {
+  it("posts ids in batches of 200, because long GET URLs fail at NCBI", async () => {
     const urls: string[] = [];
     const ids = Array.from({ length: 450 }, (_, i) => String(i + 1));
     await fetchPaperRecords(ids, {
-      limiter,
-      fetch: async (url) => {
+      ...base,
+      fetch: async (url, init) => {
+        expect(init?.method).toBe("POST");
         urls.push(url);
         return new Response("<PubmedArticleSet></PubmedArticleSet>");
       },
     });
     expect(urls).toHaveLength(3);
+    expect(urls[0]).not.toContain("id=");
   });
 
-  it("throws on an HTTP failure so the sync can retry that period", async () => {
-    await expect(searchPmids("term", { limiter, fetch: async () => new Response("", { status: 500 }) })).rejects.toThrow("500");
+  it("retries a transient failure", async () => {
+    let calls = 0;
+    const ids = await searchPmids("term", {
+      ...base,
+      fetch: async () => {
+        calls += 1;
+        return calls < 3 ? new Response("", { status: 502 }) : Response.json({ esearchresult: { idlist: ["7"] } });
+      },
+    });
+    expect(ids).toEqual(["7"]);
+    expect(calls).toBe(3);
+  });
+
+  it("throws after three failures so the sync can retry that period", async () => {
+    let calls = 0;
+    await expect(
+      searchPmids("term", {
+        ...base,
+        fetch: async () => {
+          calls += 1;
+          return new Response("", { status: 500 });
+        },
+      })
+    ).rejects.toThrow("500");
+    expect(calls).toBe(3);
   });
 });
