@@ -1,0 +1,8 @@
+{"action":"Product-Variation","product":{"id":"111111XXXXXX001","available":true,
+ "availability":{"messages":["In Stock"]},
+ "variationAttributes":[
+  {"id":"color","values":[{"id":"BLK","selectable":true}]},
+  {"id":"size","values":[
+    {"id":"SML","displayValue":"S","selectable":false},
+    {"id":"MED","displayValue":"M","selectable":true},
+    {"id":"LRG","displayValue":"L","selectable":true}]}]}}
