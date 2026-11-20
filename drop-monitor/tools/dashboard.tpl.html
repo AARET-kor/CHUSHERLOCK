@@ -45,16 +45,16 @@ html[data-store=skylrk] .bgfx.sky{opacity:1}
 .hero .chbg{position:absolute;inset:0;background:radial-gradient(120% 140% at 50% 0%,#1d1d21 0%,#0c0c0e 55%,#09090a 100%);transition:opacity .6s}
 .hero .chbg::before{content:"";position:absolute;inset:0;opacity:.05;background:var(--cross) 0 0/56px 56px}
 html[data-store=skylrk] .hero .chbg{opacity:0}
-.hero-in{position:relative;max-width:1760px;margin:0 auto;padding:40px 24px 30px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
-.logos{position:relative;width:min(860px,90vw);aspect-ratio:744/132;color:var(--logo)}
+.hero-in{position:relative;max-width:1760px;margin:0 auto;padding:18px 24px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.logos{position:relative;width:min(460px,60vw);aspect-ratio:744/132;color:var(--logo)}
 .logos > *{position:absolute;inset:0;margin:auto;transition:opacity .45s ease,transform .55s cubic-bezier(.2,.8,.2,1),filter .45s}
 .logos .banner{filter:drop-shadow(0 2px 18px rgba(255,255,255,.08))}
 .logos .sky-logo{width:86%;height:fit-content;filter:drop-shadow(0 3px 16px rgba(20,70,120,.35))}
 html[data-store=chromehearts] .logos .sky-logo,
 html[data-store=skylrk] .logos .banner{opacity:0;transform:translateX(60px) scale(.96);filter:blur(6px)}
 html[data-store=skylrk] .logos .banner{transform:translateX(-60px) scale(.96)}
-.hero .sub{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:17.5px;letter-spacing:.32em;text-transform:uppercase}
-.hero .sub .x{font-size:16px;color:var(--silver)}
+.hero .sub{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;letter-spacing:.32em;text-transform:uppercase}
+.hero .sub .x{font-size:12px;color:var(--silver)}
 html[data-store=skylrk] .hero .sub .x{-webkit-mask:none;mask:none;border-radius:50%;width:.55em;height:.55em}
 
 /* sticky bar */
@@ -99,15 +99,17 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 .chan i{font-style:normal;font-size:16px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--faint)}
 .chan i.on{color:var(--text);border-color:var(--line-2);background:var(--panel-2);font-weight:600}
 
-.layout{display:grid;grid-template-columns:460px minmax(0,1fr);gap:24px;align-items:start}
+.store-panel{margin-bottom:24px}
+.ops{display:none;flex-direction:column;gap:10px;margin-bottom:16px}
 .ph{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .ph h2{display:flex;align-items:center;gap:10px;margin:0;font-family:var(--serif);font-size:24px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--silver)}
 .ph h2 .x{font-size:19px}
 .ph small{color:var(--faint);font-size:17.5px}
 
 /* feed */
-.feed{position:sticky;top:84px;max-height:calc(100vh - 104px);display:flex;flex-direction:column}
-.feed ol{list-style:none;margin:0;padding:6px;overflow:auto}
+.feed{display:flex;flex-direction:column}
+.feed ol{list-style:none;margin:0;padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:4px;max-height:640px;overflow:auto}
+.feed ol .empty{grid-column:1/-1}
 .ev{display:grid;grid-template-columns:88px minmax(0,1fr);gap:14px;padding:12px;border-radius:10px}
 .ev:hover{background:var(--panel-2)}
 .ev .thumb{width:88px;height:88px;border-radius:10px;background:var(--img) center/contain no-repeat;border:1px solid var(--line)}
@@ -176,17 +178,17 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 .foot .x{font-size:15px}
 
 @media (max-width:1100px){
-  .layout{grid-template-columns:1fr}
-  .feed{position:static;max-height:none;order:2}
-  .feed ol{max-height:420px}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:640px){
   body{font-size:18px}
-  .hero-in{padding:24px 16px 18px}
-  .hero .sub{letter-spacing:.22em;font-size:15px}
-  header{position:relative}
-  .bar{padding:10px 12px;gap:10px}
+  .hero-in{padding:12px 16px 10px;gap:6px}
+  .logos{width:72vw}
+  .hero .sub{letter-spacing:.22em;font-size:11px}
+  .bar{padding:8px 12px;gap:8px}
+  .ops{display:flex}
+  .ops .status{width:100%}
+  .feed ol{grid-template-columns:1fr;max-height:none}
   .switch{width:100%;margin-right:0}
   .switch button{flex:1;justify-content:center;padding:9px 10px}
   .switch .banner{height:20px}
@@ -240,8 +242,8 @@ main{max-width:1760px;margin:0 auto;padding:24px}
         <span class="sky-logo" aria-hidden="true">__SKY_SVG__</span><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">SKYLRK</span><b class="zero" data-count="skylrk">0</b>
       </button>
     </div>
-    <div class="status" aria-live="polite"><span class="x" id="dot"></span><span id="statusText">연결 중…</span></div>
-    <div class="actions">
+    <div class="status" id="status" aria-live="polite"><span class="x" id="dot"></span><span id="statusText">연결 중…</span></div>
+    <div class="actions" id="actions">
       <button class="btn" id="testBtn" type="button">테스트 알림</button>
       <button class="btn primary" id="checkBtn" type="button">지금 확인</button>
     </div>
@@ -251,6 +253,14 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 <main id="main">
   <div class="err" id="err"></div>
 
+  <section class="card-bg store-panel" aria-label="스토어">
+    <div class="ph">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <input class="search" id="q" type="search" placeholder="상품 검색" aria-label="상품 검색">
+    </div>
+    <div id="store"></div>
+  </section>
+
   <section class="stats" aria-label="요약">
     <div class="stat card-bg"><div class="k"><span class="x"></span>판매 중 후디·집업</div><div class="v" id="sHood">–</div><div class="s" id="sHoodSub">&nbsp;</div></div>
     <div class="stat card-bg"><div class="k"><span class="x"></span>새로 포착 (24시간)</div><div class="v" id="sFresh">–</div><div class="s" id="sFreshSub">&nbsp;</div></div>
@@ -258,26 +268,18 @@ main{max-width:1760px;margin:0 auto;padding:24px}
     <div class="stat card-bg"><div class="k"><span class="x"></span>알림 채널</div><div class="chan" id="sChan"></div><div class="s" id="sWatch">&nbsp;</div></div>
   </section>
 
-  <div class="layout">
-    <section class="card-bg feed" aria-label="알림 기록">
-      <div class="ph"><h2><span class="x"></span>Alerts</h2><small id="feedCount"></small></div>
-      <ol id="feed"></ol>
-    </section>
+  <div class="ops" id="ops"></div>
 
-    <section class="card-bg" aria-label="스토어">
-      <div class="ph">
-        <div class="tabs" role="tablist" id="tabs"></div>
-        <input class="search" id="q" type="search" placeholder="상품 검색" aria-label="상품 검색">
-      </div>
-      <div id="store"></div>
-    </section>
-  </div>
+  <section class="card-bg feed" aria-label="알림 기록">
+    <div class="ph"><h2><span class="x"></span>Alerts</h2><small id="feedCount"></small></div>
+    <ol id="feed"></ol>
+  </section>
 
   <div class="foot" id="foot"></div>
 </main>
 
 <script>
-const VERSION = 4;
+const VERSION = 5;
 const $ = id => document.getElementById(id);
 const KIND = {new_product:"신상품", relisted:"재입고", restock:"재입고", category_open:"오픈", price_change:"가격", error:"오류", test:"테스트"};
 const TABS = [["main","메인"],["accessory","신발·액세서리"],["other","기타"],["all","전체"]];
@@ -286,7 +288,6 @@ const NAMES = {chromehearts: "Chrome Hearts", skylrk: "SKYLRK"};
 let store = "chromehearts", tab = "main", S = null, lastEvents = {}, cache = {};
 try {
   store = (location.hash.slice(1) in NAMES && location.hash.slice(1)) || localStorage.getItem("chm.store") || store;
-  tab = localStorage.getItem("chm.tab") || tab;
 } catch (e) {}
 if (!TABS.some(t => t[0] === tab)) tab = "main";
 
@@ -451,7 +452,7 @@ function renderStore() {
   $("tabs").replaceChildren(...TABS.map(([id, label]) => {
     const b = el("button", {type: "button", role: "tab", "aria-selected": String(tab === id)},
       id === "main" ? X() : null, label, el("b", {}, count(id)));
-    b.onclick = () => { tab = id; try { localStorage.setItem("chm.tab", tab); } catch (e) {} renderStore(); };
+    b.onclick = () => { tab = id; renderStore(); };
     return b;
   }));
 
@@ -535,6 +536,14 @@ document.addEventListener("keydown", e => {
   if (e.key === "1") switchStore("chromehearts");
   if (e.key === "2") switchStore("skylrk");
 });
+// phones: status line and buttons sit just above the alerts instead of in the top bar
+const phone = matchMedia("(max-width:640px)");
+function placeOps() {
+  const into = phone.matches ? $("ops") : document.querySelector("header .bar");
+  into.append($("status"), $("actions"));
+}
+phone.addEventListener ? phone.addEventListener("change", placeOps) : phone.addListener(placeOps);
+placeOps();
 switchStore(store, false);
 // prefetch the other store so the first switch is instant
 setTimeout(() => Object.keys(NAMES).filter(s => s !== store).forEach(s => fetch("/api/state?store=" + s).then(r => r.json()).then(d => { cache[s] = d; }).catch(() => {})), 1500);

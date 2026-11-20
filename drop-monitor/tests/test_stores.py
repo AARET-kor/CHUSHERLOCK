@@ -144,7 +144,7 @@ class ServerModeTests(unittest.TestCase):
         self.assertEqual(self.get("/")[0], 401)
         self.assertEqual(self.get("/api/state", "wrong-password")[0], 401)
         self.assertEqual(self.get("/", "hunter2hunter2", host="monitor.up.railway.app")[0], 200)
-        self.assertEqual(self.get("/healthz")[0], 200)
+        self.assertEqual(self.get("/healthz"), (200, "ok v5"))
 
     def test_store_switch(self):
         code, body = self.get("/api/state?store=skylrk", "hunter2hunter2")

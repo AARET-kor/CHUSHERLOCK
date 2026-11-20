@@ -32,7 +32,7 @@ from .site import Product
 log = logging.getLogger("chmonitor")
 PAGE = Path(__file__).with_name("dashboard.html")
 ACTION_HEADER = "X-CH-Dashboard"
-VERSION = 4  # the page warns when an older server is still running
+VERSION = 5  # the page warns when an older server is still running
 
 
 def config_summary(cfg: dict) -> dict:
@@ -142,7 +142,7 @@ def make_handler(monitors: dict[str, Monitor], public: bool = False, password: s
         def do_GET(self):
             path = urllib.parse.urlparse(self.path).path
             if path == "/healthz":  # for the hosting platform's health check
-                return self._send(200, b"ok", "text/plain")
+                return self._send(200, f"ok v{VERSION}".encode(), "text/plain")
             if not self._guard():
                 return
             if path in ("/", "/index.html"):

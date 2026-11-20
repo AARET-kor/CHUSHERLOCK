@@ -45,16 +45,16 @@ html[data-store=skylrk] .bgfx.sky{opacity:1}
 .hero .chbg{position:absolute;inset:0;background:radial-gradient(120% 140% at 50% 0%,#1d1d21 0%,#0c0c0e 55%,#09090a 100%);transition:opacity .6s}
 .hero .chbg::before{content:"";position:absolute;inset:0;opacity:.05;background:var(--cross) 0 0/56px 56px}
 html[data-store=skylrk] .hero .chbg{opacity:0}
-.hero-in{position:relative;max-width:1760px;margin:0 auto;padding:40px 24px 30px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
-.logos{position:relative;width:min(860px,90vw);aspect-ratio:744/132;color:var(--logo)}
+.hero-in{position:relative;max-width:1760px;margin:0 auto;padding:18px 24px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.logos{position:relative;width:min(460px,60vw);aspect-ratio:744/132;color:var(--logo)}
 .logos > *{position:absolute;inset:0;margin:auto;transition:opacity .45s ease,transform .55s cubic-bezier(.2,.8,.2,1),filter .45s}
 .logos .banner{filter:drop-shadow(0 2px 18px rgba(255,255,255,.08))}
 .logos .sky-logo{width:86%;height:fit-content;filter:drop-shadow(0 3px 16px rgba(20,70,120,.35))}
 html[data-store=chromehearts] .logos .sky-logo,
 html[data-store=skylrk] .logos .banner{opacity:0;transform:translateX(60px) scale(.96);filter:blur(6px)}
 html[data-store=skylrk] .logos .banner{transform:translateX(-60px) scale(.96)}
-.hero .sub{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:17.5px;letter-spacing:.32em;text-transform:uppercase}
-.hero .sub .x{font-size:16px;color:var(--silver)}
+.hero .sub{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;letter-spacing:.32em;text-transform:uppercase}
+.hero .sub .x{font-size:12px;color:var(--silver)}
 html[data-store=skylrk] .hero .sub .x{-webkit-mask:none;mask:none;border-radius:50%;width:.55em;height:.55em}
 
 /* sticky bar */
@@ -99,15 +99,17 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 .chan i{font-style:normal;font-size:16px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--faint)}
 .chan i.on{color:var(--text);border-color:var(--line-2);background:var(--panel-2);font-weight:600}
 
-.layout{display:grid;grid-template-columns:460px minmax(0,1fr);gap:24px;align-items:start}
+.store-panel{margin-bottom:24px}
+.ops{display:none;flex-direction:column;gap:10px;margin-bottom:16px}
 .ph{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .ph h2{display:flex;align-items:center;gap:10px;margin:0;font-family:var(--serif);font-size:24px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--silver)}
 .ph h2 .x{font-size:19px}
 .ph small{color:var(--faint);font-size:17.5px}
 
 /* feed */
-.feed{position:sticky;top:84px;max-height:calc(100vh - 104px);display:flex;flex-direction:column}
-.feed ol{list-style:none;margin:0;padding:6px;overflow:auto}
+.feed{display:flex;flex-direction:column}
+.feed ol{list-style:none;margin:0;padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:4px;max-height:640px;overflow:auto}
+.feed ol .empty{grid-column:1/-1}
 .ev{display:grid;grid-template-columns:88px minmax(0,1fr);gap:14px;padding:12px;border-radius:10px}
 .ev:hover{background:var(--panel-2)}
 .ev .thumb{width:88px;height:88px;border-radius:10px;background:var(--img) center/contain no-repeat;border:1px solid var(--line)}
@@ -176,17 +178,17 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 .foot .x{font-size:15px}
 
 @media (max-width:1100px){
-  .layout{grid-template-columns:1fr}
-  .feed{position:static;max-height:none;order:2}
-  .feed ol{max-height:420px}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:640px){
   body{font-size:18px}
-  .hero-in{padding:24px 16px 18px}
-  .hero .sub{letter-spacing:.22em;font-size:15px}
-  header{position:relative}
-  .bar{padding:10px 12px;gap:10px}
+  .hero-in{padding:12px 16px 10px;gap:6px}
+  .logos{width:72vw}
+  .hero .sub{letter-spacing:.22em;font-size:11px}
+  .bar{padding:8px 12px;gap:8px}
+  .ops{display:flex}
+  .ops .status{width:100%}
+  .feed ol{grid-template-columns:1fr;max-height:none}
   .switch{width:100%;margin-right:0}
   .switch button{flex:1;justify-content:center;padding:9px 10px}
   .switch .banner{height:20px}
@@ -240,8 +242,8 @@ main{max-width:1760px;margin:0 auto;padding:24px}
         <span class="sky-logo" aria-hidden="true"><svg viewBox="0 0 220 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <g clip-path="url(#skyclip2)"> <path d="M103.554 -4.58308e-05C103.057 -4.58308e-05 102.572 0.147244 102.161 0.42379L98.7127 2.73535C95.0048 5.22426 90.1358 5.23326 86.4161 2.76541L82.8761 0.41778C82.4648 0.144239 81.9769 -0.00305176 81.4799 -0.00305176C79.0347 -0.00305176 78.0407 3.09606 80.0406 4.48178L86.6753 9.07485C88.4559 10.3073 89.5139 12.3152 89.5139 14.4555V16.8302C89.5139 18.4564 90.8525 19.773 92.5019 19.773C94.1514 19.773 95.4896 18.4533 95.4896 16.8302V14.4464C95.4896 12.3092 96.5448 10.3073 98.3132 9.07485L104.981 4.43371C106.957 3.05999 105.969 -0.00305176 103.551 -0.00305176L103.554 -4.58308e-05Z" fill="currentColor"/> <path d="M139.829 14.7351H129.081C125.679 14.7351 122.919 12.0177 122.919 8.6631V2.87367C122.919 1.28654 121.614 0 120.005 0C118.395 0 117.09 1.28654 117.09 2.87367V18.1708C117.09 19.0576 117.818 19.776 118.718 19.776H139.826C141.237 19.776 142.384 18.6458 142.384 17.254C142.384 15.8623 141.237 14.7321 139.826 14.7321L139.829 14.7351Z" fill="currentColor"/> <path d="M63.9665 7.48475L67.6191 4.88765C69.7715 3.35461 68.6712 0 66.0154 0C65.4117 0 64.8262 0.195385 64.3478 0.559101L57.4022 5.81648C56.3533 6.61003 55.0665 7.04289 53.7433 7.04289H50.9383C48.5875 7.04289 46.6789 5.1642 46.6789 2.84361C46.6789 1.27451 45.3861 0 43.7916 0C42.197 0 40.9043 1.27451 40.9043 2.84361V16.9324C40.9043 18.5045 42.197 19.776 43.7916 19.776C45.3861 19.776 46.6789 18.5015 46.6789 16.9324C46.6789 14.6148 48.5847 12.7331 50.9383 12.7331H53.7556C55.1305 12.7331 56.4662 13.199 57.5334 14.0527L63.9057 19.1327C64.4268 19.5505 65.0795 19.776 65.7531 19.776C68.5736 19.776 69.7747 16.238 67.5184 14.5667L63.9207 11.9005C62.4237 10.7913 62.4451 8.56689 63.9665 7.48475Z" fill="currentColor"/> <path d="M218.756 14.5667L215.158 11.9005C213.661 10.7913 213.682 8.56689 215.204 7.48475L218.856 4.88765C221.009 3.35461 219.912 0 217.253 0C216.649 0 216.064 0.195385 215.585 0.559101L208.64 5.81648C207.591 6.61003 206.304 7.04289 204.981 7.04289H202.176C199.825 7.04289 197.917 5.1642 197.917 2.84361C197.917 1.27451 196.624 0 195.029 0C193.434 0 192.142 1.27451 192.142 2.84361V16.9324C192.142 18.5045 193.434 19.776 195.029 19.776C196.624 19.776 197.917 18.5015 197.917 16.9324C197.917 14.6148 199.822 12.7331 202.176 12.7331H204.993C206.368 12.7331 207.7 13.199 208.771 14.0527L215.143 19.1327C215.664 19.5505 216.317 19.776 216.99 19.776C219.811 19.776 221.012 16.238 218.756 14.5667Z" fill="currentColor"/> <path d="M175.098 12.162C175.988 11.9425 176.61 11.6299 177.177 11.2452C178.479 10.3584 179.427 8.56088 179.302 6.32146C179.095 2.66324 177.351 0.447876 173.137 0.447876H156.332C154.704 0.447876 153.38 1.74944 153.38 3.35461V16.9234C153.38 18.4143 154.542 19.7038 156.054 19.77C157.661 19.8421 158.902 18.4804 158.987 17.0105C159.109 14.4315 162.445 13.1509 164.918 13.8032C167.594 14.5096 175.311 19.4183 175.311 19.4183C175.708 19.6527 176.159 19.779 176.622 19.779C179.19 19.779 180.126 16.4424 177.921 15.1438L174.952 13.3253C174.442 13.0517 174.537 12.3003 175.101 12.162H175.098ZM171.994 8.50077H160.597C159.71 8.50077 158.987 7.79136 158.987 6.91363C158.987 6.03591 159.692 5.36557 160.557 5.36557H171.964C173.107 5.36557 173.61 5.8886 173.61 6.93167C173.61 7.9747 173.165 8.49774 171.991 8.49774L171.994 8.50077Z" fill="currentColor"/> <path d="M22.5902 9.09861L9.92493 6.57664C9.52249 6.50451 9.16574 6.25199 9.16574 5.81613C9.16574 5.81613 9.16574 5.08268 10.0378 5.08268L25.5538 5.24802C27.1453 5.24802 28.432 4.28313 28.432 2.83727C28.432 1.39141 27.4258 0.378418 25.7184 0.378418H6.14425C3.35448 0.378418 0.171387 2.0407 0.171387 5.18489C0.171387 8.32909 2.53126 9.74489 6.20217 10.5445L19.4468 13.346C20.084 13.5083 20.2639 13.854 20.2639 14.2057C20.2639 14.7197 19.834 14.9872 19.3157 14.9752L2.92458 14.6085C1.53121 14.6085 0.244561 15.5764 0.296393 17.2777C0.296393 18.7597 1.52816 19.7727 3.03434 19.7727H22.7884C26.2093 19.7727 28.8436 17.4341 28.8436 14.5063C28.8436 11.3591 25.6971 9.67875 22.5963 9.10161L22.5902 9.09861Z" fill="currentColor"/> </g> <defs> <clipPath id="skyclip2"> <rect width="220" height="20" fill="white"/> </clipPath> </defs> </svg></span><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">SKYLRK</span><b class="zero" data-count="skylrk">0</b>
       </button>
     </div>
-    <div class="status" aria-live="polite"><span class="x" id="dot"></span><span id="statusText">연결 중…</span></div>
-    <div class="actions">
+    <div class="status" id="status" aria-live="polite"><span class="x" id="dot"></span><span id="statusText">연결 중…</span></div>
+    <div class="actions" id="actions">
       <button class="btn" id="testBtn" type="button">테스트 알림</button>
       <button class="btn primary" id="checkBtn" type="button">지금 확인</button>
     </div>
@@ -251,6 +253,14 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 <main id="main">
   <div class="err" id="err"></div>
 
+  <section class="card-bg store-panel" aria-label="스토어">
+    <div class="ph">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <input class="search" id="q" type="search" placeholder="상품 검색" aria-label="상품 검색">
+    </div>
+    <div id="store"></div>
+  </section>
+
   <section class="stats" aria-label="요약">
     <div class="stat card-bg"><div class="k"><span class="x"></span>판매 중 후디·집업</div><div class="v" id="sHood">–</div><div class="s" id="sHoodSub">&nbsp;</div></div>
     <div class="stat card-bg"><div class="k"><span class="x"></span>새로 포착 (24시간)</div><div class="v" id="sFresh">–</div><div class="s" id="sFreshSub">&nbsp;</div></div>
@@ -258,26 +268,18 @@ main{max-width:1760px;margin:0 auto;padding:24px}
     <div class="stat card-bg"><div class="k"><span class="x"></span>알림 채널</div><div class="chan" id="sChan"></div><div class="s" id="sWatch">&nbsp;</div></div>
   </section>
 
-  <div class="layout">
-    <section class="card-bg feed" aria-label="알림 기록">
-      <div class="ph"><h2><span class="x"></span>Alerts</h2><small id="feedCount"></small></div>
-      <ol id="feed"></ol>
-    </section>
+  <div class="ops" id="ops"></div>
 
-    <section class="card-bg" aria-label="스토어">
-      <div class="ph">
-        <div class="tabs" role="tablist" id="tabs"></div>
-        <input class="search" id="q" type="search" placeholder="상품 검색" aria-label="상품 검색">
-      </div>
-      <div id="store"></div>
-    </section>
-  </div>
+  <section class="card-bg feed" aria-label="알림 기록">
+    <div class="ph"><h2><span class="x"></span>Alerts</h2><small id="feedCount"></small></div>
+    <ol id="feed"></ol>
+  </section>
 
   <div class="foot" id="foot"></div>
 </main>
 
 <script>
-const VERSION = 4;
+const VERSION = 5;
 const $ = id => document.getElementById(id);
 const KIND = {new_product:"신상품", relisted:"재입고", restock:"재입고", category_open:"오픈", price_change:"가격", error:"오류", test:"테스트"};
 const TABS = [["main","메인"],["accessory","신발·액세서리"],["other","기타"],["all","전체"]];
@@ -286,7 +288,6 @@ const NAMES = {chromehearts: "Chrome Hearts", skylrk: "SKYLRK"};
 let store = "chromehearts", tab = "main", S = null, lastEvents = {}, cache = {};
 try {
   store = (location.hash.slice(1) in NAMES && location.hash.slice(1)) || localStorage.getItem("chm.store") || store;
-  tab = localStorage.getItem("chm.tab") || tab;
 } catch (e) {}
 if (!TABS.some(t => t[0] === tab)) tab = "main";
 
@@ -451,7 +452,7 @@ function renderStore() {
   $("tabs").replaceChildren(...TABS.map(([id, label]) => {
     const b = el("button", {type: "button", role: "tab", "aria-selected": String(tab === id)},
       id === "main" ? X() : null, label, el("b", {}, count(id)));
-    b.onclick = () => { tab = id; try { localStorage.setItem("chm.tab", tab); } catch (e) {} renderStore(); };
+    b.onclick = () => { tab = id; renderStore(); };
     return b;
   }));
 
@@ -535,6 +536,14 @@ document.addEventListener("keydown", e => {
   if (e.key === "1") switchStore("chromehearts");
   if (e.key === "2") switchStore("skylrk");
 });
+// phones: status line and buttons sit just above the alerts instead of in the top bar
+const phone = matchMedia("(max-width:640px)");
+function placeOps() {
+  const into = phone.matches ? $("ops") : document.querySelector("header .bar");
+  into.append($("status"), $("actions"));
+}
+phone.addEventListener ? phone.addEventListener("change", placeOps) : phone.addListener(placeOps);
+placeOps();
 switchStore(store, false);
 // prefetch the other store so the first switch is instant
 setTimeout(() => Object.keys(NAMES).filter(s => s !== store).forEach(s => fetch("/api/state?store=" + s).then(r => r.json()).then(d => { cache[s] = d; }).catch(() => {})), 1500);
