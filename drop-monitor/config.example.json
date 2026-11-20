@@ -5,7 +5,7 @@
   },
 
   "preferred_sizes": ["L", "M"],
-  "alert_groups": ["hoodie", "apparel"],
+  "alert_groups": ["hoodie", "top"],
   "keywords": [],
   "track_stock": "focus",
 

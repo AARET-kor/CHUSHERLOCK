@@ -323,11 +323,11 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 </main>
 
 <script>
-const VERSION = 6;
+const VERSION = 7;
 const $ = id => document.getElementById(id);
 const KIND = {new_product:"신상품", relisted:"재입고", restock:"재입고", category_open:"오픈", price_change:"가격", error:"오류", test:"테스트"};
 const TABS = [["main","메인"],["accessory","신발·액세서리"],["other","기타"],["all","전체"]];
-const MAIN = ["hoodie", "apparel"];
+const MAIN = ["hoodie", "top", "apparel"];
 const NAMES = {chromehearts: "Chrome Hearts", skylrk: "SKYLRK", cpfm: "CPFM", denimtears: "Denim Tears"};
 let store = "chromehearts", tab = "main", S = null, lastEvents = {}, cache = {};
 try {
@@ -414,7 +414,7 @@ function render() {
     if (b) { b.textContent = s.hoodies; b.className = s.hoodies ? "" : "zero"; b.title = `판매 중 후디 ${s.hoodies}개`; }
   }
   $("sHood").textContent = hood.length;
-  $("sHoodSub").textContent = `의류 ${listed.filter(p => p.group === "apparel").length}개 · 스토어 전체 ${listed.length}개`;
+  $("sHoodSub").textContent = `상의 ${listed.filter(p => p.group === "top").length}개 · 하의·아우터 ${listed.filter(p => p.group === "apparel").length}개`;
   $("sFresh").textContent = fresh.length;
   $("sFresh").className = "v" + (fresh.length ? " hot" : "");
   $("sFreshSub").textContent = fresh.length ? fresh.map(p => p.name).slice(0, 3).join(", ") : "아직 없음";
@@ -518,11 +518,13 @@ function renderStore() {
     const fresh = listed.filter(p => isFresh(p) && match(p)).sort(sort);
     const freshIds = new Set(fresh.map(p => p.pid));
     const hoodies = pool.filter(p => p.listed && p.group === "hoodie" && !freshIds.has(p.pid));
+    const tops = pool.filter(p => p.listed && p.group === "top" && !freshIds.has(p.pid));
     const apparel = pool.filter(p => p.listed && p.group === "apparel" && !freshIds.has(p.pid));
     parts.push(section("새로 포착", fresh, {hot: true}));
     parts.push(section("후디 · 후드집업", hoodies, {icon: el("span", {"aria-hidden": "true"}, "🔥")}));
-    parts.push(section("그 밖의 의류 — 맨투맨 · 상하의 · 아우터", apparel));
-    if (!fresh.length && !hoodies.length && !apparel.length) {
+    parts.push(section("상의 — 맨투맨 · 티셔츠 · 셔츠 · 니트", tops));
+    parts.push(section("하의 · 아우터", apparel, {compact: true}));
+    if (!fresh.length && !hoodies.length && !tops.length && !apparel.length) {
       const closed = Object.entries(S.categories).filter(([c, n]) => MAIN.includes((S.category_groups || {})[c]) && c !== "shop" && !n).length;
       parts.push(el("div", {class: "wait"}, fillLogo(logoEl()),
         el("p", {}, q ? "검색 결과가 없습니다." : [el("strong", {}, `지금 ${NAMES[store]}에 판매 중인 후디 · 의류가 없습니다.`), el("br"),

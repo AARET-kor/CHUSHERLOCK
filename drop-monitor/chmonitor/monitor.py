@@ -36,7 +36,7 @@ DEFAULTS: dict = {
     "preferred_sizes": [],           # e.g. ["L", "M"]
     "categories": [],                # Chrome Hearts: empty = read from sitemap
     "track_stock": "focus",          # Chrome Hearts restock checks: focus (hoodies + keywords) | all | off
-    "alert_groups": ["hoodie", "apparel"],  # hoodie | apparel | accessory | other
+    "alert_groups": ["hoodie", "top"],  # hoodie | top | apparel (bottoms, outerwear) | accessory | other
     "auto_open_browser": True,
     "auto_open_on": ["new_product", "relisted", "restock", "category_open"],
     "desktop": True,
