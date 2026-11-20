@@ -3,12 +3,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from chmonitor import fx
 from chmonitor.detect import diff_categories, diff_products
 from chmonitor.monitor import Monitor, load_config
 from chmonitor.notify import Notifier
 from chmonitor.site import STORE, Product, buy_url, parse_categories, parse_grid, parse_variation
 
 FIX = Path(__file__).parent / "fixtures"
+fx.configure(fixed=1400)  # no network in tests
 
 
 def tile(pid, name="X", price="100.00", category="Hoodie"):
@@ -40,6 +42,15 @@ class ParseTests(unittest.TestCase):
         self.assertTrue(avail)
         self.assertEqual(sizes, {"SML": False, "MED": True, "LRG": True})
         self.assertEqual(labels["LRG"], "L")
+
+    def test_won(self):
+        self.assertEqual(fx.krw("2,625.00"), 3675000)
+        self.assertEqual(fx.krw("90.00"), 126000)
+        self.assertEqual(fx.fmt("255.00"), "$255 (≈ ₩357,000)")
+        self.assertIsNone(fx.krw(""))
+        self.assertEqual(fx.parse({"rates": {"KRW": 1452.3}}), 1452.3)
+        with self.assertRaises(ValueError):
+            fx.parse({"rates": {"KRW": 1.45}})
 
     def test_buy_url(self):
         p = Product(pid="P1", name="n", url="https://www.chromehearts.com/a/P1.html")
@@ -175,3 +186,20 @@ class MonitorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AlertGroupTests(unittest.TestCase):
+    def test_other_group_is_silent_by_default(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg = load_config(None)
+            cfg["state_file"] = str(Path(d) / "s.json")
+            client = FakeClient({"root": tile("A", "MARTINI", category="Baccarat")})
+            n = RecordingNotifier(cfg)
+            Monitor(cfg, client=client, notifier=n).run_once()
+            client.grids = {"root": tile("A", "MARTINI", category="Baccarat")
+                            + tile("B", "WINE", category="Baccarat")
+                            + tile("C", "CEMETERY HOODIE", category="Hoodie"),
+                            "baccarat": tile("B"), "hoodie": tile("C")}
+            evs = Monitor(cfg, client=client, notifier=n).run_once()
+        self.assertEqual(sorted((e.kind, e.product.pid if e.product else e.category) for e in evs),
+                         [("category_open", "hoodie"), ("new_product", "C")])

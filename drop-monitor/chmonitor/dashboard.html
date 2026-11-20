@@ -4,139 +4,192 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Drop Monitor</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23000'/%3E%3Cpath d='M13 5h6v8h8v6h-8v8h-6v-8H5v-6h8z' fill='%23e8e4dc'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="/static/favicon.png">
 <style>
 :root{
-  --bg:#0b0b0c; --panel:#141416; --panel-2:#1b1b1e; --line:#2a2a2e;
-  --text:#ecebe7; --muted:#8d8c88; --faint:#5d5c59;
-  --silver:#c9c7c1; --ok:#5fd18a; --warn:#e7b44c; --alert:#ff5a4f;
+  --bg:#09090a; --panel:#121214; --panel-2:#19191c; --line:#26262a; --line-2:#3a3a40;
+  --text:#ecebe7; --muted:#8f8e89; --faint:#5c5b58;
+  --silver:#cfccc4; --ok:#5fd18a; --warn:#e7b44c; --alert:#ff4d42;
   --radius:12px;
-  --serif: "Didot","Bodoni 72","Playfair Display","Times New Roman",serif;
-  --sans: -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Segoe UI",sans-serif;
+  --serif:"Didot","Bodoni 72","Playfair Display","Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Segoe UI",sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
 a{color:inherit}
 button{font:inherit;color:inherit}
 
-/* header */
-header{position:sticky;top:0;z-index:5;background:rgba(11,11,12,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.bar{max-width:1440px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
-.brand svg{flex:none}
-.brand b{font-family:var(--serif);font-weight:700;letter-spacing:.22em;font-size:17px}
-.brand span{color:var(--muted);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
-.status{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:none}
-.dot.ok{background:var(--ok);box-shadow:0 0 0 0 rgba(95,209,138,.6);animation:pulse 2s infinite}
-.dot.checking{background:var(--warn)}
-.dot.error{background:var(--alert)}
-@keyframes pulse{70%{box-shadow:0 0 0 8px rgba(95,209,138,0)}100%{box-shadow:0 0 0 0 rgba(95,209,138,0)}}
+/* the cross, tinted with currentColor */
+.x{display:inline-block;width:1em;height:1em;flex:none;background:currentColor;
+   -webkit-mask:url(/static/cross.png) center/contain no-repeat;mask:url(/static/cross.png) center/contain no-repeat}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);
+  background:radial-gradient(120% 140% at 50% 0%,#1d1d21 0%,#0c0c0e 55%,var(--bg) 100%)}
+.hero::before{content:"";position:absolute;inset:0;opacity:.05;pointer-events:none;
+  background:url(/static/cross.png) 0 0/46px 46px;filter:blur(.2px)}
+.hero-in{position:relative;max-width:1600px;margin:0 auto;padding:40px 24px 30px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.hero img{width:min(760px,90vw);height:auto;display:block;filter:drop-shadow(0 2px 18px rgba(255,255,255,.08))}
+.hero .sub{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;letter-spacing:.32em;text-transform:uppercase}
+.hero .sub .x{font-size:13px;color:var(--silver)}
+
+/* sticky bar */
+header{position:sticky;top:0;z-index:5;background:rgba(9,9,10,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{max-width:1600px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mini{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.mini img{height:28px;width:auto;opacity:0;transition:opacity .25s}
+.mini.show img{opacity:1}
+.status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:15px}
+.status .x{font-size:18px;color:var(--faint)}
+.status .x.ok{color:var(--ok)}
+.status .x.checking{color:var(--warn);animation:spin 1.2s linear infinite}
+.status .x.error{color:var(--alert)}
+@keyframes spin{to{transform:rotate(90deg)}}
 .status strong{color:var(--text);font-weight:600}
 .actions{display:flex;gap:8px}
-.btn{border:1px solid var(--line);background:var(--panel-2);padding:7px 13px;border-radius:999px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn{border:1px solid var(--line-2);background:var(--panel-2);padding:9px 17px;border-radius:999px;cursor:pointer;font-size:15px;white-space:nowrap}
 .btn:hover{border-color:var(--silver)}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.primary{background:var(--text);color:#000;border-color:var(--text);font-weight:600}
 
-main{max-width:1440px;margin:0 auto;padding:20px}
-.err{display:none;margin-bottom:16px;padding:12px 14px;border:1px solid rgba(255,90,79,.4);background:rgba(255,90,79,.08);border-radius:var(--radius);color:#ffb3ad}
+main{max-width:1600px;margin:0 auto;padding:24px}
+.err{display:none;margin-bottom:16px;padding:12px 14px;border:1px solid rgba(255,77,66,.4);background:rgba(255,77,66,.08);border-radius:var(--radius);color:#ffb3ad}
 
 /* stats */
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;min-width:0}
-.stat .k{color:var(--muted);font-size:12px;letter-spacing:.04em}
-.stat .v{font-size:26px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
-.stat .s{color:var(--faint);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;min-width:0}
+.stat .k{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:15px}
+.stat .k .x{font-size:12px;color:var(--faint)}
+.stat .v{font-size:38px;line-height:1.15;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+.stat .v.hot{color:var(--alert)}
+.stat .s{color:var(--faint);font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chan{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.chan i{font-style:normal;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--faint)}
-.chan i.on{color:var(--text);border-color:#4a4a50;background:var(--panel-2)}
+.chan i{font-style:normal;font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--faint)}
+.chan i.on{color:var(--text);border-color:var(--line-2);background:var(--panel-2)}
 
-.layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:20px;align-items:start}
+.layout{display:grid;grid-template-columns:400px minmax(0,1fr);gap:24px;align-items:start}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
-.ph{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
-.ph h2{margin:0;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--silver)}
-.ph small{color:var(--faint)}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ph h2{display:flex;align-items:center;gap:10px;margin:0;font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--silver)}
+.ph h2 .x{font-size:15px}
+.ph small{color:var(--faint);font-size:14px}
 
 /* feed */
-.feed{position:sticky;top:76px;max-height:calc(100vh - 96px);display:flex;flex-direction:column}
+.feed{position:sticky;top:64px;max-height:calc(100vh - 84px);display:flex;flex-direction:column}
 .feed ol{list-style:none;margin:0;padding:6px;overflow:auto}
-.ev{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;padding:10px;border-radius:9px}
+.ev{display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;padding:12px;border-radius:9px}
 .ev:hover{background:var(--panel-2)}
-.ev .thumb{width:44px;height:44px;border-radius:7px;background:#fff center/contain no-repeat;border:1px solid var(--line)}
-.ev .thumb.none{background:var(--panel-2);display:grid;place-items:center;color:var(--muted);font-size:18px}
-.ev .t{font-weight:600;overflow-wrap:anywhere}
-.ev .d{color:var(--muted);font-size:12.5px}
-.ev .m{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:12px;color:var(--faint)}
-.tag{font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:4px;background:var(--panel-2);color:var(--silver);border:1px solid var(--line)}
+.ev .thumb{width:72px;height:72px;border-radius:9px;background:#fff center/contain no-repeat;border:1px solid var(--line)}
+.ev .thumb.none{background:var(--panel-2);display:grid;place-items:center;color:var(--silver);font-size:28px}
+.ev .t{font-weight:650;font-size:17px;overflow-wrap:anywhere}
+.ev .d{color:var(--muted);font-size:15px}
+.ev .m{display:flex;align-items:center;gap:9px;margin-top:6px;font-size:14px;color:var(--faint)}
+.ev.dim{opacity:.55}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:4px;background:var(--panel-2);color:var(--silver);border:1px solid var(--line)}
+.tag .x{font-size:11px}
 .tag.new_product,.tag.relisted,.tag.category_open{background:var(--alert);border-color:var(--alert);color:#fff}
 .tag.restock{background:var(--ok);border-color:var(--ok);color:#06210f}
 .tag.price_change{color:var(--warn);border-color:rgba(231,180,76,.5)}
-.tag.error{color:var(--alert);border-color:rgba(255,90,79,.5)}
+.tag.error{color:var(--alert);border-color:rgba(255,77,66,.5)}
 .buy{margin-left:auto;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--faint)}
 .buy:hover{border-color:var(--text)}
-.empty{padding:28px 16px;color:var(--faint);text-align:center}
+.empty{padding:32px 20px;color:var(--faint);text-align:center;font-size:16px}
 
-/* categories */
-.cats{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
-.cat{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px dashed var(--line);color:var(--faint);font-size:12.5px;text-decoration:none}
-.cat.open{border-style:solid;border-color:#4a4a50;color:var(--text);background:var(--panel-2)}
-.cat.open b{font-weight:600;color:var(--silver);font-variant-numeric:tabular-nums}
-.cat .lock{opacity:.7}
-
-/* products */
-.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.search{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:7px 13px;color:var(--text);font:inherit;font-size:13px;width:220px;max-width:100%}
+/* store */
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid transparent;border-radius:999px;padding:9px 16px;font-size:16px;color:var(--muted);cursor:pointer}
+.tabs button:hover{color:var(--text)}
+.tabs button[aria-selected=true]{background:var(--text);color:#000;font-weight:650}
+.tabs button b{font-weight:600;font-size:14px;opacity:.7;font-variant-numeric:tabular-nums}
+.tabs button .x{font-size:12px}
+.search{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:10px 16px;color:var(--text);font:inherit;font-size:15px;width:240px;max-width:100%}
 .search:focus{outline:none;border-color:var(--silver)}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-.seg button{background:none;border:0;padding:6px 11px;font-size:12.5px;color:var(--muted);cursor:pointer}
-.seg button[aria-pressed=true]{background:var(--text);color:#000;font-weight:600}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;padding:16px}
-.card{display:flex;flex-direction:column;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.note{margin:18px 20px 0;padding:12px 16px;border-radius:9px;background:var(--panel-2);color:var(--muted);font-size:15px;border:1px solid var(--line)}
+
+.cats{display:flex;flex-wrap:wrap;gap:10px;padding:18px 20px 0}
+.cat{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px dashed var(--line-2);color:var(--faint);font-size:15px;text-decoration:none}
+.cat .x{font-size:12px;opacity:.6}
+.cat.open{border-style:solid;border-color:var(--line-2);color:var(--text);background:var(--panel-2)}
+.cat.open .x{color:var(--ok);opacity:1}
+.cat.open b{font-weight:600;color:var(--silver);font-variant-numeric:tabular-nums}
+
+.sec{padding:22px 20px 6px}
+.sec h3{display:flex;align-items:center;gap:10px;margin:0 0 16px;font-size:15px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.sec h3 .x{font-size:14px;color:var(--silver)}
+.sec h3.hot{color:var(--alert)}
+.sec h3.hot .x{color:var(--alert)}
+.sec h3 small{font-weight:500;letter-spacing:0;color:var(--faint);text-transform:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;padding-bottom:16px}
+.grid.compact{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.card{display:flex;flex-direction:column;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:0}
+.card.fresh{border-color:rgba(255,77,66,.55);box-shadow:0 0 0 1px rgba(255,77,66,.25),0 8px 30px -12px rgba(255,77,66,.35)}
 .card.gone{opacity:.45}
 .img{position:relative;aspect-ratio:1;background:#fff center/contain no-repeat}
-.img .badge{position:absolute;top:8px;left:8px}
-.body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
-.name{font-weight:600;font-size:13px;line-height:1.3;overflow-wrap:anywhere}
-.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;gap:8px}
-.price{color:var(--text);font-variant-numeric:tabular-nums}
-.sizes{display:flex;flex-wrap:wrap;gap:4px}
-.sz{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid #3a3a3f;color:var(--silver)}
+.img .badge{position:absolute;top:12px;left:12px}
+.body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.name{font-weight:650;font-size:18px;line-height:1.3;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:14px}
+.prices{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+.prices .usd{font-size:22px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.prices .krw{font-size:16px;color:var(--silver);font-variant-numeric:tabular-nums}
+.sizes{display:flex;flex-wrap:wrap;gap:6px}
+.sz{font-size:14px;padding:3px 9px;border-radius:5px;border:1px solid var(--line-2);color:var(--silver)}
 .sz.out{color:var(--faint);border-color:var(--line);text-decoration:line-through}
 .sz.pref{border-color:var(--text);color:var(--text);font-weight:700}
-.card .go{margin-top:auto;text-align:center;padding:7px;border-radius:7px;background:var(--text);color:#000;font-weight:650;font-size:12.5px;text-decoration:none}
+.card .go{margin-top:auto;text-align:center;padding:11px;border-radius:9px;background:var(--text);color:#000;font-weight:700;font-size:16px;text-decoration:none}
 .card .go:hover{background:#fff}
 .card.gone .go{background:var(--panel);color:var(--muted)}
 
-.foot{color:var(--faint);font-size:12px;margin:18px 2px 0;display:flex;gap:16px;flex-wrap:wrap}
+.wait{position:relative;margin:16px;padding:44px 20px 40px;border:1px dashed var(--line-2);border-radius:var(--radius);text-align:center;overflow:hidden}
+.wait img{width:min(480px,75%);opacity:.14;display:block;margin:0 auto 18px}
+.wait p{margin:0 auto;max-width:560px;color:var(--muted);font-size:17px;line-height:1.6}
+.wait p strong{color:var(--text);font-size:20px}
+
+.foot{color:var(--faint);font-size:14px;margin:18px 2px 0;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.foot .x{font-size:12px}
 
 @media (max-width:980px){
   .layout{grid-template-columns:1fr}
-  .feed{position:static;max-height:none}
-  .feed ol{max-height:420px}
+  .feed{position:static;max-height:none;order:2}
+  .feed ol{max-height:380px}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:560px){
-  .bar{padding:12px 16px;gap:10px}
-  main{padding:16px}
-  .brand span{display:none}
-  .brand b{font-size:14px;letter-spacing:.14em}
-  .btn{padding:6px 11px;font-size:12.5px}
+  .hero-in{padding:22px 16px 18px}
+  .hero .sub{letter-spacing:.22em;font-size:13px}
+  .bar{padding:10px 16px;gap:10px}
+  .mini img{height:22px}
   .status{order:3;width:100%}
-  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+  .btn{padding:8px 14px;font-size:15px}
+  main{padding:16px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;width:100%;scrollbar-width:none}
+  .tabs button{padding:8px 13px;font-size:15px;flex:none}
+  .wait p strong{font-size:18px}
+  .wait p{font-size:16px}
+  .grid{grid-template-columns:1fr;gap:16px}
+  .grid.compact{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .grid.compact .name{font-size:15px}
+  .grid.compact .prices .usd{font-size:18px}
+  .grid.compact .prices .krw{font-size:14px}
+  .sec{padding:16px 12px 4px}
   .search{width:100%}
-  .stat .v{font-size:22px}
+  .stat .v{font-size:30px}
+  .stat .k{font-size:14px}
 }
 </style>
 </head>
 <body>
+<section class="hero" id="hero">
+  <div class="hero-in">
+    <img src="/static/banner.png" alt="Chrome Hearts">
+    <div class="sub"><span class="x"></span>Drop Monitor<span class="x"></span></div>
+  </div>
+</section>
+
 <header>
   <div class="bar">
-    <div class="brand">
-      <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><path d="M13 3h6v10h10v6H19v10h-6V19H3v-6h10z" fill="currentColor"/></svg>
-      <b>CHROME HEARTS</b><span>Drop Monitor</span>
-    </div>
-    <div class="status" aria-live="polite"><span class="dot" id="dot"></span><span id="statusText">연결 중…</span></div>
+    <div class="mini" id="mini"><img src="/static/banner.png" alt=""></div>
+    <div class="status" aria-live="polite"><span class="x" id="dot"></span><span id="statusText">연결 중…</span></div>
     <div class="actions">
       <button class="btn" id="testBtn" type="button">테스트 알림</button>
       <button class="btn primary" id="checkBtn" type="button">지금 확인</button>
@@ -148,32 +201,24 @@ main{max-width:1440px;margin:0 auto;padding:20px}
   <div class="err" id="err"></div>
 
   <section class="stats" aria-label="요약">
-    <div class="stat"><div class="k">판매 중 상품</div><div class="v" id="sProducts">–</div><div class="s" id="sProductsSub">&nbsp;</div></div>
-    <div class="stat"><div class="k">열린 카테고리</div><div class="v" id="sCats">–</div><div class="s" id="sCatsSub">&nbsp;</div></div>
-    <div class="stat"><div class="k">최근 24시간 알림</div><div class="v" id="sEvents">–</div><div class="s" id="sEventsSub">&nbsp;</div></div>
-    <div class="stat"><div class="k">알림 채널</div><div class="chan" id="sChan"></div><div class="s" id="sWatch">&nbsp;</div></div>
+    <div class="stat"><div class="k"><span class="x"></span>판매 중 의류</div><div class="v" id="sMain">–</div><div class="s" id="sMainSub">&nbsp;</div></div>
+    <div class="stat"><div class="k"><span class="x"></span>새로 포착 (24시간)</div><div class="v" id="sFresh">–</div><div class="s" id="sFreshSub">&nbsp;</div></div>
+    <div class="stat"><div class="k"><span class="x"></span>열린 카테고리</div><div class="v" id="sCats">–</div><div class="s" id="sCatsSub">&nbsp;</div></div>
+    <div class="stat"><div class="k"><span class="x"></span>알림 채널</div><div class="chan" id="sChan"></div><div class="s" id="sWatch">&nbsp;</div></div>
   </section>
 
   <div class="layout">
     <section class="panel feed" aria-label="알림 기록">
-      <div class="ph"><h2>알림 기록</h2><small id="feedCount"></small></div>
+      <div class="ph"><h2><span class="x"></span>Alerts</h2><small id="feedCount"></small></div>
       <ol id="feed"></ol>
     </section>
 
-    <section class="panel" aria-label="상품">
+    <section class="panel" aria-label="스토어">
       <div class="ph">
-        <h2>스토어</h2>
-        <div class="tools">
-          <input class="search" id="q" type="search" placeholder="상품 검색" aria-label="상품 검색">
-          <div class="seg" role="group" aria-label="보기">
-            <button type="button" data-view="listed" aria-pressed="true">판매 중</button>
-            <button type="button" data-view="new" aria-pressed="false">새로 본 것</button>
-            <button type="button" data-view="all" aria-pressed="false">전체</button>
-          </div>
-        </div>
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <input class="search" id="q" type="search" placeholder="상품 검색" aria-label="상품 검색">
       </div>
-      <div class="cats" id="cats"></div>
-      <div class="grid" id="grid"></div>
+      <div id="store"></div>
     </section>
   </div>
 
@@ -184,8 +229,9 @@ main{max-width:1440px;margin:0 auto;padding:20px}
 const $ = id => document.getElementById(id);
 const BASE = "https://www.chromehearts.com/";
 const KIND = {new_product:"신상품", relisted:"재등록", restock:"재입고", category_open:"카테고리", price_change:"가격", error:"오류", test:"테스트"};
-let S = null, view = "listed", lastEventCount = null;
-try { view = localStorage.getItem("chm.view") || view; } catch (e) {}
+const TABS = [["main","메인"],["accessory","모자·액세서리"],["other","기타"],["all","전체"]];
+let S = null, tab = "main", lastEventCount = null;
+try { tab = localStorage.getItem("chm.tab") || tab; } catch (e) {}
 
 function el(tag, attrs = {}, ...kids) {
   const n = document.createElement(tag);
@@ -198,7 +244,8 @@ function el(tag, attrs = {}, ...kids) {
   for (const k of kids.flat()) if (k != null && k !== false) n.append(k.nodeType ? k : String(k));
   return n;
 }
-const ts = s => s ? new Date(s.replace(" ", "T")).getTime() : 0;
+const X = (cls = "") => el("span", {class: "x " + cls, "aria-hidden": "true"});
+const ts = s => s ? new Date(s).getTime() : 0;
 function ago(s) {
   if (!s) return "–";
   const d = Math.round((Date.now() - ts(s)) / 1000);
@@ -212,20 +259,23 @@ function until(s) {
   const d = Math.round((ts(s) - Date.now()) / 1000);
   return d <= 0 ? "곧" : d < 60 ? d + "초 후" : Math.floor(d / 60) + "분 " + (d % 60) + "초 후";
 }
-const money = p => p ? "$" + Number(String(p).replace(/,/g, "")).toLocaleString("en-US") : "";
-// products first seen after the baseline (the first check ever) are drops
-function isFresh(p) {
-  if (!S || !p.first_seen) return false;
-  const base = Math.min(...S.products.map(x => ts(x.first_seen)).filter(Boolean));
-  const t = ts(p.first_seen);
-  return t - base > 10e3 && Date.now() - t < 864e5;
-}
+const usdNum = p => Number(String(p || "").replace(/[,$]/g, ""));
+const money = p => p ? "$" + usdNum(p).toLocaleString("en-US", {maximumFractionDigits: 2}) : "";
+const won = n => n ? "₩" + Number(n).toLocaleString("ko-KR") : "";
 const imgStyle = u => u ? `background-image:url("${encodeURI(u).replace(/"/g, "%22")}")` : "";
+
+// products first seen after the baseline (the very first check) are drops
+let baseTs = 0;
+function isFresh(p) {
+  const t = ts(p.first_seen);
+  return !!t && p.listed && p.group !== "other" && t - baseTs > 10e3 && Date.now() - t < 864e5;
+}
+const inTab = (g, t) => t === "all" || g === t;
 
 function renderStatus() {
   if (!S) return;
   const st = S.status, dot = $("dot");
-  dot.className = "dot " + (st.checking ? "checking" : st.state === "error" ? "error" : st.state === "ok" ? "ok" : "");
+  dot.className = "x " + (st.checking ? "checking" : st.state === "error" ? "error" : st.state === "ok" ? "ok" : "");
   let t;
   if (st.checking) t = [el("strong", {}, "확인 중…")];
   else if (st.state === "error") t = [el("strong", {}, "접속 오류"), ` · ${st.fails}회 연속 · 다음 시도 ${until(st.next_check)}`];
@@ -239,29 +289,33 @@ function renderStatus() {
 }
 
 function render() {
-  const products = S.products, listed = products.filter(p => p.listed);
-  const cats = Object.entries(S.categories);
-  const open = cats.filter(([, n]) => n > 0);
-  const day = Date.now() - 864e5;
-  const recent = S.events.filter(e => ts(e.time) > day && e.kind !== "test");
-  const fresh = listed.filter(isFresh);
+  const products = S.products;
+  baseTs = Math.min(...products.map(p => ts(p.first_seen)).filter(Boolean));
+  const listed = products.filter(p => p.listed);
+  const mainNow = listed.filter(p => p.group === "main");
+  const fresh = listed.filter(p => isFresh(p) && p.group !== "other");
+  const cg = S.category_groups || {};
+  const watchedCats = Object.entries(S.categories).filter(([c]) => cg[c] !== "other" && c !== "shop");
+  const openCats = watchedCats.filter(([, n]) => n > 0);
 
-  $("sProducts").textContent = listed.length;
-  $("sProductsSub").textContent = fresh.length ? `오늘 새로 본 상품 ${fresh.length}개` : `기록된 전체 ${products.length}개`;
-  $("sCats").textContent = cats.length ? `${open.length} / ${cats.length}` : "–";
-  $("sCatsSub").textContent = cats.length ? `닫힘: ${cats.filter(([, n]) => !n).map(([c]) => c).slice(0, 4).join(", ")}${cats.length - open.length > 4 ? " …" : ""}` : " ";
-  $("sEvents").textContent = recent.length;
-  $("sEventsSub").textContent = S.events.length ? "마지막 " + ago(S.events[S.events.length - 1].time) : "아직 없음";
+  $("sMain").textContent = mainNow.length;
+  $("sMainSub").textContent = `스토어 전체 ${listed.length}개 중`;
+  $("sFresh").textContent = fresh.length;
+  $("sFresh").className = "v" + (fresh.length ? " hot" : "");
+  $("sFreshSub").textContent = fresh.length ? fresh.map(p => p.name).slice(0, 3).join(", ") : "아직 없음";
+  $("sCats").textContent = watchedCats.length ? `${openCats.length} / ${watchedCats.length}` : "–";
+  $("sCatsSub").textContent = openCats.length ? "열림: " + openCats.map(([c]) => c).join(", ") : "의류·액세서리 모두 닫힘";
   const ch = S.config.channels, names = {telegram:"텔레그램", ntfy:"ntfy", discord:"디스코드", desktop:"데스크톱", sound:"소리"};
   $("sChan").replaceChildren(...Object.entries(names).map(([k, v]) => el("i", {class: ch[k] ? "on" : ""}, (ch[k] ? "● " : "") + v)));
   const kw = S.config.keywords, sz = S.config.preferred_sizes;
   $("sWatch").textContent = (kw.length ? "키워드 " + kw.join(", ") : "모든 상품") + (sz.length ? " · 사이즈 " + sz.join(">") : "");
 
   // feed
+  const groupOf = e => (products.find(p => p.pid === e.pid) || {}).group || (e.kind === "category_open" ? cg[e.title.replace(/^[^:]+:\s*/, "").split(" ")[0]] : "");
   const evs = S.events.slice().reverse();
   $("feedCount").textContent = evs.length ? evs.length + "건" : "";
-  $("feed").replaceChildren(...(evs.length ? evs.map(e => el("li", {class: "ev"},
-    e.image ? el("div", {class: "thumb", style: imgStyle(e.image)}) : el("div", {class: "thumb none"}, e.kind === "category_open" ? "▣" : e.kind === "error" ? "!" : "✚"),
+  $("feed").replaceChildren(...(evs.length ? evs.map(e => el("li", {class: "ev" + (groupOf(e) === "other" ? " dim" : "")},
+    e.image ? el("div", {class: "thumb", style: imgStyle(e.image)}) : el("div", {class: "thumb none"}, e.kind === "error" ? "!" : X()),
     el("div", {},
       el("div", {class: "t"}, e.title.replace(/^[^:]+:\s*/, "")),
       e.detail ? el("div", {class: "d"}, e.detail) : null,
@@ -269,46 +323,100 @@ function render() {
         e.link ? el("a", {class: "buy", href: e.link, target: "_blank", rel: "noopener"}, e.kind === "category_open" ? "열기 →" : "구매 →") : null)
     ))) : [el("li", {class: "empty"}, S.status.cycles > 0 ? "아직 변화가 없습니다. 드롭이 뜨면 여기에 쌓입니다." : "첫 확인이 끝나면 현재 상태를 기준으로 감시를 시작합니다.")]));
 
-  // categories
-  $("cats").replaceChildren(...cats.sort((a, b) => (b[1] > 0) - (a[1] > 0) || a[0].localeCompare(b[0])).map(([c, n]) =>
-    n > 0 ? el("a", {class: "cat open", href: BASE + encodeURIComponent(c), target: "_blank", rel: "noopener"}, c, el("b", {}, n >= 12 ? "12+" : n))
-          : el("span", {class: "cat", title: "닫힘: 드롭 때 열리면 알림"}, el("span", {class: "lock"}, "🔒"), c)));
-
-  renderGrid();
+  renderStore();
   renderStatus();
-  $("foot").replaceChildren(
+  $("foot").replaceChildren(X(),
     el("span", {}, `확인 간격 ${Math.round(S.config.interval_seconds)}초`),
     el("span", {}, `완료한 확인 ${S.status.cycles}회`),
     el("span", {}, `시작 ${ago(S.status.started)}`),
-    el("span", {}, S.config.auto_open_browser ? "알림 시 구매 페이지 자동 열기 켜짐" : "자동 열기 꺼짐"));
+    el("span", {}, "알림 대상: " + (S.config.alert_groups.map(g => S.group_labels[g] || g).join(", ") || "전체")),
+    el("span", {}, S.config.auto_open_browser ? "알림 시 구매 페이지 자동 열기" : "자동 열기 꺼짐"),
+    el("span", {}, fxText()));
 }
 
-function renderGrid() {
-  const q = $("q").value.trim().toLowerCase();
+function fxText() {
+  const f = S.fx || {};
+  const r = "환율 $1 = " + won(Math.round(f.rate || 0));
+  if (f.source === "live") return r + ` (실시간, ${ago(f.updated)} 갱신 · 원화는 단순 환산)`;
+  if (f.source === "config") return r + " (설정값 고정)";
+  return r + " (기본값 — 실시간 환율을 아직 못 받음)";
+}
+
+function card(p, pref) {
+  const fresh = isFresh(p);
+  const sizes = Object.entries(p.sizes || {});
+  return el("article", {class: "card" + (p.listed ? "" : " gone") + (fresh ? " fresh" : "")},
+    el("div", {class: "img", style: imgStyle(p.image)},
+      fresh ? el("span", {class: "tag new_product badge"}, X(), "NEW") : !p.listed ? el("span", {class: "tag badge"}, "내려감") : null),
+    el("div", {class: "body"},
+      el("div", {class: "name"}, p.name),
+      el("div", {class: "meta"}, p.category),
+      p.price ? el("div", {class: "prices"}, el("span", {class: "usd"}, money(p.price)), el("span", {class: "krw"}, "≈ " + won(p.price_krw))) : null,
+      sizes.length ? el("div", {class: "sizes"}, sizes.map(([id, ok]) => {
+        const lab = (p.size_labels || {})[id] || id;
+        const isPref = ok && (pref.includes(lab.toUpperCase()) || pref.includes(id.toUpperCase()));
+        return el("span", {class: "sz" + (ok ? "" : " out") + (isPref ? " pref" : ""), title: ok ? "재고 있음" : "품절"}, lab);
+      })) : null,
+      el("a", {class: "go", href: p.buy_url, target: "_blank", rel: "noopener"}, p.listed ? "구매 페이지 →" : "상품 페이지 →")));
+}
+
+function section(title, items, opts = {}) {
+  if (!items.length) return null;
   const pref = S.config.preferred_sizes.map(s => s.toUpperCase());
-  let list = S.products.filter(p => view === "all" || (view === "listed" ? p.listed : isFresh(p)));
-  if (q) list = list.filter(p => (p.name + " " + p.category + " " + p.pid).toLowerCase().includes(q));
-  list.sort((a, b) => (b.listed - a.listed) || (ts(b.first_seen) - ts(a.first_seen)) || a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
-  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === view));
-  if (!list.length) {
-    $("grid").replaceChildren(el("div", {class: "empty", style: "grid-column:1/-1"}, S.products.length ? "조건에 맞는 상품이 없습니다." : "상품을 불러오는 중…"));
-    return;
-  }
-  $("grid").replaceChildren(...list.map(p => {
-    const isNew = isFresh(p);
-    const sizes = Object.entries(p.sizes || {});
-    return el("article", {class: "card" + (p.listed ? "" : " gone")},
-      el("div", {class: "img", style: imgStyle(p.image)}, isNew ? el("span", {class: "tag new_product badge"}, "NEW") : !p.listed ? el("span", {class: "tag badge"}, "내려감") : null),
-      el("div", {class: "body"},
-        el("div", {class: "name"}, p.name),
-        el("div", {class: "meta"}, el("span", {}, p.category), el("span", {class: "price"}, money(p.price))),
-        sizes.length ? el("div", {class: "sizes"}, sizes.map(([id, ok]) => {
-          const lab = (p.size_labels || {})[id] || id;
-          const isPref = ok && (pref.includes(lab.toUpperCase()) || pref.includes(id.toUpperCase()));
-          return el("span", {class: "sz" + (ok ? "" : " out") + (isPref ? " pref" : ""), title: ok ? "재고 있음" : "품절"}, lab);
-        })) : null,
-        el("a", {class: "go", href: p.buy_url, target: "_blank", rel: "noopener"}, p.listed ? "구매 페이지 →" : "상품 페이지 →")));
+  return el("div", {class: "sec"},
+    el("h3", {class: opts.hot ? "hot" : ""}, X(), title, el("small", {}, items.length + "개")),
+    el("div", {class: "grid" + (opts.compact ? " compact" : "")}, items.map(p => card(p, pref))));
+}
+
+function chips(group) {
+  const cg = S.category_groups || {};
+  const cats = Object.entries(S.categories).filter(([c]) => c !== "shop" && inTab(cg[c], group))
+    .sort((a, b) => (b[1] > 0) - (a[1] > 0) || a[0].localeCompare(b[0]));
+  if (!cats.length) return null;
+  return el("div", {class: "cats"}, cats.map(([c, n]) => n > 0
+    ? el("a", {class: "cat open", href: BASE + encodeURIComponent(c), target: "_blank", rel: "noopener"}, X(), c, el("b", {}, n >= 12 ? "12+" : n))
+    : el("span", {class: "cat", title: "닫힘 — 열리면 알림"}, X(), c)));
+}
+
+function renderStore() {
+  const q = $("q").value.trim().toLowerCase();
+  const match = p => !q || (p.name + " " + p.category + " " + p.pid).toLowerCase().includes(q);
+  const sort = (a, b) => (b.listed - a.listed) || (ts(b.first_seen) - ts(a.first_seen)) || a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
+  const listed = S.products.filter(p => p.listed);
+  const count = g => listed.filter(p => inTab(p.group, g)).length;
+
+  $("tabs").replaceChildren(...TABS.map(([id, label]) => {
+    const b = el("button", {type: "button", role: "tab", "aria-selected": String(tab === id)},
+      id === "main" ? X() : null, label, el("b", {}, count(id)));
+    b.onclick = () => { tab = id; try { localStorage.setItem("chm.tab", tab); } catch (e) {} renderStore(); };
+    return b;
   }));
+
+  const parts = [];
+  const alertsOff = !S.config.alert_groups.includes(tab) && tab !== "all" && S.config.alert_groups.length;
+  if (tab === "other") parts.push(el("div", {class: "note"}, "Baccarat 글라스, 향, 속옷·양말은 여기로 따로 모았습니다." + (alertsOff ? " 이 그룹은 알림을 보내지 않습니다 (config의 alert_groups)." : "")));
+  parts.push(chips(tab));
+
+  const pool = S.products.filter(p => inTab(p.group, tab) && match(p)).sort(sort);
+  if (tab === "main") {
+    const fresh = listed.filter(p => isFresh(p) && p.group !== "other" && match(p)).sort(sort);
+    const freshIds = new Set(fresh.map(p => p.pid));
+    const apparel = pool.filter(p => p.listed && !freshIds.has(p.pid));
+    parts.push(section("새로 포착", fresh, {hot: true}));
+    parts.push(section("의류 — 후디 · 맨투맨 · 상하의 · 아우터", apparel));
+    if (!fresh.length && !apparel.length) {
+      const closed = Object.entries(S.categories).filter(([c, n]) => (S.category_groups || {})[c] === "main" && c !== "shop" && !n).length;
+      parts.push(el("div", {class: "wait"},
+        el("img", {src: "/static/banner.png", alt: ""}),
+        el("p", {}, q ? "검색 결과가 없습니다." : [el("strong", {}, "지금 판매 중인 의류가 없습니다."), el("br"),
+          `닫혀 있는 의류 카테고리 ${closed}개와 전체 스토어를 감시하고 있어요. 후디·맨투맨·팬츠·아우터가 올라오면 여기에 가장 먼저 뜨고 바로 알려 드립니다.`])));
+    }
+  } else {
+    const items = pool.filter(p => tab === "all" || p.listed);
+    parts.push(section(tab === "all" ? "전체 상품" : TABS.find(t => t[0] === tab)[1], items, {compact: tab === "other"}));
+    if (!items.length) parts.push(el("div", {class: "empty"}, q ? "검색 결과가 없습니다." : "지금 판매 중인 상품이 없습니다."));
+  }
+  $("store").replaceChildren(...parts.filter(Boolean));
 }
 
 async function load() {
@@ -322,7 +430,7 @@ async function load() {
     lastEventCount = S.events.length;
     render();
   } catch (e) {
-    $("dot").className = "dot error";
+    $("dot").className = "x error";
     $("statusText").textContent = "모니터 프로세스에 연결할 수 없습니다 (종료되었나요?)";
   }
 }
@@ -334,11 +442,9 @@ async function act(path, btn, label) {
 }
 $("checkBtn").onclick = e => act("/api/check", e.currentTarget, "요청함");
 $("testBtn").onclick = e => act("/api/test-notify", e.currentTarget, "보냄");
-$("q").oninput = () => S && renderGrid();
-document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
-  view = b.dataset.view; try { localStorage.setItem("chm.view", view); } catch (e) {}
-  S && renderGrid();
-});
+$("q").oninput = () => S && renderStore();
+// show the small banner in the sticky bar once the big one scrolls away
+new IntersectionObserver(([en]) => $("mini").classList.toggle("show", !en.isIntersecting)).observe($("hero"));
 load(); setInterval(load, 3000); setInterval(renderStatus, 1000);
 </script>
 </body>

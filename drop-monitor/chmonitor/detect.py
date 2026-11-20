@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from . import fx
 from .site import Product
 
 
@@ -65,7 +66,7 @@ def diff_products(
         if old.price and p.price and old.price != p.price:
             events.append(
                 Event("price_change", f"가격 변경: {p.name}", product=p,
-                      detail=f"${old.price} → ${p.price}")
+                      detail=f"{fx.fmt(old.price)} → {fx.fmt(p.price)}")
             )
         back = sorted(s for s, ok in p.sizes.items() if ok and not old.sizes.get(s, False))
         if old.available is False and p.available:
@@ -79,7 +80,7 @@ def diff_products(
 
 
 def _price(p: Product) -> str:
-    parts = [f"${p.price}" if p.price else "", p.category]
+    parts = [fx.fmt(p.price) if p.price else "", p.category]
     return " · ".join(x for x in parts if x)
 
 

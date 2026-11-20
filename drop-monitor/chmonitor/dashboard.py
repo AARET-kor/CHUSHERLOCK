@@ -15,12 +15,16 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from . import fx
 from .detect import Event
+from .groups import LABELS, classify
 from .monitor import Monitor, sample_event
 from .site import Product
 
 log = logging.getLogger("chmonitor")
 PAGE = Path(__file__).with_name("dashboard.html")
+STATIC = Path(__file__).with_name("static")
+STATIC_FILES = {"banner.png", "cross.png", "favicon.png"}
 ACTION_HEADER = "X-CH-Dashboard"
 
 
@@ -34,6 +38,7 @@ def config_summary(cfg: dict) -> dict:
         "keywords": cfg["keywords"],
         "preferred_sizes": cfg["preferred_sizes"],
         "track_stock": cfg["track_stock"],
+        "alert_groups": cfg.get("alert_groups") or [],
         "auto_open_browser": bool(cfg.get("auto_open_browser")),
         "channels": {n: on(n) for n in ("desktop", "sound", "ntfy", "telegram", "discord")},
     }
@@ -43,6 +48,11 @@ def build_state(mon: Monitor) -> dict:
     snap = mon.snapshot()
     for d in snap["products"]:
         d["buy_url"] = mon.notifier.link(Event("view", "", product=Product.from_dict(d)))
+        d["group"] = classify(d["name"], d["category"])
+        d["price_krw"] = fx.krw(d["price"])
+    snap["category_groups"] = {c: classify("", c) for c in snap["categories"]}
+    snap["group_labels"] = LABELS
+    snap["fx"] = fx.info()
     snap["config"] = config_summary(mon.cfg)
     return snap
 
@@ -75,6 +85,17 @@ def make_handler(mon: Monitor):
             path = self.path.split("?")[0]
             if path in ("/", "/index.html"):
                 return self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+            if path.startswith("/static/") and path[8:] in STATIC_FILES:
+                body = (STATIC / path[8:]).read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "max-age=86400")
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            if path == "/favicon.ico":
+                return self._send(200, (STATIC / "favicon.png").read_bytes(), "image/png")
             if path == "/api/state":
                 return self._json(build_state(mon))
             self._json({"error": "not found"}, 404)

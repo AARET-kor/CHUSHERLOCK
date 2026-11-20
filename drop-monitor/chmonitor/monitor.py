@@ -13,6 +13,8 @@ import time
 from pathlib import Path
 
 from .detect import Event, diff_categories, diff_products, matches
+from . import fx
+from .groups import classify
 from .notify import Notifier
 from .site import Client, FetchError, Product, fetch_categories, fetch_category, fetch_stock
 
@@ -24,6 +26,7 @@ DEFAULTS: dict = {
     "preferred_sizes": [],       # e.g. ["LRG", "MED"]
     "categories": [],            # empty = read from sitemap
     "track_stock": "watchlist",  # watchlist | all | off
+    "alert_groups": ["main", "accessory"],  # main | accessory | other (Baccarat, scents, underwear)
     "auto_open_browser": True,
     "auto_open_on": ["new_product", "relisted", "restock", "category_open"],
     "desktop": True,
@@ -31,6 +34,8 @@ DEFAULTS: dict = {
     "ntfy": {"enabled": False, "topic": "", "server": "https://ntfy.sh", "priority": 5},
     "telegram": {"enabled": False, "bot_token": "", "chat_id": ""},
     "discord": {"enabled": False, "webhook_url": "", "mention_user_id": ""},
+    "usd_krw": None,              # fix the won rate (e.g. 1450); null = fetch the live rate
+    "usd_krw_fallback": 1400,     # used until a live rate arrives
     "state_file": "state.json",
 }
 MIN_INTERVAL = 20
@@ -105,6 +110,7 @@ class State:
 class Monitor:
     def __init__(self, cfg: dict, client: Client | None = None, notifier: Notifier | None = None):
         self.cfg = cfg
+        fx.configure(fallback=cfg.get("usd_krw_fallback"), fixed=cfg.get("usd_krw"))
         self.client = client or Client()
         self.notifier = notifier or Notifier(cfg)
         self.state = State(Path(cfg["state_file"]))
@@ -189,6 +195,15 @@ class Monitor:
                 counts[cg] = self.state.categories.get(cg, 0)  # unknown: keep last value
         return counts
 
+    def wanted(self, ev: Event) -> bool:
+        """Alert only for the product groups in alert_groups."""
+        groups = self.cfg.get("alert_groups") or ["main", "accessory", "other"]
+        if ev.product:
+            return classify(ev.product.name, ev.product.category) in groups
+        if ev.kind == "category_open":
+            return classify("", ev.category) in groups
+        return True
+
     def _emit(self, events: list[Event]) -> None:
         for ev in events:
             link = self.notifier.link(ev)
@@ -207,12 +222,14 @@ class Monitor:
             del self.state.events[:-MAX_EVENTS]
 
     def run_once(self) -> list[Event]:
+        if not self.cfg.get("usd_krw") and self.cfg.get("fetch_fx", True):
+            fx.refresh()
         first = not self.state.initialized
         events: list[Event] = []
 
         products = self.scan_products()
         if not first:
-            evs = diff_products(self.state.products, products, self.cfg["keywords"])
+            evs = [e for e in diff_products(self.state.products, products, self.cfg["keywords"]) if self.wanted(e)]
             self._emit(evs)  # alert before the slower category pass
             events += evs
         with self.lock:
@@ -221,7 +238,7 @@ class Monitor:
 
         counts = self.scan_categories()
         if not first:
-            evs = diff_categories(self.state.categories, counts)
+            evs = [e for e in diff_categories(self.state.categories, counts) if self.wanted(e)]
             self._emit(evs)
             events += evs
         else:
@@ -306,10 +323,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.list:
+        fx.configure(fallback=cfg.get("usd_krw_fallback"), fixed=cfg.get("usd_krw"))
+        if not cfg.get("usd_krw"):
+            fx.refresh()
         client = Client()
         items = fetch_category(client, "root")
         for p in sorted(items, key=lambda p: (p.category, p.name)):
-            print(f"{p.category:<12} ${p.price:>9}  {p.name:<40} {p.url}")
+            print(f"{p.category:<12} {fx.fmt(p.price):>26}  {p.name:<40} {p.url}")
         print(f"\n총 {len(items)}개")
         return 0
 

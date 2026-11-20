@@ -4,6 +4,7 @@
   "preferred_sizes": ["LRG", "MED"],
   "categories": [],
   "track_stock": "watchlist",
+  "alert_groups": ["main", "accessory"],
 
   "auto_open_browser": true,
   "auto_open_on": ["new_product", "relisted", "restock", "category_open"],
@@ -13,6 +14,9 @@
   "ntfy":     { "enabled": false, "topic": "ch-drops-CHANGE-ME-random123", "server": "https://ntfy.sh", "priority": 5 },
   "telegram": { "enabled": false, "bot_token": "", "chat_id": "" },
   "discord":  { "enabled": false, "webhook_url": "", "mention_user_id": "" },
+
+  "usd_krw": null,
+  "usd_krw_fallback": 1400,
 
   "state_file": "state.json"
 }
