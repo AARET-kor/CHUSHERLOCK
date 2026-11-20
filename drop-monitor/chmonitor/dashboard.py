@@ -53,6 +53,7 @@ def build_state(mon: Monitor) -> dict:
     snap["category_groups"] = {c: classify("", c) for c in snap["categories"]}
     snap["group_labels"] = LABELS
     snap["fx"] = fx.info()
+    snap["version"] = 3  # the page warns when an older server is still running
     snap["config"] = config_summary(mon.cfg)
     return snap
 
@@ -118,10 +119,14 @@ def make_handler(mon: Monitor):
 
 
 def serve(mon: Monitor, port: int = 8787, open_browser: bool = True) -> int:
+    try:
+        httpd = ThreadingHTTPServer(("127.0.0.1", port), make_handler(mon))
+    except OSError:
+        print(f"포트 {port}을(를) 이미 쓰고 있습니다. 이전에 켠 대시보드가 아직 실행 중이면 그 터미널에서 Ctrl+C로 끄거나,\n"
+              f"  lsof -ti tcp:{port} | xargs kill\n로 끈 뒤 다시 실행하세요. (다른 포트: --port 8788)")
+        return 1
     stop = threading.Event()
-    worker = threading.Thread(target=mon.loop, args=(stop,), name="monitor", daemon=True)
-    worker.start()
-    httpd = ThreadingHTTPServer(("127.0.0.1", port), make_handler(mon))
+    threading.Thread(target=mon.loop, args=(stop,), name="monitor", daemon=True).start()
     url = f"http://127.0.0.1:{port}/"
     log.info("대시보드: %s", url)
     if open_browser:

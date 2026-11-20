@@ -122,6 +122,14 @@ python3 -m chmonitor                 # 대시보드 없이 감시만 (Ctrl+C로 
 같은 이유로 확인 간격은 최소 20초로 막아 두었고, 요청 사이에도 0.5초 이상 쉽니다.
 사이트가 계속 응답하지 않으면 간격을 늘려(최대 10분) 다시 시도하고, 3번 연속 실패하면 알려 줍니다.
 
+## 문제 해결
+
+- **대시보드 로고가 깨지거나 "이전 버전으로 실행 중" 경고가 뜸**: `git pull` 뒤에 예전 대시보드가 계속 켜져 있는 경우입니다.
+  그 터미널에서 Ctrl+C로 끄고 다시 `python3 -m chmonitor --dashboard`.
+- **"포트 8787을 이미 쓰고 있습니다"**: 예전 대시보드가 다른 터미널에서 실행 중입니다. `lsof -ti tcp:8787 | xargs kill` 후 다시 실행.
+- **CERTIFICATE_VERIFY_FAILED**: python.org 파이썬이면 `open "/Applications/Python 3.13/Install Certificates.command"` 한 번 실행.
+- **No module named chmonitor**: `drop-monitor` 폴더 안에서 실행해야 합니다 (`cd ~/chusherlock/drop-monitor`).
+
 ## 개발
 
 ```bash
