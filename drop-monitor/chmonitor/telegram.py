@@ -34,7 +34,8 @@ def call(token: str, method: str, payload: dict | None = None, timeout: float = 
         raise TelegramError(f"{method}: {e.code} {desc}") from None
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         # never echo the URL: it contains the bot token
-        raise TelegramError(f"{method}: 연결 실패 ({getattr(e, 'reason', e)})") from None
+        from .site import ssl_hint
+        raise TelegramError(f"{method}: 연결 실패 ({getattr(e, 'reason', e)}){ssl_hint(e)}") from None
     if not body.get("ok"):
         raise TelegramError(f"{method}: {body.get('description', 'unknown error')}")
     return body["result"]

@@ -27,6 +27,16 @@ USER_AGENT = (
 )
 
 
+def ssl_hint(e: Exception) -> str:
+    """python.org installs on macOS ship without root certificates."""
+    if "CERTIFICATE_VERIFY_FAILED" not in str(e):
+        return ""
+    import sys
+    v = f"{sys.version_info.major}.{sys.version_info.minor}"
+    return (f" — 인증서 문제입니다. 터미널에서 "
+            f"open \"/Applications/Python {v}/Install Certificates.command\" 를 한 번 실행하세요.")
+
+
 class FetchError(Exception):
     def __init__(self, url: str, status: int | None, msg: str):
         super().__init__(f"{status or 'ERR'} {url}: {msg}")
@@ -84,7 +94,7 @@ class Client:
         except urllib.error.HTTPError as e:
             raise FetchError(url, e.code, e.reason) from None
         except (urllib.error.URLError, TimeoutError, OSError) as e:
-            raise FetchError(url, None, str(e)) from None
+            raise FetchError(url, None, str(e) + ssl_hint(e)) from None
         finally:
             self._last = time.monotonic()
         # Closed categories redirect to the home page.
