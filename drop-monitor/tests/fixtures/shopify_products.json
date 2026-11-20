@@ -1,0 +1,14 @@
+{"products":[
+ {"id":101,"title":"NO ZIP - DOTS","handle":"reverse-no-zip-dots","product_type":"HOODIES","published_at":"2026-11-12T09:00:00-08:00",
+  "images":[{"src":"https://cdn.shopify.com/s/files/1/x/NOZIP.png?v=1"}],
+  "options":[{"name":"Size","position":1,"values":["S","M","L"]}],
+  "variants":[{"id":1001,"option1":"S","available":true,"price":"240.00"},
+              {"id":1002,"option1":"M","available":true,"price":"240.00"},
+              {"id":1003,"option1":"L","available":false,"price":"240.00"}]},
+ {"id":102,"title":"MATTERDADDIES - TOY","handle":"matterdaddies-toy","product_type":"FOOTWEAR",
+  "images":[],"options":[{"name":"Color","position":1,"values":["TOY","INK"]},{"name":"Size","position":2,"values":["M 9 / W 10"]}],
+  "variants":[{"id":2001,"option1":"TOY","option2":"M 9 / W 10","available":false,"price":"140.00"},
+              {"id":2002,"option1":"INK","option2":"M 9 / W 10","available":true,"price":"140.00"}]},
+ {"id":103,"title":"BUMP CASE","handle":"bump-case","product_type":"CASES","images":[],"options":[{"name":"Title","position":1,"values":["Default Title"]}],
+  "variants":[{"id":3001,"option1":"Default Title","available":true,"price":"25.00"}]}
+]}

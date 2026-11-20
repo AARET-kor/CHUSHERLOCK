@@ -41,21 +41,25 @@ def call(token: str, method: str, payload: dict | None = None, timeout: float = 
     return body["result"]
 
 
-def send_alert(token: str, chat_id: str, title: str, detail: str, link: str, image: str = "") -> None:
-    text = f"🚨 <b>{html.escape(title)}</b>"
-    if detail:
-        text += f"\n{html.escape(detail)}"
-    markup = {"inline_keyboard": [[{"text": "🛒 바로 구매", "url": link}]]} if link else None
+def send_message(token: str, chat_id: str, text_html: str, buttons: list[tuple[str, str]] | None = None,
+                 image: str = "") -> None:
+    """A photo with the text as caption when there is an image, else a text message."""
     base = {"chat_id": chat_id, "parse_mode": "HTML"}
-    if markup:
-        base["reply_markup"] = markup
-    if image:
+    if buttons:
+        base["reply_markup"] = {"inline_keyboard": [[{"text": t, "url": u}] for t, u in buttons if u]}
+    if image and len(text_html) <= 1024:  # Telegram's caption limit
         try:
-            call(token, "sendPhoto", {**base, "photo": image, "caption": text})
+            call(token, "sendPhoto", {**base, "photo": image, "caption": text_html})
             return
         except TelegramError:
             pass  # image unreachable for Telegram: fall back to text
-    call(token, "sendMessage", {**base, "text": text, "disable_web_page_preview": not link})
+    call(token, "sendMessage", {**base, "text": text_html, "disable_web_page_preview": True})
+
+
+def send_alert(token: str, chat_id: str, title: str, detail: str, link: str, image: str = "") -> None:
+    """Simple alert (setup check)."""
+    text = f"🚨 <b>{html.escape(title)}</b>" + (f"\n{html.escape(detail)}" if detail else "")
+    send_message(token, chat_id, text, [("🛒 바로 구매", link)] if link else None, image)
 
 
 def wait_for_chat(token: str, seconds: int = 120) -> dict | None:
@@ -129,8 +133,11 @@ def setup(config_path: str) -> int:
     save_config(path, token, chat["id"])
     print(f"✓ {path} 에 저장했습니다 (telegram.enabled = true)")
     try:
-        send_alert(token, chat["id"], "Chrome Hearts 모니터 연결 완료",
-                   "새 드롭이 뜨면 여기로 알림이 옵니다.", "https://www.chromehearts.com/")
+        send_message(token, chat["id"],
+                     "✅ <b>드롭 모니터 연결 완료</b>\n"
+                     "크롬하츠 · SKYLRK에 새 드롭이 뜨면 여기로 한국어 알림이 옵니다.\n"
+                     "🔥 후디·집업은 가장 먼저, 🚨 다른 의류도 알려 드려요.",
+                     [("🏬 크롬하츠", "https://www.chromehearts.com/"), ("🏬 SKYLRK", "https://skylrk.com/")])
         print("✓ 테스트 메시지를 보냈습니다. 텔레그램을 확인하세요.")
     except TelegramError as e:
         print(f"테스트 메시지 실패: {e}")

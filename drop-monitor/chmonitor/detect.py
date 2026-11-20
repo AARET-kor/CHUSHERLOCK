@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from . import fx
+from .groups import ko_category
 from .site import Product
 
 
@@ -15,6 +16,12 @@ class Event:
     product: Product | None = None
     category: str = ""
     detail: str = ""
+    store: str = ""
+    info: dict = field(default_factory=dict)  # e.g. {"sizes_back": [...], "old_price": "..."}
+
+    def __post_init__(self):
+        if not self.store and self.product:
+            self.store = self.product.store
 
 
 def matches(product: Product, keywords: list[str]) -> bool:
@@ -42,8 +49,9 @@ def diff(
     return events
 
 
-def diff_categories(old: dict[str, int], new: dict[str, int]) -> list[Event]:
-    return diff({}, {}, old, new)
+def diff_categories(old: dict[str, int], new: dict[str, int], store: str = "", word: str = "카테고리") -> list[Event]:
+    return [Event("category_open", f"{word} 오픈: {cg} ({n}개)", category=cg, store=store)
+            for cg, n in new.items() if n > 0 and old.get(cg, 0) == 0]
 
 
 def diff_products(
@@ -63,10 +71,10 @@ def diff_products(
         if not old.listed:
             events.append(Event("relisted", f"재등록: {p.name}", product=p, detail=_price(p)))
             continue
-        if old.price and p.price and old.price != p.price:
+        if old.price and p.price and fx.usd(old.price) != fx.usd(p.price):
             events.append(
                 Event("price_change", f"가격 변경: {p.name}", product=p,
-                      detail=f"{fx.fmt(old.price)} → {fx.fmt(p.price)}")
+                      detail=f"{fx.fmt(old.price)} → {fx.fmt(p.price)}", info={"old_price": old.price})
             )
         back = sorted(s for s, ok in p.sizes.items() if ok and not old.sizes.get(s, False))
         if old.available is False and p.available:
@@ -74,13 +82,14 @@ def diff_products(
         elif back and old.sizes:
             events.append(
                 Event("restock", f"재입고: {p.name}", product=p,
-                      detail="사이즈 " + ", ".join(p.size_labels.get(s, s) for s in back))
+                      detail="사이즈 " + ", ".join(p.size_labels.get(s, s) for s in back),
+                      info={"sizes_back": back})
             )
     return events
 
 
 def _price(p: Product) -> str:
-    parts = [fx.fmt(p.price) if p.price else "", p.category]
+    parts = [fx.fmt(p.price) if p.price else "", ko_category(p.category)]
     return " · ".join(x for x in parts if x)
 
 

@@ -1,18 +1,21 @@
 {
-  "interval_seconds": 60,
+  "stores": {
+    "chromehearts": { "enabled": true },
+    "skylrk": { "enabled": true }
+  },
+
+  "preferred_sizes": ["L", "M"],
+  "alert_groups": ["hoodie", "apparel"],
   "keywords": [],
-  "preferred_sizes": ["LRG", "MED"],
-  "categories": [],
-  "track_stock": "watchlist",
-  "alert_groups": ["main", "accessory"],
+  "track_stock": "focus",
 
   "auto_open_browser": true,
   "auto_open_on": ["new_product", "relisted", "restock", "category_open"],
-
   "desktop": true,
   "sound": true,
-  "ntfy":     { "enabled": false, "topic": "ch-drops-CHANGE-ME-random123", "server": "https://ntfy.sh", "priority": 5 },
+
   "telegram": { "enabled": false, "bot_token": "", "chat_id": "" },
+  "ntfy":     { "enabled": false, "topic": "ch-drops-CHANGE-ME-random123", "server": "https://ntfy.sh", "priority": 5 },
   "discord":  { "enabled": false, "webhook_url": "", "mention_user_id": "" },
 
   "usd_krw": null,

@@ -55,7 +55,8 @@ def refresh(force: bool = False, timeout: float = 10) -> None:
             _state["checked"] = time.time() - REFRESH_SECONDS + 1800
         return
     with _lock:
-        _state.update(rate=rate, source="live", updated=time.strftime("%Y-%m-%dT%H:%M:%S"))
+        from datetime import datetime
+        _state.update(rate=rate, source="live", updated=datetime.now().astimezone().isoformat(timespec="seconds"))
 
 
 def info() -> dict:
@@ -79,9 +80,9 @@ def krw(price: str | float | None) -> int | None:
 
 
 def fmt(price: str | float | None) -> str:
-    """'$2,625 (≈ ₩3,675,000)'"""
+    """'$2,625 (약 3,675,000원)'"""
     v = usd(price)
     if v is None:
         return ""
     d = f"${v:,.0f}" if v == int(v) else f"${v:,.2f}"
-    return f"{d} (≈ ₩{krw(v):,})"
+    return f"{d} (약 {krw(v):,}원)"

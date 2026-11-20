@@ -57,6 +57,8 @@ class Product:
     available: bool | None = None
     listed: bool = True  # currently shown in the storefront grid
     first_seen: str = ""  # ISO time the monitor first saw it
+    store: str = "chromehearts"
+    size_variants: dict[str, str] = field(default_factory=dict)  # size id -> store variant id (Shopify)
 
     def to_dict(self) -> dict:
         return asdict(self)

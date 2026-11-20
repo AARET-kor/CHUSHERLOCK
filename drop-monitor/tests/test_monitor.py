@@ -46,7 +46,7 @@ class ParseTests(unittest.TestCase):
     def test_won(self):
         self.assertEqual(fx.krw("2,625.00"), 3675000)
         self.assertEqual(fx.krw("90.00"), 126000)
-        self.assertEqual(fx.fmt("255.00"), "$255 (≈ ₩357,000)")
+        self.assertEqual(fx.fmt("255.00"), "$255 (약 357,000원)")
         self.assertIsNone(fx.krw(""))
         self.assertEqual(fx.parse({"rates": {"KRW": 1452.3}}), 1452.3)
         with self.assertRaises(ValueError):

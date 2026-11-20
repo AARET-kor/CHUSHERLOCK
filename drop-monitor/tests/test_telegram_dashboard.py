@@ -73,7 +73,7 @@ class DashboardTests(unittest.TestCase):
         self.notifier = RecordingNotifier(cfg)
         self.mon = Monitor(cfg, client=FakeClient({"root": tile("A", "CEMETERY HOODIE")}), notifier=self.notifier)
         self.mon.check()
-        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(self.mon))
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), make_handler({"chromehearts": self.mon}))
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
         self.base = f"http://127.0.0.1:{self.httpd.server_port}"
 
