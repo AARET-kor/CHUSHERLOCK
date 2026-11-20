@@ -12,6 +12,7 @@ import urllib.parse
 import urllib.request
 import webbrowser
 
+from . import telegram
 from .detect import Event
 from .site import buy_url
 
@@ -134,11 +135,8 @@ class Notifier:
 
     def _telegram(self, ev: Event, body: str, link: str) -> None:
         c = self.cfg["telegram"]
-        payload = {"chat_id": c["chat_id"], "text": f"🚨 {ev.title}\n{body}", "disable_web_page_preview": False}
-        if link:
-            payload["reply_markup"] = {"inline_keyboard": [[{"text": "🛒 바로 구매", "url": link}]]}
-        _post(f"https://api.telegram.org/bot{c['bot_token']}/sendMessage",
-              json.dumps(payload).encode(), {"Content-Type": "application/json"})
+        image = ev.product.image if ev.product else ""
+        telegram.send_alert(c["bot_token"], str(c["chat_id"]), ev.title, ev.detail, link, image)
 
     def _discord(self, ev: Event, body: str, link: str) -> None:
         c = self.cfg["discord"]

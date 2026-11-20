@@ -26,9 +26,27 @@ Python 3.9 이상만 있으면 되고 추가 설치는 없습니다.
 cd drop-monitor
 cp config.example.json config.json   # 설정 편집
 python3 -m chmonitor --list          # 지금 판매 중인 상품 보기 (접속 확인)
+python3 -m chmonitor --setup-telegram  # 텔레그램 연결 (아래 참고)
 python3 -m chmonitor --test-notify   # 알림 채널 테스트
-python3 -m chmonitor                 # 감시 시작 (Ctrl+C로 종료)
+python3 -m chmonitor --dashboard     # 감시 + 대시보드 (http://127.0.0.1:8787)
+python3 -m chmonitor                 # 대시보드 없이 감시만 (Ctrl+C로 종료)
 ```
+
+## 대시보드
+
+`python3 -m chmonitor --dashboard`를 실행하면 감시를 시작하고 브라우저에 `http://127.0.0.1:8787`을 엽니다
+(`--port 9000`으로 포트 변경, `--no-browser`로 자동 열기 끄기).
+
+- 상단: 감시 상태(마지막 확인·다음 확인까지 남은 시간·접속 오류), **지금 확인**, **테스트 알림** 버튼
+- 요약: 판매 중 상품 수, 열린/닫힌 카테고리, 최근 24시간 알림 수, 켜진 알림 채널
+- 알림 기록: 신상품·재등록·재입고·카테고리 오픈이 사진, 시간, **구매 →** 링크와 함께 쌓임 (`state.json`에 최근 300건 저장)
+- 스토어: 상품 사진, 가격, 사이즈별 재고(품절은 취소선, 선호 사이즈는 굵게), 새로 본 상품 **NEW** 표시, 검색,
+  판매 중 / 새로 본 것 / 전체 보기. 구매 버튼은 선호 사이즈가 선택된 페이지로 바로 갑니다
+- 새 알림이 오면 탭 제목이 🚨로 바뀝니다
+
+![대시보드](docs/dashboard.png)
+
+대시보드는 이 컴퓨터(127.0.0.1)에서만 열리고, 봇 토큰 같은 비밀값은 화면에 보내지 않습니다.
 
 다른 옵션: `--once` (한 번만 확인), `--reset` (기준 다시 잡기), `-v` (자세한 로그), `-c 경로` (다른 설정 파일).
 
@@ -60,8 +78,14 @@ python3 -m chmonitor                 # 감시 시작 (Ctrl+C로 종료)
   macOS에서 `brew install terminal-notifier`를 하면 알림을 클릭할 때 구매 페이지가 열립니다.
 - **휴대폰 푸시: ntfy** (가장 간단, 가입 없음): 휴대폰에 ntfy 앱을 설치하고 아무도 못 맞힐 토픽 이름을
   구독한 뒤 같은 이름을 `ntfy.topic`에 넣고 `enabled: true`. 알림에 **🛒 바로 구매** 버튼이 붙습니다.
-- **Telegram**: @BotFather에서 봇을 만들어 토큰을 받고, 봇에게 아무 메시지나 보낸 뒤
-  `https://api.telegram.org/bot<토큰>/getUpdates`에서 `chat.id`를 확인해 넣습니다.
+- **Telegram** (추천): `python3 -m chmonitor --setup-telegram` 한 번이면 끝납니다.
+  1. 텔레그램에서 **@BotFather** → `/newbot` → 봇 이름과 아이디(…bot으로 끝남)를 정하면 토큰을 줍니다.
+  2. 토큰을 붙여 넣습니다(화면에 안 보임). 봇 확인 후 `t.me/<봇아이디>` 링크가 나옵니다.
+  3. 휴대폰에서 그 봇을 열고 **시작**을 누르면 chat_id를 자동으로 찾아 `config.json`에 저장하고 테스트 메시지를 보냅니다.
+
+  알림은 상품 사진 + 이름/가격 + **🛒 바로 구매** 버튼(선호 사이즈 선택된 링크)으로 옵니다.
+  그룹 채팅으로 받으려면 봇을 그룹에 초대한 뒤 그룹에서 메시지를 보내면 됩니다.
+  토큰은 `config.json`(권한 600, git 제외)에 저장되며, 원하면 환경변수 `CH_TELEGRAM_BOT_TOKEN`·`CH_TELEGRAM_CHAT_ID`로 대신 줄 수 있습니다.
 - **Discord**: 채널 설정 → 연동 → 웹후크 URL을 `discord.webhook_url`에. `mention_user_id`를 넣으면 멘션됩니다.
 
 ## 계속 켜 두기
@@ -92,5 +116,7 @@ python3 -m unittest discover -s tests -t .
 - `chmonitor/detect.py` — 이전/현재 상태를 비교해 이벤트 생성
 - `chmonitor/notify.py` — 알림 채널과 구매 링크
 - `chmonitor/monitor.py` — 감시 루프, 상태 파일(`state.json`), 명령줄
+- `chmonitor/telegram.py` — 텔레그램 전송과 `--setup-telegram`
+- `chmonitor/dashboard.py`, `dashboard.html` — 로컬 대시보드 서버와 화면
 
 사이트 구조가 바뀌면 `--list`가 0개를 보여 줍니다. 그때는 `site.py`의 `parse_grid`를 고치면 됩니다.

@@ -46,6 +46,7 @@ class Product:
     size_labels: dict[str, str] = field(default_factory=dict)  # size id -> shown label
     available: bool | None = None
     listed: bool = True  # currently shown in the storefront grid
+    first_seen: str = ""  # ISO time the monitor first saw it
 
     def to_dict(self) -> dict:
         return asdict(self)

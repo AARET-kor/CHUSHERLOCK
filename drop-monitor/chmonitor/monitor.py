@@ -8,6 +8,7 @@ import logging
 import os
 import random
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -34,6 +35,20 @@ DEFAULTS: dict = {
 }
 MIN_INTERVAL = 20
 MAX_STOCK_CHECKS_PER_CYCLE = 25
+MAX_EVENTS = 300
+
+
+def now_iso() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def sample_event() -> Event:
+    p = Product(pid="176354XXXXXX349", name="CH LOGO SOCKS (테스트)", price="255.00",
+                category="Socks", url="https://www.chromehearts.com/socks/ch-logo-socks/176354XXXXXX349.html",
+                image="https://www.chromehearts.com/dw/image/v2/bfbv_prd/on/demandware.static/-/Sites-ch-master-catalog/default/dwef1672e7/img_products/hi-res/316176354BLKSML349-1.png?sw=600",
+                sizes={"SML": True, "MED": True, "LRG": True},
+                size_labels={"SML": "S", "MED": "M", "LRG": "L"})
+    return Event("test", "테스트 알림: " + p.name, product=p, detail="$255.00 · Socks")
 
 
 def load_config(path: str | None) -> dict:
@@ -66,11 +81,13 @@ class State:
         self.products: dict[str, Product] = {}
         self.categories: dict[str, int] = {}
         self.initialized = False
+        self.events: list[dict] = []
         if path.exists():
             d = json.loads(path.read_text(encoding="utf-8"))
             self.products = {k: Product.from_dict(v) for k, v in d.get("products", {}).items()}
             self.categories = d.get("categories", {})
             self.initialized = bool(d.get("initialized"))
+            self.events = d.get("events", [])
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -80,6 +97,7 @@ class State:
             "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "categories": self.categories,
             "products": {k: v.to_dict() for k, v in self.products.items()},
+            "events": self.events[-MAX_EVENTS:],
         }, ensure_ascii=False, indent=1), encoding="utf-8")
         tmp.replace(self.path)
 
@@ -92,6 +110,24 @@ class Monitor:
         self.state = State(Path(cfg["state_file"]))
         self._cats: list[str] = []
         self._cycle = 0
+        self.lock = threading.RLock()
+        self._wake = threading.Event()
+        self.status: dict = {"state": "starting", "checking": False, "last_check": None,
+                             "last_ok": None, "last_error": None, "next_check": None,
+                             "fails": 0, "cycles": 0, "started": now_iso()}
+
+    def request_check(self) -> None:
+        """Run the next check now instead of waiting for the interval."""
+        self._wake.set()
+
+    def snapshot(self) -> dict:
+        with self.lock:
+            return {
+                "status": dict(self.status),
+                "products": [p.to_dict() for p in self.state.products.values()],
+                "categories": dict(self.state.categories),
+                "events": list(self.state.events[-100:]),
+            }
 
     def categories(self) -> list[str]:
         if self.cfg["categories"]:
@@ -117,6 +153,8 @@ class Monitor:
             prev = old.get(pid)
             if prev:
                 p.sizes, p.size_labels, p.available = dict(prev.sizes), dict(prev.size_labels), prev.available
+                p.first_seen = prev.first_seen
+            p.first_seen = p.first_seen or now_iso()
             products[pid] = p
         self._check_stock(products, old)
         return products
@@ -153,8 +191,20 @@ class Monitor:
 
     def _emit(self, events: list[Event]) -> None:
         for ev in events:
-            log.info("🚨 %s  %s  %s", ev.title, ev.detail, self.notifier.link(ev))
+            link = self.notifier.link(ev)
+            log.info("🚨 %s  %s  %s", ev.title, ev.detail, link)
+            self.record(ev, link)
             self.notifier.send(ev)
+
+    def record(self, ev: Event, link: str = "") -> None:
+        with self.lock:
+            self.state.events.append({
+                "time": now_iso(), "kind": ev.kind, "title": ev.title, "detail": ev.detail,
+                "link": link or self.notifier.link(ev),
+                "image": ev.product.image if ev.product else "",
+                "pid": ev.product.pid if ev.product else "",
+            })
+            del self.state.events[:-MAX_EVENTS]
 
     def run_once(self) -> list[Event]:
         first = not self.state.initialized
@@ -165,8 +215,9 @@ class Monitor:
             evs = diff_products(self.state.products, products, self.cfg["keywords"])
             self._emit(evs)  # alert before the slower category pass
             events += evs
-        self.state.products = products
-        self.state.save()
+        with self.lock:
+            self.state.products = products
+            self.state.save()
 
         counts = self.scan_categories()
         if not first:
@@ -176,31 +227,52 @@ class Monitor:
         else:
             listed = sum(1 for p in products.values() if p.listed)
             log.info("첫 실행: 상품 %d개, 카테고리 %d개를 기준으로 저장 (알림 없음)", listed, len(counts))
-        self.state.categories = counts
-        self.state.initialized = True
-        self.state.save()
+        with self.lock:
+            self.state.categories = counts
+            self.state.initialized = True
+            self.state.save()
         self._cycle += 1
         return events
 
-    def loop(self) -> None:
+    def check(self) -> list[Event]:
+        """run_once plus bookkeeping for the dashboard. Raises FetchError."""
+        self.status.update(checking=True, state="checking", last_check=now_iso())
+        try:
+            evs = self.run_once()
+        except FetchError as e:
+            self.status.update(checking=False, state="error", last_error=str(e),
+                               fails=self.status["fails"] + 1)
+            raise
+        self.status.update(checking=False, state="ok", last_ok=now_iso(), last_error=None,
+                           fails=0, cycles=self.status["cycles"] + 1)
+        return evs
+
+    def loop(self, stop: threading.Event | None = None) -> None:
         base = self.cfg["interval_seconds"]
-        fails = 0
+        stop = stop or threading.Event()
         log.info("모니터링 시작: %.0f초 간격, 키워드=%s", base, self.cfg["keywords"] or "전체")
-        while True:
+        while not stop.is_set():
+            self._wake.clear()
             try:
-                evs = self.run_once()
-                fails = 0
+                evs = self.check()
                 listed = sum(1 for p in self.state.products.values() if p.listed)
                 log.info("확인 완료: 상품 %d개 · 변경 %d건", listed, len(evs))
                 delay = base * random.uniform(0.8, 1.2)
             except FetchError as e:
-                fails += 1
+                fails = self.status["fails"]
                 delay = min(600, base * 2 ** (fails - 1))
                 log.error("사이트 접속 실패 (%d회 연속): %s — %.0f초 후 재시도", fails, e, delay)
                 if fails == 3:
-                    self.notifier.send(Event("error", "모니터 접속 실패",
-                                             detail="chromehearts.com에 3회 연속 접속하지 못했습니다."))
-            time.sleep(delay)
+                    ev = Event("error", "모니터 접속 실패",
+                               detail="chromehearts.com에 3회 연속 접속하지 못했습니다.")
+                    self.record(ev)
+                    self.notifier.send(ev)
+            except Exception:  # keep watching whatever happens
+                log.exception("확인 중 예기치 않은 오류")
+                self.status.update(checking=False, state="error", last_error="내부 오류 (로그 확인)")
+                delay = base
+            self.status["next_check"] = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(time.time() + delay))
+            self._wake.wait(delay)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -210,22 +282,26 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--list", action="store_true", help="현재 판매 중인 상품을 출력하고 종료")
     ap.add_argument("--test-notify", action="store_true", help="설정된 알림 채널로 테스트 알림 전송")
     ap.add_argument("--reset", action="store_true", help="저장된 상태를 지우고 새 기준으로 시작")
+    ap.add_argument("--setup-telegram", action="store_true", help="텔레그램 봇 연결 (토큰 입력 → chat_id 자동 저장)")
+    ap.add_argument("--dashboard", action="store_true", help="감시 + 로컬 대시보드 (http://127.0.0.1:8787)")
+    ap.add_argument("--port", type=int, default=8787, help="대시보드 포트")
+    ap.add_argument("--no-browser", action="store_true", help="대시보드를 브라우저로 자동으로 열지 않음")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
 
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
+    if args.setup_telegram:
+        from .telegram import setup
+        return setup(args.config)
+
     cfg = load_config(args.config)
 
     if args.reset and Path(cfg["state_file"]).exists():
         Path(cfg["state_file"]).unlink()
 
     if args.test_notify:
-        p = Product(pid="176354XXXXXX349", name="CH LOGO SOCKS (테스트)", price="255.00",
-                    category="Socks", url="https://www.chromehearts.com/socks/ch-logo-socks/176354XXXXXX349.html",
-                    sizes={"SML": True, "MED": True, "LRG": True},
-                    size_labels={"SML": "S", "MED": "M", "LRG": "L"})
-        Notifier(cfg).send(Event("new_product", "테스트 알림: " + p.name, product=p, detail="$255.00 · Socks"))
+        Notifier(cfg).send(sample_event())
         print("테스트 알림을 보냈습니다.")
         return 0
 
@@ -238,6 +314,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     mon = Monitor(cfg)
+    if args.dashboard:
+        from .dashboard import serve
+        return serve(mon, args.port, open_browser=not args.no_browser)
     if args.once:
         mon.run_once()
         return 0
