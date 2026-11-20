@@ -67,12 +67,12 @@ def fetch_products(client: Client, base: str, store: str, max_pages: int = 8) ->
         for d in items:
             p = parse_product(base, d, store)
             out[p.pid] = p
-        if len(items) < PAGE_LIMIT:
+        if not items:  # a page can hold fewer than the limit and still not be the last
             break
     return list(out.values())
 
 
-TITLES: dict[str, str] = {}  # collection handle -> title, filled by fetch_collections
+TITLES: dict[tuple[str, str], str] = {}  # (store base, collection handle) -> title
 
 
 def fetch_collections(client: Client, base: str) -> dict[str, int]:
@@ -84,7 +84,7 @@ def fetch_collections(client: Client, base: str) -> dict[str, int]:
         raise FetchError(f"{base}/collections.json", None, "JSON이 아님") from None
     for c in cols:
         if c.get("handle") and c.get("title"):
-            TITLES[c["handle"]] = html.unescape(c["title"]).strip()
+            TITLES[(base, c["handle"])] = html.unescape(c["title"]).strip()
     return {c["handle"]: int(c.get("products_count") or 0) for c in cols if c.get("handle")}
 
 

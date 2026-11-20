@@ -9,6 +9,15 @@ class GroupTests(unittest.TestCase):
                           ("NO ZIP - DOTS", "HOODIES"), ("BATWING REVERSE HOODIE", "HOODIES")]:
             self.assertEqual(classify(name, cat), HOODIE, name)
 
+    def test_zip_up_is_a_hoodie_unless_it_is_a_fleece_or_jacket(self):
+        self.assertEqual(classify("DAGGER ZIP UP", ""), HOODIE)
+        self.assertEqual(classify("Distressed Tackle Twill Zip Up Hoodie Navy", "Zip Hoodie"), HOODIE)
+        self.assertEqual(classify("Spacebrat Vixen Pile Fleece Zip-Up", "Crewneck"), APPAREL)
+        self.assertEqual(classify("André Leon Talley Quarter-Zip Sweatshirt Grey", "Half Zip"), APPAREL)
+        self.assertEqual(classify("Kids Cotton Wreath Zip Hoodie Black", "Kids"), OTHER)
+        self.assertEqual(classify("Thermal Cotton Wreath Durag Black", "Durag"), ACCESSORY)
+        self.assertEqual(classify('Fela Kuti "Zombie" Vinyl Record', "Vinyl Record"), OTHER)
+
     def test_apparel(self):
         for name, cat in [("MATTY BOY CREWNECK", ""), ("CH PLUS SWEATPANTS", "Sweatpants"),
                           ("LEATHER JACKET", "Outerwear"), ("SWEATS", "BOTTOMS"), ("REVERSE SWEATS JOGGER", "BOTTOMS"),

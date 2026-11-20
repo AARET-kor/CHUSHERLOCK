@@ -1,6 +1,7 @@
-# 드롭 모니터 — Chrome Hearts · SKYLRK
+# 드롭 모니터 — Chrome Hearts · SKYLRK · CPFM · Denim Tears
 
-크롬하츠(chromehearts.com)와 SKYLRK(skylrk.com) 공식 스토어를 계속 확인하다가
+크롬하츠(chromehearts.com), SKYLRK(skylrk.com), Cactus Plant Flea Market(cactusplantfleamarket.com),
+Denim Tears(denimtears.com) 공식 스토어를 계속 확인하다가
 **새 드롭이 뜨면 텔레그램으로 한국어 알림을 보내고, 원하는 사이즈로 바로 살 수 있는 링크를 줍니다.**
 후디·후드집업을 가장 먼저 챙기고, 신발·액세서리·바카라 글라스·속옷 같은 건 따로 모아 알림을 보내지 않습니다.
 
@@ -62,10 +63,10 @@ NO ZIP - DOTS
 
 | 그룹 | 무엇 | 대시보드 | 알림 (기본) |
 |---|---|---|---|
-| 🔥 **후디·집업** `hoodie` | 후디, 후드집업, 노집 후디 | 메인 맨 위 | 보냄, 재입고까지 감시 |
+| 🔥 **후디·집업** `hoodie` | 후디, 후드집업, 노집 후디 (플리스 집업·쿼터집 스웻은 의류) | 메인 맨 위 | 보냄, 재입고까지 감시 |
 | **의류** `apparel` | 맨투맨·크루넥, 티셔츠, 팬츠·스웻·조거·쇼츠, 자켓·코트 등 아우터, 처음 보는 종류 | 메인 | 보냄 |
-| **신발·액세서리** `accessory` | 신발, 모자, 아이웨어, 폰 케이스, 가방, 주얼리 | 별도 탭 | 안 보냄 |
-| **기타** `other` | 바카라 글라스, 향·캔들, 속옷·레깅스, 양말 | 별도 탭 | 안 보냄 |
+| **신발·액세서리** `accessory` | 신발, 모자, 아이웨어, 폰 케이스, 가방, 주얼리, 두건, 핀·키링 | 별도 탭 | 안 보냄 |
+| **기타** `other` | 바카라 글라스, 향·캔들, 속옷·레깅스, 양말, 키즈, LP·책 | 별도 탭 | 안 보냄 |
 
 알림 대상은 `alert_groups`로 바꿉니다 (예: 액세서리도 받으려면 `["hoodie", "apparel", "accessory"]`).
 
@@ -73,7 +74,7 @@ NO ZIP - DOTS
 
 `python3 -m chmonitor --dashboard` → http://127.0.0.1:8787
 
-- 맨 위 **CHROME HEARTS | SKYLRK** 버튼(키보드 `1`, `2`)으로 스토어를 바꾸면 로고·색·상품이 그 스토어로 바로 바뀝니다.
+- 맨 위 **CHROME HEARTS | SKYLRK | CPFM | DENIM TEARS** 버튼(키보드 `1`~`4`, 주소 `#cpfm` 등)으로 스토어를 바꾸면 로고·색·상품이 그 스토어로 바로 바뀝니다.
   버튼의 빨간 숫자는 지금 판매 중인 후디 수입니다.
 - 메인 탭: 새로 포착 → 🔥 후디·후드집업 → 그 밖의 의류. 신발·액세서리 / 기타 / 전체는 별도 탭.
 - 가격은 달러와 원화(실시간 환율 단순 환산), 사이즈별 재고(품절은 취소선, 선호 사이즈는 굵게).
@@ -113,11 +114,11 @@ NO ZIP - DOTS
 
 | 키 | 기본값 | 설명 |
 |---|---|---|
-| `stores` | 둘 다 켬 | `{"skylrk": {"enabled": false}}`로 끄기. 스토어별로 아래 키를 덮어쓸 수 있음 |
+| `stores` | 넷 다 켬 | `chromehearts`, `skylrk`, `cpfm`, `denimtears`. `{"cpfm": {"enabled": false}}`로 끄기. 스토어별로 아래 키를 덮어쓸 수 있음 |
 | `preferred_sizes` | `[]` | 구매 링크에 미리 고를 사이즈 순서. `"L"`, `"LRG"` 둘 다 됨 |
 | `alert_groups` | `["hoodie","apparel"]` | 알림 보낼 그룹 |
 | `keywords` | `[]` | 이 단어가 들어간 상품만 알림. 비우면 그룹 기준 |
-| `interval_seconds` | 크롬하츠 60, SKYLRK 45 | 확인 간격(초), 최소 20 |
+| `interval_seconds` | 크롬하츠 60, SKYLRK·CPFM 45, Denim Tears 75 | 확인 간격(초), 최소 20. Denim Tears는 상품이 320개라 한 번에 약 2MB를 받아서 조금 느리게 |
 | `track_stock` | `focus` | 크롬하츠 사이즈 재고 확인 범위: `focus`(후디+키워드) / `all` / `off`. SKYLRK는 항상 전체 |
 | `auto_open_browser` | `true` | 알림과 함께 구매 페이지 열기 (서버 모드에선 꺼짐) |
 | `usd_krw` / `usd_krw_fallback` | `null` / 1400 | 원화 환율 고정값 / 실시간 환율을 못 받을 때 값 |
@@ -131,7 +132,8 @@ NO ZIP - DOTS
 - **크롬하츠** (Salesforce Commerce Cloud): 전체 상품 그리드(`cgid=root`)를 12개씩 읽고, 사이트맵의 카테고리를 한 페이지씩
   확인합니다. hoodie·hat 같은 카테고리는 평소 닫혀 있다가(홈으로 리다이렉트) 드롭 때 열리므로 카테고리 오픈이 가장 빠른 신호인 경우가 많습니다.
   사이즈 재고는 `Product-Variation`으로 후디·새 상품만 확인합니다.
-- **SKYLRK** (Shopify): `products.json` 한 번에 전 상품과 사이즈별 재고가 오고, `collections.json`으로 새 컬렉션(드롭)을 봅니다.
+- **SKYLRK · CPFM · Denim Tears** (Shopify): `products.json`으로 전 상품과 사이즈별 재고가 오고(빈 페이지가 나올 때까지 읽음),
+  `collections.json`으로 새 컬렉션(드롭)을 봅니다. 선호 사이즈 재고가 있으면 구매 버튼이 그 사이즈가 담긴 결제 화면으로 바로 갑니다.
 - 요청 사이 0.5초 이상 쉬고, 실패가 이어지면 간격을 늘립니다(최대 10분). 3번 연속 실패하면 알립니다.
 
 ## 문제 해결

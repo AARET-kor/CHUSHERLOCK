@@ -32,7 +32,7 @@ from .site import Product
 log = logging.getLogger("chmonitor")
 PAGE = Path(__file__).with_name("dashboard.html")
 ACTION_HEADER = "X-CH-Dashboard"
-VERSION = 5  # the page warns when an older server is still running
+VERSION = 6  # the page warns when an older server is still running
 
 
 def config_summary(cfg: dict) -> dict:

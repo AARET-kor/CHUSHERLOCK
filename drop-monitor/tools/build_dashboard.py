@@ -21,6 +21,9 @@ def main() -> None:
     first = page.index("__SKY_SVG__")
     page = page[:first] + svg + page[first + len("__SKY_SVG__"):]
     page = page.replace("__SKY_SVG__", svg.replace("skyclip", "skyclip2"))  # ids must be unique
+    dt = (STATIC / "denimtears.svg").read_text(encoding="utf-8")
+    plus = (STATIC / "cpfm-plus.svg").read_text(encoding="utf-8")
+    page = page.replace("__DT_SVG__", dt).replace("__CPFM_PLUS__", plus)
     page = page.replace("__CROSS__", uri("cross.png")).replace("__BANNER__", uri("banner.png"))
     page = page.replace("__FAVICON__", uri("favicon.png"))
     (ROOT / "chmonitor" / "dashboard.html").write_text(page, encoding="utf-8")

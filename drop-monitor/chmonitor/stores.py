@@ -66,11 +66,13 @@ class ChromeHearts(Store):
         return f"{self.base}/{urllib.parse.quote(category)}"
 
 
-class Skylrk(Store):
-    id, name, base = "skylrk", "SKYLRK", "https://skylrk.com"
+class ShopifyStore(Store):
+    """Any Shopify storefront: products.json carries every product with per-size stock."""
     stock_in_listing = True
     category_word = "컬렉션"
-    default_interval = 45  # one request per check
+
+    def __init__(self, id: str, name: str, base: str, default_interval: int = 45):
+        self.id, self.name, self.base, self.default_interval = id, name, base, default_interval
 
     def products(self, client):
         return shopify.fetch_products(client, self.base, self.id)
@@ -85,10 +87,15 @@ class Skylrk(Store):
         return shopify.collection_url(self.base, category)
 
     def category_title(self, category):
-        return shopify.TITLES.get(category) or shopify.title_from_handle(category)
+        return shopify.TITLES.get((self.base, category)) or shopify.title_from_handle(category)
 
 
-STORES: dict[str, Store] = {s.id: s for s in (ChromeHearts(), Skylrk())}
+STORES: dict[str, Store] = {s.id: s for s in (
+    ChromeHearts(),
+    ShopifyStore("skylrk", "SKYLRK", "https://skylrk.com", 45),             # one small request
+    ShopifyStore("cpfm", "CPFM", "https://cactusplantfleamarket.com", 45),  # one small request
+    ShopifyStore("denimtears", "Denim Tears", "https://denimtears.com", 75),  # ~2 MB per check, go easier
+)}
 
 
 def get(store_id: str) -> Store:

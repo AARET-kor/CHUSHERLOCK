@@ -19,18 +19,22 @@ LABELS = {HOODIE: "후디·집업", APPAREL: "의류", ACCESSORY: "신발·액�
 # older configs said "main" for hoodies and apparel together
 LEGACY = {"main": [HOODIE, APPAREL]}
 
-_HOODIE = ["hoodie", "hoody", "hooded", "hood", "zip up", "zip-up", "zipup", "full zip", "half zip", "parka hood"]
+_HOODIE = ["hoodie", "hoody", "hooded", "hood"]
+# "ZIP UP" alone means a zip hoodie at Chrome Hearts, but not on a fleece or a jacket
+_ZIP_UP = ["zip up", "zip-up", "zipup"]
+_NOT_HOODIE_ZIP = ["fleece", "jacket", "crewneck", "crew neck", "sweatshirt", "track", "cardigan", "vest", "knit", "pile"]
 _OTHER = [
     "baccarat", "scent", "candle", "incense", "soap", "perfume", "parfum", "fragrance", "matchstick",
     "martini", "flute", "decanter", "tumbler", "glass", "coffee set", "ashtray", "old fashion", "vase", "cup",
     "underwear", "intimate", "boxer", "brief", "legging", "tights", "long johns", "bra", "panty", "thong",
-    "sock", "home", "gift card", "sticker",
+    "sock", "home", "gift card", "sticker", "vinyl", "record", "book", "poster", "mug", "towel", "blanket",
 ]
 _ACCESSORY = [
     "footwear", "shoe", "sneaker", "boot", "slipper", "sandal", "slide", "clog", "loafer", "matterdaddies",
     "hat", "cap", "beanie", "trucker", "bucket", "visor", "eyewear", "sunglass", "glasses", "optical", "goggle",
     "scarf", "bandana", "glove", "bag", "tote", "backpack", "wallet", "belt", "keychain", "key ring", "lighter",
     "case", "phone", "ring", "necklace", "bracelet", "pendant", "earring", "chain", "dog tag", "jewel", "accessor",
+    "durag", "du rag", "wave cap", "boutonniere", "pin", "brooch", "money clip", "key fob", "fob", "patch",
 ]
 _APPAREL = [
     "sweatshirt", "crewneck", "crew neck", "sweater", "cardigan", "knit", "top",
@@ -54,14 +58,18 @@ def _pattern(words: list[str]) -> re.Pattern:
     return re.compile(r"(?<![a-z])(" + "|".join(re.escape(w) for w in words) + r")(e?s)?(?![a-z])")
 
 
+_RE_ZIP, _RE_NOT_ZIP = _pattern(_ZIP_UP), _pattern(_NOT_HOODIE_ZIP)
+_RE_KIDS = _pattern(["kid", "kids", "toddler", "baby", "infant", "youth"])
 _RE = {HOODIE: _pattern(_HOODIE), OTHER: _pattern(_OTHER), ACCESSORY: _pattern(_ACCESSORY), APPAREL: _pattern(_APPAREL)}
 
 
 def classify(name: str = "", category: str = "") -> str:
     cat = category.lower().replace("-", " ").replace("_", " ")
     text = f"{name} {cat}".lower()
-    if _RE[HOODIE].search(text):  # "NO ZIP HOODIE" filed under TOPS is still a hoodie
-        return HOODIE
+    if _RE_KIDS.search(text):
+        return OTHER
+    if _RE[HOODIE].search(text) or (_RE_ZIP.search(text) and not _RE_NOT_ZIP.search(text)):
+        return HOODIE  # "NO ZIP HOODIE" filed under TOPS is still a hoodie
     # then the store's own category is the strongest signal
     for g in (OTHER, ACCESSORY, APPAREL):
         if _RE[g].search(cat):

@@ -23,6 +23,19 @@ html[data-store=skylrk]{
   --ok:#0f9457; --warn:#a86b12; --alert:#e5432b; --on-text:#fff; --img:#f4fafe;
   --header:rgba(170,219,244,.72); --logo:#fff; --blur:blur(14px) saturate(1.3);
 }
+html[data-store=cpfm]{
+  --bg:#fff; --panel:#f5f5f3; --panel-2:#fff; --line:rgba(0,0,0,.12); --line-2:rgba(0,0,0,.3);
+  --text:#111; --muted:#4d4d4d; --faint:#8a8a8a; --silver:#222;
+  --ok:#138a4a; --warn:#b36b00; --alert:#ff2d6f; --on-text:#fff; --img:#fff;
+  --header:rgba(255,255,255,.9); --logo:#111; --blur:none;
+}
+html[data-store=denimtears]{
+  --bg:#0d1526; --panel:#142036; --panel-2:#1a2943; --line:#24375a; --line-2:#33507d;
+  --text:#f2f4f8; --muted:#a3b3ca; --faint:#6c7f9b; --silver:#cdd9ec;
+  --ok:#4fd18b; --warn:#f0b44c; --alert:#ff3b30; --on-text:#0d1526; --img:#fff;
+  --header:rgba(13,21,38,.9); --logo:#fff; --blur:none;
+}
+:root{--mono:"OCR A Std","OCR A Extended","OCR-A","Courier New",ui-monospace,monospace}
 *{box-sizing:border-box}
 html{background:var(--bg);transition:background-color .6s ease}
 body{margin:0;color:var(--text);font:20px/1.5 var(--sans);-webkit-font-smoothing:antialiased;transition:color .4s ease}
@@ -32,40 +45,57 @@ button{font:inherit;color:inherit}
 /* background layers that cross-fade between stores */
 .bgfx{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;transition:opacity .6s ease}
 .bgfx.sky{background:radial-gradient(ellipse at 50% 0%,#c7ebfc 0%,#9dd5f1 38%,#8fd5ff 70%,#bfe5f8 100%)}
-html[data-store=skylrk] .bgfx.sky{opacity:1}
+.bgfx.cpfm{background:#fff}
+.bgfx.dt{background:radial-gradient(120% 80% at 50% 0%,#24406e 0%,#152542 45%,#0d1526 100%)}
+html[data-store=skylrk] .bgfx.sky,html[data-store=cpfm] .bgfx.cpfm,html[data-store=denimtears] .bgfx.dt{opacity:1}
 
 /* the cross, tinted with currentColor */
 .x{display:inline-block;width:1em;height:1em;flex:none;background:currentColor;
    -webkit-mask:var(--cross) center/contain no-repeat;mask:var(--cross) center/contain no-repeat}
 .banner{background:currentColor;-webkit-mask:var(--banner) center/contain no-repeat;mask:var(--banner) center/contain no-repeat;aspect-ratio:744/132}
-.sky-logo svg{display:block;width:100%;height:auto}
+.sky-logo svg,.dt-logo svg{display:block;width:100%;height:auto}
+.cpfm-logo{display:flex;align-items:center;justify-content:center;gap:.45em;font-family:var(--mono);font-weight:400;letter-spacing:.06em;white-space:nowrap;line-height:1}
+.cpfm-logo svg{width:.95em;height:.95em;flex:none}
 
 /* hero */
 .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
 .hero .chbg{position:absolute;inset:0;background:radial-gradient(120% 140% at 50% 0%,#1d1d21 0%,#0c0c0e 55%,#09090a 100%);transition:opacity .6s}
 .hero .chbg::before{content:"";position:absolute;inset:0;opacity:.05;background:var(--cross) 0 0/56px 56px}
-html[data-store=skylrk] .hero .chbg{opacity:0}
+html:not([data-store=chromehearts]) .hero .chbg{opacity:0}
 .hero-in{position:relative;max-width:1760px;margin:0 auto;padding:18px 24px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 .logos{position:relative;width:min(460px,60vw);aspect-ratio:744/132;color:var(--logo)}
 .logos > *{position:absolute;inset:0;margin:auto;transition:opacity .45s ease,transform .55s cubic-bezier(.2,.8,.2,1),filter .45s}
 .logos .banner{filter:drop-shadow(0 2px 18px rgba(255,255,255,.08))}
 .logos .sky-logo{width:86%;height:fit-content;filter:drop-shadow(0 3px 16px rgba(20,70,120,.35))}
-html[data-store=chromehearts] .logos .sky-logo,
-html[data-store=skylrk] .logos .banner{opacity:0;transform:translateX(60px) scale(.96);filter:blur(6px)}
-html[data-store=skylrk] .logos .banner{transform:translateX(-60px) scale(.96)}
+.logos .dt-logo{width:92%;height:fit-content}
+.logos .cpfm-logo{font-size:clamp(15px,2.3vw,32px)}
+.logos > [data-logo]{opacity:0;transform:translateX(60px) scale(.96);filter:blur(6px);pointer-events:none}
+html[data-store=chromehearts] .logos > [data-logo=chromehearts],
+html[data-store=skylrk] .logos > [data-logo=skylrk],
+html[data-store=cpfm] .logos > [data-logo=cpfm],
+html[data-store=denimtears] .logos > [data-logo=denimtears]{opacity:1;transform:none;filter:none}
+html[data-store=chromehearts] .logos > [data-logo=chromehearts]{filter:drop-shadow(0 2px 18px rgba(255,255,255,.08))}
+html[data-store=skylrk] .logos > [data-logo=skylrk]{filter:drop-shadow(0 3px 16px rgba(20,70,120,.35))}
+html[data-store=cpfm] .ph h2,html[data-store=cpfm] .hero .sub{font-family:var(--mono);letter-spacing:.12em}
 .hero .sub{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;letter-spacing:.32em;text-transform:uppercase}
 .hero .sub .x{font-size:12px;color:var(--silver)}
-html[data-store=skylrk] .hero .sub .x{-webkit-mask:none;mask:none;border-radius:50%;width:.55em;height:.55em}
+html:not([data-store=chromehearts]) .hero .sub .x{-webkit-mask:none;mask:none;border-radius:50%;width:.55em;height:.55em}
 
 /* sticky bar */
 header{position:sticky;top:0;z-index:5;background:var(--header);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);transition:background .6s}
 .bar{max-width:1760px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .switch{display:flex;gap:6px;padding:5px;border-radius:999px;background:var(--panel);border:1px solid var(--line);margin-right:auto}
-.switch button{display:flex;align-items:center;gap:10px;border:0;background:none;border-radius:999px;padding:9px 18px;cursor:pointer;color:var(--muted);transition:background .3s,color .3s}
+.switch button{display:flex;align-items:center;gap:8px;border:0;background:none;border-radius:999px;padding:8px 13px;cursor:pointer;color:var(--muted);transition:background .3s,color .3s}
 .switch button:hover{color:var(--text)}
 .switch button[aria-pressed=true]{background:var(--text);color:var(--on-text)}
-.switch .banner{height:26px;width:auto;aspect-ratio:744/132}
-.switch .sky-logo{width:118px}
+.switch .banner{height:22px;width:auto;aspect-ratio:744/132}
+.switch .sky-logo{width:96px}
+.switch .dt-logo{width:96px}
+.switch .cpfm-logo{font-size:13px;letter-spacing:.04em}
+.tools{display:flex;align-items:center;gap:14px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.status{font-size:17px!important}
+.more{border:1px dashed var(--line-2);background:none;color:var(--muted);border-radius:999px;padding:7px 15px;font-size:18px;cursor:pointer}
+.more:hover{color:var(--text);border-color:var(--text)}
 .switch b{font-size:15px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--alert);color:#fff;font-variant-numeric:tabular-nums}
 .switch b.zero{background:transparent;color:inherit;opacity:.55;border:1px solid currentColor}
 .status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:19px}
@@ -170,7 +200,8 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 .card .go:hover{opacity:.88}
 .card.gone .go{background:var(--panel);color:var(--muted)}
 .wait{margin:20px;padding:48px 24px 44px;border:1px dashed var(--line-2);border-radius:var(--radius);text-align:center;color:var(--logo)}
-.wait .banner,.wait .sky-logo{width:min(560px,80%);opacity:.16;margin:0 auto 24px;color:var(--text)}
+.wait .banner,.wait .sky-logo,.wait .dt-logo{width:min(560px,80%);opacity:.16;margin:0 auto 24px;color:var(--text)}
+.wait .cpfm-logo{font-size:clamp(16px,2.6vw,30px);opacity:.3;margin:0 auto 24px;color:var(--text)}
 .wait p{margin:0 auto;max-width:640px;color:var(--muted);font-size:21px;line-height:1.6}
 .wait p strong{color:var(--text);font-size:25px}
 
@@ -189,10 +220,13 @@ main{max-width:1760px;margin:0 auto;padding:24px}
   .ops{display:flex}
   .ops .status{width:100%}
   .feed ol{grid-template-columns:1fr;max-height:none}
-  .switch{width:100%;margin-right:0}
-  .switch button{flex:1;justify-content:center;padding:9px 10px}
-  .switch .banner{height:20px}
-  .switch .sky-logo{width:84px}
+  .switch{width:100%;margin-right:0;display:grid;grid-template-columns:1fr 1fr;border-radius:22px;gap:4px}
+  .switch button{justify-content:center;padding:10px 8px;border-radius:18px;gap:8px}
+  .switch .banner{height:18px}
+  .switch .sky-logo{width:80px}
+  .switch .dt-logo{width:84px}
+  .switch .cpfm-logo{font-size:11px}
+  .switch b{font-size:13px;padding:0 7px}
   .status{width:100%;font-size:17px}
   .actions{width:100%}
   .actions .btn{flex:1;font-size:17px}
@@ -219,14 +253,16 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 </style>
 </head>
 <body>
-<div class="bgfx sky"></div>
+<div class="bgfx sky"></div><div class="bgfx cpfm"></div><div class="bgfx dt"></div>
 
 <section class="hero" id="hero">
   <div class="chbg"></div>
   <div class="hero-in">
     <div class="logos" id="logos">
-      <div class="banner" role="img" aria-label="Chrome Hearts"></div>
-      <div class="sky-logo" role="img" aria-label="SKYLRK"><svg viewBox="0 0 220 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <g clip-path="url(#skyclip)"> <path d="M103.554 -4.58308e-05C103.057 -4.58308e-05 102.572 0.147244 102.161 0.42379L98.7127 2.73535C95.0048 5.22426 90.1358 5.23326 86.4161 2.76541L82.8761 0.41778C82.4648 0.144239 81.9769 -0.00305176 81.4799 -0.00305176C79.0347 -0.00305176 78.0407 3.09606 80.0406 4.48178L86.6753 9.07485C88.4559 10.3073 89.5139 12.3152 89.5139 14.4555V16.8302C89.5139 18.4564 90.8525 19.773 92.5019 19.773C94.1514 19.773 95.4896 18.4533 95.4896 16.8302V14.4464C95.4896 12.3092 96.5448 10.3073 98.3132 9.07485L104.981 4.43371C106.957 3.05999 105.969 -0.00305176 103.551 -0.00305176L103.554 -4.58308e-05Z" fill="currentColor"/> <path d="M139.829 14.7351H129.081C125.679 14.7351 122.919 12.0177 122.919 8.6631V2.87367C122.919 1.28654 121.614 0 120.005 0C118.395 0 117.09 1.28654 117.09 2.87367V18.1708C117.09 19.0576 117.818 19.776 118.718 19.776H139.826C141.237 19.776 142.384 18.6458 142.384 17.254C142.384 15.8623 141.237 14.7321 139.826 14.7321L139.829 14.7351Z" fill="currentColor"/> <path d="M63.9665 7.48475L67.6191 4.88765C69.7715 3.35461 68.6712 0 66.0154 0C65.4117 0 64.8262 0.195385 64.3478 0.559101L57.4022 5.81648C56.3533 6.61003 55.0665 7.04289 53.7433 7.04289H50.9383C48.5875 7.04289 46.6789 5.1642 46.6789 2.84361C46.6789 1.27451 45.3861 0 43.7916 0C42.197 0 40.9043 1.27451 40.9043 2.84361V16.9324C40.9043 18.5045 42.197 19.776 43.7916 19.776C45.3861 19.776 46.6789 18.5015 46.6789 16.9324C46.6789 14.6148 48.5847 12.7331 50.9383 12.7331H53.7556C55.1305 12.7331 56.4662 13.199 57.5334 14.0527L63.9057 19.1327C64.4268 19.5505 65.0795 19.776 65.7531 19.776C68.5736 19.776 69.7747 16.238 67.5184 14.5667L63.9207 11.9005C62.4237 10.7913 62.4451 8.56689 63.9665 7.48475Z" fill="currentColor"/> <path d="M218.756 14.5667L215.158 11.9005C213.661 10.7913 213.682 8.56689 215.204 7.48475L218.856 4.88765C221.009 3.35461 219.912 0 217.253 0C216.649 0 216.064 0.195385 215.585 0.559101L208.64 5.81648C207.591 6.61003 206.304 7.04289 204.981 7.04289H202.176C199.825 7.04289 197.917 5.1642 197.917 2.84361C197.917 1.27451 196.624 0 195.029 0C193.434 0 192.142 1.27451 192.142 2.84361V16.9324C192.142 18.5045 193.434 19.776 195.029 19.776C196.624 19.776 197.917 18.5015 197.917 16.9324C197.917 14.6148 199.822 12.7331 202.176 12.7331H204.993C206.368 12.7331 207.7 13.199 208.771 14.0527L215.143 19.1327C215.664 19.5505 216.317 19.776 216.99 19.776C219.811 19.776 221.012 16.238 218.756 14.5667Z" fill="currentColor"/> <path d="M175.098 12.162C175.988 11.9425 176.61 11.6299 177.177 11.2452C178.479 10.3584 179.427 8.56088 179.302 6.32146C179.095 2.66324 177.351 0.447876 173.137 0.447876H156.332C154.704 0.447876 153.38 1.74944 153.38 3.35461V16.9234C153.38 18.4143 154.542 19.7038 156.054 19.77C157.661 19.8421 158.902 18.4804 158.987 17.0105C159.109 14.4315 162.445 13.1509 164.918 13.8032C167.594 14.5096 175.311 19.4183 175.311 19.4183C175.708 19.6527 176.159 19.779 176.622 19.779C179.19 19.779 180.126 16.4424 177.921 15.1438L174.952 13.3253C174.442 13.0517 174.537 12.3003 175.101 12.162H175.098ZM171.994 8.50077H160.597C159.71 8.50077 158.987 7.79136 158.987 6.91363C158.987 6.03591 159.692 5.36557 160.557 5.36557H171.964C173.107 5.36557 173.61 5.8886 173.61 6.93167C173.61 7.9747 173.165 8.49774 171.991 8.49774L171.994 8.50077Z" fill="currentColor"/> <path d="M22.5902 9.09861L9.92493 6.57664C9.52249 6.50451 9.16574 6.25199 9.16574 5.81613C9.16574 5.81613 9.16574 5.08268 10.0378 5.08268L25.5538 5.24802C27.1453 5.24802 28.432 4.28313 28.432 2.83727C28.432 1.39141 27.4258 0.378418 25.7184 0.378418H6.14425C3.35448 0.378418 0.171387 2.0407 0.171387 5.18489C0.171387 8.32909 2.53126 9.74489 6.20217 10.5445L19.4468 13.346C20.084 13.5083 20.2639 13.854 20.2639 14.2057C20.2639 14.7197 19.834 14.9872 19.3157 14.9752L2.92458 14.6085C1.53121 14.6085 0.244561 15.5764 0.296393 17.2777C0.296393 18.7597 1.52816 19.7727 3.03434 19.7727H22.7884C26.2093 19.7727 28.8436 17.4341 28.8436 14.5063C28.8436 11.3591 25.6971 9.67875 22.5963 9.10161L22.5902 9.09861Z" fill="currentColor"/> </g> <defs> <clipPath id="skyclip"> <rect width="220" height="20" fill="white"/> </clipPath> </defs> </svg></div>
+      <div class="banner" data-logo="chromehearts" role="img" aria-label="Chrome Hearts"></div>
+      <div class="sky-logo" data-logo="skylrk" role="img" aria-label="SKYLRK"><svg viewBox="0 0 220 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <g clip-path="url(#skyclip)"> <path d="M103.554 -4.58308e-05C103.057 -4.58308e-05 102.572 0.147244 102.161 0.42379L98.7127 2.73535C95.0048 5.22426 90.1358 5.23326 86.4161 2.76541L82.8761 0.41778C82.4648 0.144239 81.9769 -0.00305176 81.4799 -0.00305176C79.0347 -0.00305176 78.0407 3.09606 80.0406 4.48178L86.6753 9.07485C88.4559 10.3073 89.5139 12.3152 89.5139 14.4555V16.8302C89.5139 18.4564 90.8525 19.773 92.5019 19.773C94.1514 19.773 95.4896 18.4533 95.4896 16.8302V14.4464C95.4896 12.3092 96.5448 10.3073 98.3132 9.07485L104.981 4.43371C106.957 3.05999 105.969 -0.00305176 103.551 -0.00305176L103.554 -4.58308e-05Z" fill="currentColor"/> <path d="M139.829 14.7351H129.081C125.679 14.7351 122.919 12.0177 122.919 8.6631V2.87367C122.919 1.28654 121.614 0 120.005 0C118.395 0 117.09 1.28654 117.09 2.87367V18.1708C117.09 19.0576 117.818 19.776 118.718 19.776H139.826C141.237 19.776 142.384 18.6458 142.384 17.254C142.384 15.8623 141.237 14.7321 139.826 14.7321L139.829 14.7351Z" fill="currentColor"/> <path d="M63.9665 7.48475L67.6191 4.88765C69.7715 3.35461 68.6712 0 66.0154 0C65.4117 0 64.8262 0.195385 64.3478 0.559101L57.4022 5.81648C56.3533 6.61003 55.0665 7.04289 53.7433 7.04289H50.9383C48.5875 7.04289 46.6789 5.1642 46.6789 2.84361C46.6789 1.27451 45.3861 0 43.7916 0C42.197 0 40.9043 1.27451 40.9043 2.84361V16.9324C40.9043 18.5045 42.197 19.776 43.7916 19.776C45.3861 19.776 46.6789 18.5015 46.6789 16.9324C46.6789 14.6148 48.5847 12.7331 50.9383 12.7331H53.7556C55.1305 12.7331 56.4662 13.199 57.5334 14.0527L63.9057 19.1327C64.4268 19.5505 65.0795 19.776 65.7531 19.776C68.5736 19.776 69.7747 16.238 67.5184 14.5667L63.9207 11.9005C62.4237 10.7913 62.4451 8.56689 63.9665 7.48475Z" fill="currentColor"/> <path d="M218.756 14.5667L215.158 11.9005C213.661 10.7913 213.682 8.56689 215.204 7.48475L218.856 4.88765C221.009 3.35461 219.912 0 217.253 0C216.649 0 216.064 0.195385 215.585 0.559101L208.64 5.81648C207.591 6.61003 206.304 7.04289 204.981 7.04289H202.176C199.825 7.04289 197.917 5.1642 197.917 2.84361C197.917 1.27451 196.624 0 195.029 0C193.434 0 192.142 1.27451 192.142 2.84361V16.9324C192.142 18.5045 193.434 19.776 195.029 19.776C196.624 19.776 197.917 18.5015 197.917 16.9324C197.917 14.6148 199.822 12.7331 202.176 12.7331H204.993C206.368 12.7331 207.7 13.199 208.771 14.0527L215.143 19.1327C215.664 19.5505 216.317 19.776 216.99 19.776C219.811 19.776 221.012 16.238 218.756 14.5667Z" fill="currentColor"/> <path d="M175.098 12.162C175.988 11.9425 176.61 11.6299 177.177 11.2452C178.479 10.3584 179.427 8.56088 179.302 6.32146C179.095 2.66324 177.351 0.447876 173.137 0.447876H156.332C154.704 0.447876 153.38 1.74944 153.38 3.35461V16.9234C153.38 18.4143 154.542 19.7038 156.054 19.77C157.661 19.8421 158.902 18.4804 158.987 17.0105C159.109 14.4315 162.445 13.1509 164.918 13.8032C167.594 14.5096 175.311 19.4183 175.311 19.4183C175.708 19.6527 176.159 19.779 176.622 19.779C179.19 19.779 180.126 16.4424 177.921 15.1438L174.952 13.3253C174.442 13.0517 174.537 12.3003 175.101 12.162H175.098ZM171.994 8.50077H160.597C159.71 8.50077 158.987 7.79136 158.987 6.91363C158.987 6.03591 159.692 5.36557 160.557 5.36557H171.964C173.107 5.36557 173.61 5.8886 173.61 6.93167C173.61 7.9747 173.165 8.49774 171.991 8.49774L171.994 8.50077Z" fill="currentColor"/> <path d="M22.5902 9.09861L9.92493 6.57664C9.52249 6.50451 9.16574 6.25199 9.16574 5.81613C9.16574 5.81613 9.16574 5.08268 10.0378 5.08268L25.5538 5.24802C27.1453 5.24802 28.432 4.28313 28.432 2.83727C28.432 1.39141 27.4258 0.378418 25.7184 0.378418H6.14425C3.35448 0.378418 0.171387 2.0407 0.171387 5.18489C0.171387 8.32909 2.53126 9.74489 6.20217 10.5445L19.4468 13.346C20.084 13.5083 20.2639 13.854 20.2639 14.2057C20.2639 14.7197 19.834 14.9872 19.3157 14.9752L2.92458 14.6085C1.53121 14.6085 0.244561 15.5764 0.296393 17.2777C0.296393 18.7597 1.52816 19.7727 3.03434 19.7727H22.7884C26.2093 19.7727 28.8436 17.4341 28.8436 14.5063C28.8436 11.3591 25.6971 9.67875 22.5963 9.10161L22.5902 9.09861Z" fill="currentColor"/> </g> <defs> <clipPath id="skyclip"> <rect width="220" height="20" fill="white"/> </clipPath> </defs> </svg></div>
+      <div class="cpfm-logo" data-logo="cpfm" role="img" aria-label="Cactus Plant Flea Market"><svg xmlns="http://www.w3.org/2000/svg"  fill="none" viewBox="0 0 22 22" > <path fill="currentColor" d="M4.583 13.156c-1.288-.016-2.337-.028-3.386-.046-.134 0-.267-.022-.395-.064-.404-.142-.667-.41-.73-.872A9.025 9.025 0 01.1 9.689c.068-.477.298-.716.769-.808.163-.027.328-.038.493-.035.897-.009 1.795-.013 2.693-.018 1.003-.006 2.006-.005 3.008-.02.303-.007.604-.036.903-.087.345-.056.583-.27.706-.61.095-.261.143-.538.142-.816 0-1.942 0-3.883.008-5.825 0-.253.024-.504.073-.752a.843.843 0 01.26-.449.805.805 0 01.47-.202c.245-.024.492-.028.738-.034C10.89.019 11.419.006 11.946 0c.127 0 .253.014.376.043.426.101.678.399.724.848.014.13.02.26.02.39.002 1.913-.002 3.827.007 5.74.008.27.042.538.102.801.1.495.422.785.887.895.254.059.512.09.772.092 1.31.012 2.62.008 3.93.015.704.004 1.408.015 2.112.032.28.006.532.101.73.314.121.132.208.294.253.47.152.543.151 1.098.132 1.655-.013.4-.124.782-.194 1.173-.04.217-.178.364-.366.463a1.6 1.6 0 01-.742.18c-1.668.013-3.336.03-5.004.05-.475.006-.95.022-1.424.054-.591.04-.94.402-1.101.961a2.46 2.46 0 00-.087.662c-.008 1.928-.006 3.855-.008 5.782 0 .264-.014.527-.098.782a.658.658 0 01-.451.458c-.265.088-.541.135-.82.14-.594 0-1.189 0-1.783-.019-.344-.01-.66-.113-.874-.42-.137-.191-.21-.421-.212-.658l-.006-1.551-.018-4.902a2.201 2.201 0 00-.05-.44c-.098-.466-.395-.724-.844-.787a6.712 6.712 0 00-.862-.06c-.901-.012-1.803-.007-2.464-.007z"></path> </svg><span>cactus plant flea market</span></div>
+      <div class="dt-logo" data-logo="denimtears" role="img" aria-label="Denim Tears"><svg viewBox="0 0 104 12" fill="none"> <path d="M99.9248 0C100.997 0 102.367 0.229047 103.588 1.20996V4.34863C102.301 3.44955 101.179 3.2207 100.387 3.2207C100.024 3.22073 99.4297 3.26987 99.4297 3.66211C99.4297 4.02173 99.9745 4.16858 100.717 4.33203C102.878 4.80615 104 5.59168 104 7.66797C104 10.5287 101.722 12 98.9678 12C98.1427 11.9999 96.5262 11.8688 95.4375 10.79V7.24219C96.0315 7.84707 97.3844 8.8769 98.8691 8.87695C99.5785 8.87695 99.793 8.6317 99.793 8.37012C99.7926 7.9781 99.2648 7.81497 98.5723 7.60254C97.2195 7.19384 95.2404 6.55591 95.2402 3.875C95.2402 0.899636 97.7967 6.8766e-05 99.9248 0ZM4.22363 0.27832C8.29846 0.278396 10.7236 2.56683 10.7236 6C10.7236 9.43318 8.29847 11.7216 4.22363 11.7217H0V0.27832H4.22363ZM18.8008 3.59668H15.4678V4.54492H18.5371V7.34082H15.4678V8.40332H18.9658V11.7217H11.2783V0.27832H18.8008V3.59668ZM26.5439 5.31348V0.27832H30.6025V11.7217H26.3291L24.0361 6.62109V11.7217H19.9775V0.27832H24.2832L26.5439 5.31348ZM36.0586 11.7217H31.8682V0.27832H36.0586V11.7217ZM44.0938 6.6377L45.4131 0.27832H50.8574V11.7217H46.8486V4.79004L45.3477 11.7217H42.8398L41.3223 4.70801V11.7217H37.3291V0.27832H42.7734L44.0938 6.6377ZM63.9316 3.59668H61.7705V11.7217H57.5801V3.59668H55.4189V0.27832H63.9316V3.59668ZM71.8867 3.59668H68.5547V4.54492H71.623V7.34082H68.5547V8.40332H72.0518V11.7217H64.3643V0.27832H71.8867V3.59668ZM84.5234 11.7217H80.3008L79.8545 9.74414H76.9678L76.5225 11.7217H72.2988L75.8291 0.27832H80.9766L84.5234 11.7217ZM89.6934 0.27832C91.2606 0.27832 94.6426 0.376431 94.6426 4.00586C94.6425 5.49336 94.0484 6.3433 92.8936 6.81738L95.0225 11.7217H90.749L89.3145 7.76562H88.9512V11.7217H84.7607V0.27832H89.6934ZM4.17383 8.40332H4.28906C5.90585 8.40332 6.5332 7.29155 6.5332 6C6.53319 4.70846 5.90584 3.59668 4.28906 3.59668H4.17383V8.40332ZM77.6113 6.94824H79.2119L78.4033 3.43359L77.6113 6.94824ZM88.9512 5.06836H89.3799C90.1716 5.06836 90.452 4.65962 90.4521 4.07129C90.4521 3.3683 90.0397 3.15527 89.3633 3.15527H88.9512V5.06836Z" fill="currentcolor"/> </svg></div>
     </div>
     <div class="sub"><span class="x"></span>Drop Monitor<span class="x"></span></div>
   </div>
@@ -241,11 +277,19 @@ main{max-width:1760px;margin:0 auto;padding:24px}
       <button type="button" data-store="skylrk" aria-pressed="false" title="SKYLRK">
         <span class="sky-logo" aria-hidden="true"><svg viewBox="0 0 220 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <g clip-path="url(#skyclip2)"> <path d="M103.554 -4.58308e-05C103.057 -4.58308e-05 102.572 0.147244 102.161 0.42379L98.7127 2.73535C95.0048 5.22426 90.1358 5.23326 86.4161 2.76541L82.8761 0.41778C82.4648 0.144239 81.9769 -0.00305176 81.4799 -0.00305176C79.0347 -0.00305176 78.0407 3.09606 80.0406 4.48178L86.6753 9.07485C88.4559 10.3073 89.5139 12.3152 89.5139 14.4555V16.8302C89.5139 18.4564 90.8525 19.773 92.5019 19.773C94.1514 19.773 95.4896 18.4533 95.4896 16.8302V14.4464C95.4896 12.3092 96.5448 10.3073 98.3132 9.07485L104.981 4.43371C106.957 3.05999 105.969 -0.00305176 103.551 -0.00305176L103.554 -4.58308e-05Z" fill="currentColor"/> <path d="M139.829 14.7351H129.081C125.679 14.7351 122.919 12.0177 122.919 8.6631V2.87367C122.919 1.28654 121.614 0 120.005 0C118.395 0 117.09 1.28654 117.09 2.87367V18.1708C117.09 19.0576 117.818 19.776 118.718 19.776H139.826C141.237 19.776 142.384 18.6458 142.384 17.254C142.384 15.8623 141.237 14.7321 139.826 14.7321L139.829 14.7351Z" fill="currentColor"/> <path d="M63.9665 7.48475L67.6191 4.88765C69.7715 3.35461 68.6712 0 66.0154 0C65.4117 0 64.8262 0.195385 64.3478 0.559101L57.4022 5.81648C56.3533 6.61003 55.0665 7.04289 53.7433 7.04289H50.9383C48.5875 7.04289 46.6789 5.1642 46.6789 2.84361C46.6789 1.27451 45.3861 0 43.7916 0C42.197 0 40.9043 1.27451 40.9043 2.84361V16.9324C40.9043 18.5045 42.197 19.776 43.7916 19.776C45.3861 19.776 46.6789 18.5015 46.6789 16.9324C46.6789 14.6148 48.5847 12.7331 50.9383 12.7331H53.7556C55.1305 12.7331 56.4662 13.199 57.5334 14.0527L63.9057 19.1327C64.4268 19.5505 65.0795 19.776 65.7531 19.776C68.5736 19.776 69.7747 16.238 67.5184 14.5667L63.9207 11.9005C62.4237 10.7913 62.4451 8.56689 63.9665 7.48475Z" fill="currentColor"/> <path d="M218.756 14.5667L215.158 11.9005C213.661 10.7913 213.682 8.56689 215.204 7.48475L218.856 4.88765C221.009 3.35461 219.912 0 217.253 0C216.649 0 216.064 0.195385 215.585 0.559101L208.64 5.81648C207.591 6.61003 206.304 7.04289 204.981 7.04289H202.176C199.825 7.04289 197.917 5.1642 197.917 2.84361C197.917 1.27451 196.624 0 195.029 0C193.434 0 192.142 1.27451 192.142 2.84361V16.9324C192.142 18.5045 193.434 19.776 195.029 19.776C196.624 19.776 197.917 18.5015 197.917 16.9324C197.917 14.6148 199.822 12.7331 202.176 12.7331H204.993C206.368 12.7331 207.7 13.199 208.771 14.0527L215.143 19.1327C215.664 19.5505 216.317 19.776 216.99 19.776C219.811 19.776 221.012 16.238 218.756 14.5667Z" fill="currentColor"/> <path d="M175.098 12.162C175.988 11.9425 176.61 11.6299 177.177 11.2452C178.479 10.3584 179.427 8.56088 179.302 6.32146C179.095 2.66324 177.351 0.447876 173.137 0.447876H156.332C154.704 0.447876 153.38 1.74944 153.38 3.35461V16.9234C153.38 18.4143 154.542 19.7038 156.054 19.77C157.661 19.8421 158.902 18.4804 158.987 17.0105C159.109 14.4315 162.445 13.1509 164.918 13.8032C167.594 14.5096 175.311 19.4183 175.311 19.4183C175.708 19.6527 176.159 19.779 176.622 19.779C179.19 19.779 180.126 16.4424 177.921 15.1438L174.952 13.3253C174.442 13.0517 174.537 12.3003 175.101 12.162H175.098ZM171.994 8.50077H160.597C159.71 8.50077 158.987 7.79136 158.987 6.91363C158.987 6.03591 159.692 5.36557 160.557 5.36557H171.964C173.107 5.36557 173.61 5.8886 173.61 6.93167C173.61 7.9747 173.165 8.49774 171.991 8.49774L171.994 8.50077Z" fill="currentColor"/> <path d="M22.5902 9.09861L9.92493 6.57664C9.52249 6.50451 9.16574 6.25199 9.16574 5.81613C9.16574 5.81613 9.16574 5.08268 10.0378 5.08268L25.5538 5.24802C27.1453 5.24802 28.432 4.28313 28.432 2.83727C28.432 1.39141 27.4258 0.378418 25.7184 0.378418H6.14425C3.35448 0.378418 0.171387 2.0407 0.171387 5.18489C0.171387 8.32909 2.53126 9.74489 6.20217 10.5445L19.4468 13.346C20.084 13.5083 20.2639 13.854 20.2639 14.2057C20.2639 14.7197 19.834 14.9872 19.3157 14.9752L2.92458 14.6085C1.53121 14.6085 0.244561 15.5764 0.296393 17.2777C0.296393 18.7597 1.52816 19.7727 3.03434 19.7727H22.7884C26.2093 19.7727 28.8436 17.4341 28.8436 14.5063C28.8436 11.3591 25.6971 9.67875 22.5963 9.10161L22.5902 9.09861Z" fill="currentColor"/> </g> <defs> <clipPath id="skyclip2"> <rect width="220" height="20" fill="white"/> </clipPath> </defs> </svg></span><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">SKYLRK</span><b class="zero" data-count="skylrk">0</b>
       </button>
+      <button type="button" data-store="cpfm" aria-pressed="false" title="Cactus Plant Flea Market">
+        <span class="cpfm-logo" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"  fill="none" viewBox="0 0 22 22" > <path fill="currentColor" d="M4.583 13.156c-1.288-.016-2.337-.028-3.386-.046-.134 0-.267-.022-.395-.064-.404-.142-.667-.41-.73-.872A9.025 9.025 0 01.1 9.689c.068-.477.298-.716.769-.808.163-.027.328-.038.493-.035.897-.009 1.795-.013 2.693-.018 1.003-.006 2.006-.005 3.008-.02.303-.007.604-.036.903-.087.345-.056.583-.27.706-.61.095-.261.143-.538.142-.816 0-1.942 0-3.883.008-5.825 0-.253.024-.504.073-.752a.843.843 0 01.26-.449.805.805 0 01.47-.202c.245-.024.492-.028.738-.034C10.89.019 11.419.006 11.946 0c.127 0 .253.014.376.043.426.101.678.399.724.848.014.13.02.26.02.39.002 1.913-.002 3.827.007 5.74.008.27.042.538.102.801.1.495.422.785.887.895.254.059.512.09.772.092 1.31.012 2.62.008 3.93.015.704.004 1.408.015 2.112.032.28.006.532.101.73.314.121.132.208.294.253.47.152.543.151 1.098.132 1.655-.013.4-.124.782-.194 1.173-.04.217-.178.364-.366.463a1.6 1.6 0 01-.742.18c-1.668.013-3.336.03-5.004.05-.475.006-.95.022-1.424.054-.591.04-.94.402-1.101.961a2.46 2.46 0 00-.087.662c-.008 1.928-.006 3.855-.008 5.782 0 .264-.014.527-.098.782a.658.658 0 01-.451.458c-.265.088-.541.135-.82.14-.594 0-1.189 0-1.783-.019-.344-.01-.66-.113-.874-.42-.137-.191-.21-.421-.212-.658l-.006-1.551-.018-4.902a2.201 2.201 0 00-.05-.44c-.098-.466-.395-.724-.844-.787a6.712 6.712 0 00-.862-.06c-.901-.012-1.803-.007-2.464-.007z"></path> </svg><span>CPFM</span></span><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Cactus Plant Flea Market</span><b class="zero" data-count="cpfm">0</b>
+      </button>
+      <button type="button" data-store="denimtears" aria-pressed="false" title="Denim Tears">
+        <span class="dt-logo" aria-hidden="true"><svg viewBox="0 0 104 12" fill="none"> <path d="M99.9248 0C100.997 0 102.367 0.229047 103.588 1.20996V4.34863C102.301 3.44955 101.179 3.2207 100.387 3.2207C100.024 3.22073 99.4297 3.26987 99.4297 3.66211C99.4297 4.02173 99.9745 4.16858 100.717 4.33203C102.878 4.80615 104 5.59168 104 7.66797C104 10.5287 101.722 12 98.9678 12C98.1427 11.9999 96.5262 11.8688 95.4375 10.79V7.24219C96.0315 7.84707 97.3844 8.8769 98.8691 8.87695C99.5785 8.87695 99.793 8.6317 99.793 8.37012C99.7926 7.9781 99.2648 7.81497 98.5723 7.60254C97.2195 7.19384 95.2404 6.55591 95.2402 3.875C95.2402 0.899636 97.7967 6.8766e-05 99.9248 0ZM4.22363 0.27832C8.29846 0.278396 10.7236 2.56683 10.7236 6C10.7236 9.43318 8.29847 11.7216 4.22363 11.7217H0V0.27832H4.22363ZM18.8008 3.59668H15.4678V4.54492H18.5371V7.34082H15.4678V8.40332H18.9658V11.7217H11.2783V0.27832H18.8008V3.59668ZM26.5439 5.31348V0.27832H30.6025V11.7217H26.3291L24.0361 6.62109V11.7217H19.9775V0.27832H24.2832L26.5439 5.31348ZM36.0586 11.7217H31.8682V0.27832H36.0586V11.7217ZM44.0938 6.6377L45.4131 0.27832H50.8574V11.7217H46.8486V4.79004L45.3477 11.7217H42.8398L41.3223 4.70801V11.7217H37.3291V0.27832H42.7734L44.0938 6.6377ZM63.9316 3.59668H61.7705V11.7217H57.5801V3.59668H55.4189V0.27832H63.9316V3.59668ZM71.8867 3.59668H68.5547V4.54492H71.623V7.34082H68.5547V8.40332H72.0518V11.7217H64.3643V0.27832H71.8867V3.59668ZM84.5234 11.7217H80.3008L79.8545 9.74414H76.9678L76.5225 11.7217H72.2988L75.8291 0.27832H80.9766L84.5234 11.7217ZM89.6934 0.27832C91.2606 0.27832 94.6426 0.376431 94.6426 4.00586C94.6425 5.49336 94.0484 6.3433 92.8936 6.81738L95.0225 11.7217H90.749L89.3145 7.76562H88.9512V11.7217H84.7607V0.27832H89.6934ZM4.17383 8.40332H4.28906C5.90585 8.40332 6.5332 7.29155 6.5332 6C6.53319 4.70846 5.90584 3.59668 4.28906 3.59668H4.17383V8.40332ZM77.6113 6.94824H79.2119L78.4033 3.43359L77.6113 6.94824ZM88.9512 5.06836H89.3799C90.1716 5.06836 90.452 4.65962 90.4521 4.07129C90.4521 3.3683 90.0397 3.15527 89.3633 3.15527H88.9512V5.06836Z" fill="currentcolor"/> </svg></span><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Denim Tears</span><b class="zero" data-count="denimtears">0</b>
+      </button>
     </div>
+    <div class="tools" id="tools">
     <div class="status" id="status" aria-live="polite"><span class="x" id="dot"></span><span id="statusText">연결 중…</span></div>
     <div class="actions" id="actions">
       <button class="btn" id="testBtn" type="button">테스트 알림</button>
       <button class="btn primary" id="checkBtn" type="button">지금 확인</button>
+    </div>
     </div>
   </div>
 </header>
@@ -279,12 +323,12 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 </main>
 
 <script>
-const VERSION = 5;
+const VERSION = 6;
 const $ = id => document.getElementById(id);
 const KIND = {new_product:"신상품", relisted:"재입고", restock:"재입고", category_open:"오픈", price_change:"가격", error:"오류", test:"테스트"};
 const TABS = [["main","메인"],["accessory","신발·액세서리"],["other","기타"],["all","전체"]];
 const MAIN = ["hoodie", "apparel"];
-const NAMES = {chromehearts: "Chrome Hearts", skylrk: "SKYLRK"};
+const NAMES = {chromehearts: "Chrome Hearts", skylrk: "SKYLRK", cpfm: "CPFM", denimtears: "Denim Tears"};
 let store = "chromehearts", tab = "main", S = null, lastEvents = {}, cache = {};
 try {
   store = (location.hash.slice(1) in NAMES && location.hash.slice(1)) || localStorage.getItem("chm.store") || store;
@@ -321,8 +365,9 @@ const usdNum = p => Number(String(p || "").replace(/[,$]/g, ""));
 const money = p => p ? "$" + usdNum(p).toLocaleString("en-US", {maximumFractionDigits: 2}) : "";
 const won = n => n ? Number(n).toLocaleString("ko-KR") + "원" : "";
 const imgStyle = u => u ? `background-image:url("${encodeURI(u).replace(/"/g, "%22")}")` : "";
-const logoEl = () => store === "skylrk" ? el("div", {class: "sky-logo"}) : el("div", {class: "banner"});
-function fillLogo(n) { if (n.classList.contains("sky-logo")) n.innerHTML = document.querySelector("#logos .sky-logo").innerHTML; return n; }
+// the hero's logo for this store, copied for the empty-state watermark
+const logoEl = () => { const n = document.querySelector(`#logos [data-logo="${store}"]`).cloneNode(true); n.removeAttribute("data-logo"); n.removeAttribute("role"); return n; };
+const fillLogo = n => n;
 const catName = c => (S.category_titles || {})[c] || c;
 
 // products first seen after the baseline (the very first check) are drops
@@ -437,10 +482,16 @@ function chips(group) {
   const cats = Object.entries(S.categories).filter(([c]) => c !== "shop" && (group === "all" || inTab(cg[c], group)))
     .sort((a, b) => (b[1] > 0) - (a[1] > 0) || a[0].localeCompare(b[0]));
   if (!cats.length) return null;
-  return el("div", {class: "cats"}, cats.map(([c, n]) => n > 0
+  const limit = phone.matches ? 4 : 10, open = chipsOpen[store + group];
+  const shown = open ? cats : cats.slice(0, limit);
+  const more = cats.length - shown.length;
+  const toggle = cats.length > limit ? el("button", {type: "button", class: "more"}, open ? "접기" : `+${more}개 더 보기`) : null;
+  if (toggle) toggle.onclick = () => { chipsOpen[store + group] = !open; renderStore(); };
+  return el("div", {class: "cats"}, shown.map(([c, n]) => n > 0
     ? el("a", {class: "cat open", href: urls[c] || "#", target: "_blank", rel: "noopener"}, X(), catName(c), el("b", {}, n >= 12 && store === "chromehearts" ? "12+" : n))
-    : el("span", {class: "cat", title: "닫힘 — 열리면 알림"}, X(), catName(c))));
+    : el("span", {class: "cat", title: "닫힘 — 열리면 알림"}, X(), catName(c))), toggle);
 }
+const chipsOpen = {};
 
 function renderStore() {
   const q = $("q").value.trim().toLowerCase();
@@ -533,18 +584,19 @@ $("q").oninput = () => S && renderStore();
 document.querySelectorAll("#switch button").forEach(b => b.onclick = () => b.dataset.store !== store && switchStore(b.dataset.store));
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") return;
-  if (e.key === "1") switchStore("chromehearts");
-  if (e.key === "2") switchStore("skylrk");
+  const k = Object.keys(NAMES)[Number(e.key) - 1];
+  if (k) switchStore(k);
 });
 // phones: status line and buttons sit just above the alerts instead of in the top bar
 const phone = matchMedia("(max-width:640px)");
 function placeOps() {
-  const into = phone.matches ? $("ops") : document.querySelector("header .bar");
+  const into = phone.matches ? $("ops") : $("tools");
   into.append($("status"), $("actions"));
 }
 phone.addEventListener ? phone.addEventListener("change", placeOps) : phone.addListener(placeOps);
 placeOps();
 switchStore(store, false);
+addEventListener("hashchange", () => { const h = location.hash.slice(1); if (h in NAMES && h !== store) switchStore(h); });
 // prefetch the other store so the first switch is instant
 setTimeout(() => Object.keys(NAMES).filter(s => s !== store).forEach(s => fetch("/api/state?store=" + s).then(r => r.json()).then(d => { cache[s] = d; }).catch(() => {})), 1500);
 setInterval(load, 3000); setInterval(renderStatus, 1000);

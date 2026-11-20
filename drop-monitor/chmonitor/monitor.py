@@ -28,8 +28,10 @@ DEFAULTS: dict = {
     "stores": {                      # per-store switches and overrides of any key below
         "chromehearts": {"enabled": True},
         "skylrk": {"enabled": True},
+        "cpfm": {"enabled": True},
+        "denimtears": {"enabled": True},
     },
-    "interval_seconds": None,        # None = the store's default (Chrome Hearts 60, SKYLRK 45)
+    "interval_seconds": None,        # None = the store's default (Chrome Hearts 60, SKYLRK/CPFM 45, Denim Tears 75)
     "keywords": [],                  # empty = every product
     "preferred_sizes": [],           # e.g. ["L", "M"]
     "categories": [],                # Chrome Hearts: empty = read from sitemap
