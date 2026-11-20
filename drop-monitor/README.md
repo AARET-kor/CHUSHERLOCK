@@ -70,6 +70,8 @@ python3 -m chmonitor                 # 대시보드 없이 감시만 (Ctrl+C로 
 | `interval_seconds` | 60 | 확인 간격(초). 최소 20초. 매번 ±20% 무작위로 흔들림 |
 | `keywords` | `[]` | 이 단어가 상품명/카테고리에 있을 때만 알림. 비우면 전부 |
 | `preferred_sizes` | `[]` | 구매 링크에 미리 선택할 사이즈 순서. `"L"`, `"LRG"` 둘 다 됨. 재고 있는 첫 사이즈를 고름 |
+| `usd_krw` | `null` | 원화 환율을 고정하고 싶을 때 (예: `1450`). 비우면 실시간 환율(6시간마다, open.er-api.com) |
+| `usd_krw_fallback` | 1400 | 실시간 환율을 못 받았을 때 쓰는 값. 대시보드 하단에 "기본값"으로 표시됨 |
 | `alert_groups` | `["main", "accessory"]` | 알림을 보낼 상품 그룹. `"other"`를 넣으면 Baccarat·향·속옷도 알림 |
 | `track_stock` | `watchlist` | 재입고 감시 범위: `watchlist`(키워드 상품) / `all` / `off` |
 | `auto_open_browser` | `true` | 알림과 동시에 기본 브라우저로 구매 페이지 열기 |
