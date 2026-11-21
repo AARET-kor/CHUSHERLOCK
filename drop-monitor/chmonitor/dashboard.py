@@ -1,8 +1,11 @@
 """Dashboard: runs one monitor per store in background threads and serves their state.
 
 Local mode (--dashboard) listens on 127.0.0.1 only and checks the Host header
-(no DNS rebinding). Server mode (--server) listens on every address and asks
-for a password (HTTP Basic auth, CH_DASHBOARD_PASSWORD) on every page.
+(no DNS rebinding). Server mode (--server) listens on every address with no
+password by default; set CH_DASHBOARD_REQUIRE_PASSWORD=1 and
+CH_DASHBOARD_PASSWORD to put HTTP Basic auth back on every page. The pages
+never carry secrets (tokens stay on the server), and the two actions are
+rate-limited so an open dashboard can't be used to spam Telegram.
 
 The two actions (check now, test alert) are POSTs that need a custom header,
 so another website open in the same browser cannot trigger them (a
@@ -18,12 +21,13 @@ import json
 import logging
 import os
 import threading
+import time
 import urllib.parse
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import fx
+from . import fx, priority
 from .detect import Event
 from .groups import LABELS, ORDER, classify, ko_category
 from .monitor import Monitor, sample_event
@@ -32,7 +36,24 @@ from .site import Product
 log = logging.getLogger("chmonitor")
 PAGE = Path(__file__).with_name("dashboard.html")
 ACTION_HEADER = "X-CH-Dashboard"
-VERSION = 7  # the page warns when an older server is still running
+ACTION_GAP = {"/api/check": 20, "/api/test-notify": 60}  # seconds between presses, per store
+
+
+class Limiter:
+    def __init__(self):
+        self.last: dict[str, float] = {}
+        self.lock = threading.Lock()
+
+    def wait(self, key: str, gap: float) -> float:
+        """0 and records the press when allowed, else the seconds left."""
+        now = time.monotonic()
+        with self.lock:
+            left = self.last.get(key, -1e9) + gap - now
+            if left > 0:
+                return left
+            self.last[key] = now
+            return 0.0
+VERSION = 8  # the page warns when an older server is still running
 
 
 def config_summary(cfg: dict) -> dict:
@@ -69,6 +90,7 @@ def build_state(mon: Monitor, monitors: dict[str, Monitor]) -> dict:
         d["group"] = classify(d["name"], d["category"])
         d["category_ko"] = ko_category(d["category"])
         d["price_krw"] = fx.krw(d["price"])
+        d["priority_hits"] = priority.live_hits(p, mon.rules(), mon.store.id)
     titles = {c: mon.store.category_title(c) for c in snap["categories"]}
     snap["category_titles"] = titles
     snap["category_groups"] = {c: classify(titles[c]) for c in snap["categories"]}
@@ -80,12 +102,14 @@ def build_state(mon: Monitor, monitors: dict[str, Monitor]) -> dict:
     snap["fx"] = fx.info()
     snap["version"] = VERSION
     snap["config"] = config_summary(mon.cfg)
+    snap["config"]["priority"] = [r for r in mon.rules() if r.get("store", mon.store.id) == mon.store.id]
     snap["stores"] = [store_summary(m) for m in monitors.values()]
     return snap
 
 
 def make_handler(monitors: dict[str, Monitor], public: bool = False, password: str = ""):
     default = next(iter(monitors))
+    limiter = Limiter()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "chmonitor"
@@ -158,6 +182,9 @@ def make_handler(monitors: dict[str, Monitor], public: bool = False, password: s
                 return self._json({"error": "forbidden"}, 403)
             path = urllib.parse.urlparse(self.path).path
             mon = self._mon()
+            wait = limiter.wait(f"{path}:{mon.store.id}", ACTION_GAP.get(path, 0))
+            if wait:
+                return self._json({"error": "too soon", "retry_after": round(wait)}, 429)
             if path == "/api/check":
                 mon.request_check()
                 return self._json({"ok": True})
@@ -175,10 +202,12 @@ def serve(monitors: dict[str, Monitor] | Monitor, port: int = 8787, open_browser
           public: bool = False) -> int:
     if isinstance(monitors, Monitor):
         monitors = {monitors.store.id: monitors}
-    password = os.environ.get("CH_DASHBOARD_PASSWORD", "").strip()
-    if public and len(password) < 8:
-        print("서버 모드는 대시보드 비밀번호가 필요합니다. 환경변수 CH_DASHBOARD_PASSWORD 에 8자 이상을 넣어 주세요.")
-        return 2
+    password = ""
+    if os.environ.get("CH_DASHBOARD_REQUIRE_PASSWORD", "").strip() in ("1", "true", "yes"):
+        password = os.environ.get("CH_DASHBOARD_PASSWORD", "").strip()
+        if len(password) < 8:
+            print("CH_DASHBOARD_REQUIRE_PASSWORD 가 켜져 있으면 CH_DASHBOARD_PASSWORD 에 8자 이상이 필요합니다.")
+            return 2
     host = "0.0.0.0" if public else "127.0.0.1"
     try:
         httpd = ThreadingHTTPServer((host, port), make_handler(monitors, public, password))

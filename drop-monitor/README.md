@@ -72,6 +72,36 @@ NO ZIP - DOTS
 알림 대상은 `alert_groups`로 바꿉니다 (예: 하의·아우터도 받으려면 `["hoodie", "top", "apparel"]`).
 Railway에서는 변수 `CH_CONFIG_JSON`에 `{"alert_groups":["hoodie","top","apparel"]}`처럼 넣으면 됩니다.
 
+## ⚡ 우선 알림 — 크롬하츠 후디 M·XL
+
+크롬하츠 **후디·후드집업**이 새로 올라오거나 재입고됐는데 **M 또는 XL** 재고가 있으면 일반 알림 대신 우선 알림이 갑니다.
+
+```
+🔥🔥 [Chrome Hearts] 후디 M 재고 — 지금 구매
+CEMETERY HOODIE
+⚡ M 사이즈가 선택된 페이지로 바로 열립니다
+💵 $1,450 (약 1,930,000원)
+📏 재고 있음: M · L · XL
+[🛒 M 사이즈로 지금 구매]  [👀 상품 보기]
+```
+
+- 버튼을 누르면 **M(없으면 XL)이 이미 선택된 상품 페이지**가 열립니다 → 장바구니 → 결제.
+- 놓치지 않게 **20초 간격으로 2번 더** 텔레그램이 다시 울립니다.
+- 재입고는 우리 사이즈(M·XL)가 돌아온 경우만 우선 알림입니다. L만 돌아오면 일반 알림.
+- 대시보드에서는 해당 상품에 노란 **⚡ M·XL** 표시가 붙습니다.
+- 바꾸기: `"priority": [{"store": "chromehearts", "groups": ["hoodie"], "sizes": ["M", "XL"], "repeat": 2, "repeat_every": 20}]`
+  (끄기 `"priority": []`, 다른 스토어도 같은 형식으로 추가)
+
+자동 주문·결제는 하지 않습니다. 크롬하츠 약관이 봇 구매를 금지하고(주문 취소·계정 차단 사유), 결제 단계에 reCAPTCHA와
+결제사 기기 인증이 있어 우회 없이는 안정적으로 동작하지 않기 때문입니다.
+
+### 구매 준비 체크리스트 (알림 오기 전에 미리)
+1. **배송지**: 크롬하츠 온라인은 **미국 배송만** 됩니다(약관상 미국 거주자 대상). 미국 배송대행지 주소를 준비하세요.
+2. **계정**: chromehearts.com 계정을 만들고 로그인 상태를 휴대폰 브라우저에 유지 → 주소록에 배송대행 주소 저장.
+3. **결제수단**: 미국 결제가 되는 카드를 준비하고, 카드 앱의 해외결제·온라인결제를 켜 두기. 휴대폰 브라우저 자동완성에 카드 저장.
+4. **연습**: 지금 판매 중인 아무 상품으로 결제 직전 단계(리뷰 화면)까지 한 번 가 보기 — 실제 드롭 때 막히는 곳을 미리 찾습니다.
+5. 텔레그램 알림 소리와 "방해 금지 모드 예외"에 이 봇을 넣어 두기.
+
 ## 대시보드
 
 `python3 -m chmonitor --dashboard` → http://127.0.0.1:8787
@@ -100,11 +130,12 @@ Railway에서는 변수 `CH_CONFIG_JSON`에 `{"alert_groups":["hoodie","top","ap
    |---|---|
    | `CH_TELEGRAM_BOT_TOKEN` | BotFather 토큰 (맥 `config.json`의 `telegram.bot_token`과 같은 값) |
    | `CH_TELEGRAM_CHAT_ID` | 맥 `config.json`의 `telegram.chat_id` 값 |
-   | `CH_DASHBOARD_PASSWORD` | 대시보드 비밀번호 (8자 이상, 새로 정하기) |
    | `CH_CONFIG_JSON` | (선택) 설정 JSON 한 줄, 예: `{"preferred_sizes":["L","M"]}` |
 4. **Volume** 추가 → Mount path `/data` (알림 기록·기준 상태 저장. 없으면 재배포 때마다 기준을 새로 잡습니다).
 5. **Settings → Networking → Generate Domain** → `https://xxxx.up.railway.app` 에서 대시보드 확인.
-   브라우저가 아이디/비밀번호를 물으면 아이디는 아무거나, 비밀번호는 `CH_DASHBOARD_PASSWORD`.
+   대시보드는 비밀번호 없이 열립니다. 다시 잠그려면 변수 `CH_DASHBOARD_REQUIRE_PASSWORD=1`과
+   `CH_DASHBOARD_PASSWORD`(8자 이상)를 넣으세요. 페이지에는 토큰 같은 비밀값이 나가지 않고,
+   테스트 알림은 1분에 한 번, 지금 확인은 20초에 한 번만 눌립니다.
 6. 대시보드의 **테스트 알림** 버튼으로 텔레그램이 오는지 확인.
 
 **서버에 올리면 맥에서 돌리던 건 끄세요.** 둘 다 켜 두면 알림이 두 번 옵니다.
@@ -127,7 +158,7 @@ Railway에서는 변수 `CH_CONFIG_JSON`에 `{"alert_groups":["hoodie","top","ap
 | `telegram`, `ntfy`, `discord`, `desktop`, `sound` | | 알림 채널 |
 
 환경변수: `CH_TELEGRAM_BOT_TOKEN`, `CH_TELEGRAM_CHAT_ID`, `CH_DISCORD_WEBHOOK_URL`, `CH_NTFY_TOPIC`,
-`CH_CONFIG_JSON`(설정 전체), `CH_DATA_DIR`(상태 파일 폴더), `CH_DASHBOARD_PASSWORD`(서버 모드), `PORT`.
+`CH_CONFIG_JSON`(설정 전체), `CH_DATA_DIR`(상태 파일 폴더), `CH_DASHBOARD_REQUIRE_PASSWORD`·`CH_DASHBOARD_PASSWORD`(대시보드 잠금, 선택), `PORT`.
 
 ## 어떻게 감지하나
 

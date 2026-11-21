@@ -149,7 +149,9 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(sorted(e.kind for e in evs), ["category_open", "new_product"])
         new = [e for e in evs if e.kind == "new_product"][0]
         self.assertEqual(new.product.sizes["LRG"], True)
-        self.assertIn("dwvar_C_size=LRG", n2.link(new))  # preferred size pre-selected
+        # a Chrome Hearts hoodie with M in stock is a priority alert: M beats the preferred L
+        self.assertTrue(new.info.get("priority"))
+        self.assertIn("dwvar_C_size=MED", n2.link(new))
         self.assertEqual(len(n2.sent), 2)
 
         # nothing changes -> no alerts

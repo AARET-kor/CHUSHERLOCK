@@ -14,7 +14,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from . import fx
+from . import fx, priority
 from .detect import Event, diff_categories, diff_products, matches
 from .groups import HOODIE, classify, expand
 from .notify import Notifier
@@ -46,6 +46,7 @@ DEFAULTS: dict = {
     "discord": {"enabled": False, "webhook_url": "", "mention_user_id": ""},
     "usd_krw": None,                 # fix the won rate (e.g. 1450); null = fetch the live rate
     "usd_krw_fallback": 1400,        # used until a live rate arrives
+    "priority": None,                # None = Chrome Hearts hoodies in M or XL (see priority.py); [] turns it off
     "state_file": "state.json",      # Chrome Hearts; other stores use state-<store>.json next to it
 }
 MIN_INTERVAL = 20
@@ -264,9 +265,15 @@ class Monitor:
             return classify(self.store.category_title(ev.category), "") in groups
         return True
 
+    def rules(self) -> list[dict]:
+        r = self.cfg.get("priority")
+        return priority.DEFAULT_RULES if r is None else r
+
     def _emit(self, events: list[Event]) -> None:
         for ev in events:
             ev.store = ev.store or self.store.id
+            if priority.mark(ev, self.rules(), self.store.id):
+                ev.title = f"⚡ {', '.join(ev.info['hits'])} 재고 — " + ev.title
             link = self.notifier.link(ev)
             log.info("🚨 [%s] %s  %s  %s", self.store.name, ev.title, ev.detail, link)
             self.record(ev, link)
@@ -280,6 +287,7 @@ class Monitor:
                 "image": ev.product.image if ev.product else "",
                 "pid": ev.product.pid if ev.product else "",
                 "category": ev.category,
+                "priority": bool(ev.info.get("priority")),
             })
             del self.state.events[:-MAX_EVENTS]
 

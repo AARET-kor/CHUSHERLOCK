@@ -13,6 +13,8 @@ import os
 import platform
 import shutil
 import subprocess
+import threading
+import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 import webbrowser
@@ -86,15 +88,31 @@ class Notifier:
                 fn(msg, link)
             except Exception as e:  # one broken channel must not stop the others
                 log.warning("알림 실패 (%s): %s", name, e)
+        if ev.info.get("priority") and int(ev.info.get("repeat", 0)) > 0:
+            threading.Thread(target=self._remind, args=(ev, msg, link), daemon=True).start()
         if self.cfg.get("auto_open_browser") and link and ev.kind in self.cfg.get(
             "auto_open_on", ["new_product", "restock", "category_open"]
         ):
             webbrowser.open(link, new=2)
 
+    def _remind(self, ev: Event, msg: Message, link: str) -> None:
+        """Repeat a priority alert so it can't be slept through."""
+        n = int(ev.info.get("repeat", 2))
+        for i in range(1, n + 1):
+            time.sleep(float(ev.info.get("repeat_every", 20)))
+            again = Message(f"⏰ 다시 알림 {i}/{n} — {msg.headline}", msg.title,
+                            [x for x in msg.lines if x.startswith(("💵", "📏"))], msg.buttons[:1])
+            for name, fn in (("telegram", self._telegram), ("ntfy", self._ntfy)):
+                if self._enabled(name):
+                    try:
+                        fn(again, link)
+                    except Exception as e:
+                        log.warning("다시 알림 실패 (%s): %s", name, e)
+
     def link(self, ev: Event) -> str:
         store = get_store(ev.store or (ev.product.store if ev.product else ""))
         if ev.product:
-            return store.buy_url(ev.product, self.preferred_size(ev.product))
+            return store.buy_url(ev.product, ev.info.get("size") or self.preferred_size(ev.product))
         if ev.category:
             return store.category_url(ev.category)
         return ""
@@ -119,6 +137,9 @@ class Notifier:
         icon = {"restock": "📦", "price_change": "💲", "test": "🧪", "error": "⚠️"}.get(
             ev.kind, "🔥" if group == HOODIE else "🚨")
         headline = f"{icon} [{store.name}] " + (f"{what} {kind}" if what and p else kind)
+        if ev.info.get("priority"):
+            sizes = "·".join(ev.info.get("hits") or [])
+            headline = f"🔥🔥 [{store.name}] {what or '우선'} {sizes} 재고 — 지금 구매"
 
         if not p:
             name = store.category_title(ev.category) if ev.category else ev.title
@@ -145,11 +166,15 @@ class Notifier:
         lines.append(f"🏷 {ko_category(p.category) or '-'} · {LABELS.get(group, group)}")
         lines.append(f"🕒 {_clock()} 포착")
 
-        size = self.preferred_size(p)
+        size = ev.info.get("size") or self.preferred_size(p)
+        if ev.info.get("priority"):
+            lines.insert(0, f"⚡ {p.size_labels.get(size, size)} 사이즈가 선택된 페이지로 바로 열립니다")
         buttons = []
         if link:
             if size and "/cart/" in link:
                 label = f"🛒 {p.size_labels.get(size, size)} 사이즈 바로 결제"
+            elif size and ev.info.get("priority"):
+                label = f"🛒 {p.size_labels.get(size, size)} 사이즈로 지금 구매"
             elif size:
                 label = f"🛒 바로 구매 ({p.size_labels.get(size, size)} 선택됨)"
             else:

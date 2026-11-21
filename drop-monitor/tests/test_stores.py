@@ -140,11 +140,25 @@ class ServerModeTests(unittest.TestCase):
         except urllib.error.HTTPError as e:
             return e.code, e.read().decode()
 
-    def test_password_required(self):
+    def test_password_when_configured(self):
         self.assertEqual(self.get("/")[0], 401)
         self.assertEqual(self.get("/api/state", "wrong-password")[0], 401)
         self.assertEqual(self.get("/", "hunter2hunter2", host="monitor.up.railway.app")[0], 200)
-        self.assertEqual(self.get("/healthz"), (200, "ok v7"))
+        self.assertEqual(self.get("/healthz"), (200, "ok v8"))
+
+    def test_actions_are_rate_limited(self):
+        def post(path):
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            h = {"X-CH-Dashboard": "1", "Authorization": "Basic " + base64.b64encode(b"me:hunter2hunter2").decode()}
+            try:
+                with opener.open(urllib.request.Request(self.base + path, data=b"", headers=h, method="POST"), timeout=5) as r:
+                    return r.status
+            except urllib.error.HTTPError as e:
+                return e.code
+        self.assertEqual(post("/api/test-notify?store=skylrk"), 200)
+        self.assertEqual(post("/api/test-notify?store=skylrk"), 429)
+        self.assertEqual(post("/api/check?store=skylrk"), 200)
+        self.assertEqual(post("/api/check?store=skylrk"), 429)
 
     def test_store_switch(self):
         code, body = self.get("/api/state?store=skylrk", "hunter2hunter2")

@@ -182,6 +182,9 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;padding-bottom:16px}
 .grid.compact{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
 .card{display:flex;flex-direction:column;background:var(--panel-2);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.tag.prio{position:absolute;top:12px;right:12px;background:#ffd400;border-color:#ffd400;color:#111;font-size:17px}
+.card.prio{border-color:#ffd400;box-shadow:0 0 0 2px #ffd400,0 10px 34px -12px #ffd400}
+.ev.prio{background:linear-gradient(90deg,rgba(255,212,0,.16),transparent 70%)}
 .card.fresh{border-color:var(--alert);box-shadow:0 0 0 1px var(--alert),0 10px 34px -12px var(--alert)}
 .card.gone{opacity:.45}
 .img{position:relative;aspect-ratio:1;background:var(--img) center/contain no-repeat}
@@ -323,7 +326,7 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 </main>
 
 <script>
-const VERSION = 7;
+const VERSION = 8;
 const $ = id => document.getElementById(id);
 const KIND = {new_product:"신상품", relisted:"재입고", restock:"재입고", category_open:"오픈", price_change:"가격", error:"오류", test:"테스트"};
 const TABS = [["main","메인"],["accessory","신발·액세서리"],["other","기타"],["all","전체"]];
@@ -424,13 +427,14 @@ function render() {
   const ch = S.config.channels, names = {telegram:"텔레그램", ntfy:"ntfy", discord:"디스코드", desktop:"데스크톱", sound:"소리"};
   $("sChan").replaceChildren(...Object.entries(names).map(([k, v]) => el("i", {class: ch[k] ? "on" : ""}, (ch[k] ? "● " : "") + v)));
   const sz = S.config.preferred_sizes;
-  $("sWatch").textContent = "알림: " + S.config.alert_groups.map(g => S.group_labels[g] || g).join(", ") + (sz.length ? " · 사이즈 " + sz.join(">") : "");
+  const pr = (S.config.priority || []).map(r => `⚡ 우선: ${(r.groups || []).map(g => S.group_labels[g] || g).join("·")} ${(r.sizes || []).join("·")}`);
+  $("sWatch").textContent = [...pr, "알림: " + S.config.alert_groups.map(g => S.group_labels[g] || g).join(", ")].join(" · ");
 
   // feed
   const groupOf = e => (products.find(p => p.pid === e.pid) || {}).group || (e.category ? cg[e.category] : "");
   const evs = S.events.slice().reverse();
   $("feedCount").textContent = evs.length ? evs.length + "건" : "";
-  $("feed").replaceChildren(...(evs.length ? evs.map(e => el("li", {class: "ev" + (["accessory", "other"].includes(groupOf(e)) ? " dim" : "")},
+  $("feed").replaceChildren(...(evs.length ? evs.map(e => el("li", {class: "ev" + (e.priority ? " prio" : "") + (["accessory", "other"].includes(groupOf(e)) ? " dim" : "")},
     e.image ? el("div", {class: "thumb", style: imgStyle(e.image)}) : el("div", {class: "thumb none"}, e.kind === "error" ? "!" : X()),
     el("div", {},
       el("div", {class: "t"}, e.title.replace(/^[^:]+:\s*/, "")),
@@ -453,9 +457,10 @@ function render() {
 function card(p, pref, compact) {
   const fresh = isFresh(p);
   const sizes = Object.entries(p.sizes || {});
-  return el("article", {class: "card" + (p.listed ? "" : " gone") + (fresh ? " fresh" : "")},
+  return el("article", {class: "card" + (p.listed ? "" : " gone") + (fresh ? " fresh" : "") + ((p.priority_hits || []).length ? " prio" : "")},
     el("div", {class: "img", style: imgStyle(p.image)},
-      fresh ? el("span", {class: "tag new_product badge"}, X(), "NEW") : !p.listed ? el("span", {class: "tag badge"}, "내려감") : null),
+      fresh ? el("span", {class: "tag new_product badge"}, X(), "NEW") : !p.listed ? el("span", {class: "tag badge"}, "내려감") : null,
+      (p.priority_hits || []).length ? el("span", {class: "tag prio"}, "⚡ " + p.priority_hits.join("·")) : null),
     el("div", {class: "body"},
       el("div", {class: "name"}, p.name),
       el("div", {class: "meta"}, p.category_ko && p.category_ko !== p.category ? `${p.category_ko} · ${p.category}` : p.category),
