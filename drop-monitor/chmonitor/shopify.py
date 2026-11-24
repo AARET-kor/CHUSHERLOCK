@@ -102,3 +102,63 @@ def collection_url(base: str, handle: str) -> str:
 
 def title_from_handle(handle: str) -> str:
     return re.sub(r"[-_]+", " ", handle).strip()
+
+
+def parse_product_js(base: str, d: dict, store: str) -> Product:
+    """/products/<handle>.js: the storefront's own product JSON, which also answers for
+    unlisted products. Prices are in cents and options carry their names."""
+    opts = d.get("options") or []
+    pos = None
+    for i, o in enumerate(opts, 1):
+        name = o.get("name") if isinstance(o, dict) else o
+        if str(name).strip().lower() in ("size", "sizes", "사이즈"):
+            pos = int(o.get("position", i)) if isinstance(o, dict) else i
+    sizes: dict[str, bool] = {}
+    size_variants: dict[str, str] = {}
+    for v in d.get("variants") or []:
+        size = v.get(f"option{pos}") if pos else None
+        if not size:
+            continue
+        sizes[size] = sizes.get(size, False) or bool(v.get("available"))
+        if v.get("available") or size not in size_variants:
+            size_variants[size] = str(v["id"])
+    image = d.get("featured_image") or ""
+    if image.startswith("//"):
+        image = "https:" + image
+    if image:
+        image += ("&" if "?" in image else "?") + "width=600"
+    price = d.get("price_min", d.get("price"))
+    return Product(
+        pid=str(d["id"]), name=html.unescape(d.get("title", "")).strip(),
+        price=f"{price / 100:.2f}" if isinstance(price, (int, float)) else "",
+        category=(d.get("type") or "").strip(), url=f"{base}/products/{d.get('handle', '')}",
+        image=image, sizes=sizes, size_labels={s: s for s in sizes}, available=bool(d.get("available")),
+        store=store, size_variants=size_variants,
+    )
+
+
+def fetch_product_js(client: Client, base: str, handle: str, store: str) -> Product | None:
+    """None when the handle doesn't exist (404)."""
+    try:
+        body = client.get(f"{base}/products/{urllib.parse.quote(handle)}.js")
+    except FetchError as e:
+        if e.status == 404:
+            return None
+        raise
+    try:
+        return parse_product_js(base, json.loads(body), store)
+    except (ValueError, KeyError, TypeError):
+        return None
+
+
+def sitemap_handles(client: Client, base: str) -> list[str]:
+    """Product handles from the store's sitemap (it sometimes lists products the catalogue hides)."""
+    index = client.get(f"{base}/sitemap.xml")
+    handles: list[str] = []
+    for loc in re.findall(r"<loc>([^<]+sitemap_products[^<]+)</loc>", index):
+        body = client.get(html.unescape(loc))
+        for h in re.findall(r"<loc>[^<]*/products/([^<?#/]+)</loc>", body):
+            if h not in handles:
+                handles.append(h)
+    return handles
+

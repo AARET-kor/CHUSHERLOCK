@@ -69,6 +69,19 @@ class Message:
 class Notifier:
     def __init__(self, cfg: dict):
         self.cfg = cfg
+        self.health: dict[str, dict] = {}  # channel -> last result, for the dashboard
+        self._hlock = threading.Lock()
+
+    def _note(self, name: str, ok: bool, error: str = "") -> None:
+        from datetime import datetime
+        with self._hlock:
+            h = self.health.setdefault(name, {"sent": 0, "failed": 0})
+            h["sent" if ok else "failed"] += 1
+            h.update(ok=ok, time=datetime.now().astimezone().isoformat(timespec="seconds"))
+            if ok:
+                h["last_ok"] = h["time"]
+            else:
+                h["error"] = error[:300]
 
     # -- public
 
@@ -86,8 +99,10 @@ class Notifier:
                 continue
             try:
                 fn(msg, link)
+                self._note(name, True)
             except Exception as e:  # one broken channel must not stop the others
                 log.warning("알림 실패 (%s): %s", name, e)
+                self._note(name, False, str(e))
         if ev.info.get("priority") and int(ev.info.get("repeat", 0)) > 0:
             threading.Thread(target=self._remind, args=(ev, msg, link), daemon=True).start()
         if self.cfg.get("auto_open_browser") and link and ev.kind in self.cfg.get(
@@ -106,8 +121,10 @@ class Notifier:
                 if self._enabled(name):
                     try:
                         fn(again, link)
+                        self._note(name, True)
                     except Exception as e:
                         log.warning("다시 알림 실패 (%s): %s", name, e)
+                        self._note(name, False, str(e))
 
     def link(self, ev: Event) -> str:
         store = get_store(ev.store or (ev.product.store if ev.product else ""))
@@ -137,6 +154,8 @@ class Notifier:
         icon = {"restock": "📦", "price_change": "💲", "test": "🧪", "error": "⚠️"}.get(
             ev.kind, "🔥" if group == HOODIE else "🚨")
         headline = f"{icon} [{store.name}] " + (f"{what} {kind}" if what and p else kind)
+        if p and p.hidden:
+            headline = headline.replace(f"[{store.name}] ", f"[{store.name}] 🔗 히든링크 ", 1)
         if ev.info.get("priority"):
             sizes = "·".join(ev.info.get("hits") or [])
             headline = f"🔥🔥 [{store.name}] {what or '우선'} {sizes} 재고 — 지금 구매"
@@ -164,6 +183,8 @@ class Notifier:
         elif p.sizes:
             lines.append("📏 전 사이즈 품절")
         lines.append(f"🏷 {ko_category(p.category) or '-'} · {LABELS.get(group, group)}")
+        if p.hidden:
+            lines.append("🔗 목록에 없는 비밀 링크: " + p.url.replace("https://", ""))
         lines.append(f"🕒 {_clock()} 포착")
 
         size = ev.info.get("size") or self.preferred_size(p)

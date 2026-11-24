@@ -182,6 +182,14 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;padding-bottom:16px}
 .grid.compact{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
 .card{display:flex;flex-direction:column;background:var(--panel-2);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.tag.hid{position:absolute;bottom:12px;left:12px;background:#111;border-color:#111;color:#fff;font-size:16px}
+.hidbox{margin:18px 20px 0;padding:14px 16px;border:1px dashed var(--line-2);border-radius:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.hidbox b{font-size:18px}
+.hidbox input{flex:1;min-width:220px;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:9px 16px;color:var(--text);font:inherit;font-size:17px}
+.hidbox small{width:100%;color:var(--faint);font-size:15px}
+.health{margin-top:6px;font-size:15px}
+.health.bad{color:var(--alert);font-weight:600}
+.health.good{color:var(--ok)}
 .tag.prio{position:absolute;top:12px;right:12px;background:#ffd400;border-color:#ffd400;color:#111;font-size:17px}
 .card.prio{border-color:#ffd400;box-shadow:0 0 0 2px #ffd400,0 10px 34px -12px #ffd400}
 .ev.prio{background:linear-gradient(90deg,rgba(255,212,0,.16),transparent 70%)}
@@ -312,7 +320,7 @@ main{max-width:1760px;margin:0 auto;padding:24px}
     <div class="stat card-bg"><div class="k"><span class="x"></span>판매 중 후디·집업</div><div class="v" id="sHood">–</div><div class="s" id="sHoodSub">&nbsp;</div></div>
     <div class="stat card-bg"><div class="k"><span class="x"></span>새로 포착 (24시간)</div><div class="v" id="sFresh">–</div><div class="s" id="sFreshSub">&nbsp;</div></div>
     <div class="stat card-bg"><div class="k"><span class="x"></span><span id="sCatsK">열린 카테고리</span></div><div class="v" id="sCats">–</div><div class="s" id="sCatsSub">&nbsp;</div></div>
-    <div class="stat card-bg"><div class="k"><span class="x"></span>알림 채널</div><div class="chan" id="sChan"></div><div class="s" id="sWatch">&nbsp;</div></div>
+    <div class="stat card-bg"><div class="k"><span class="x"></span>알림 채널</div><div class="chan" id="sChan"></div><div class="health" id="sHealth"></div><div class="s" id="sWatch">&nbsp;</div></div>
   </section>
 
   <div class="ops" id="ops"></div>
@@ -326,7 +334,7 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 </main>
 
 <script>
-const VERSION = 8;
+const VERSION = 9;
 const $ = id => document.getElementById(id);
 const KIND = {new_product:"신상품", relisted:"재입고", restock:"재입고", category_open:"오픈", price_change:"가격", error:"오류", test:"테스트"};
 const TABS = [["main","메인"],["accessory","신발·액세서리"],["other","기타"],["all","전체"]];
@@ -425,6 +433,12 @@ function render() {
   $("sCats").textContent = watched.length ? `${open.length} / ${watched.length}` : "0";
   $("sCatsSub").textContent = open.length ? open.map(([c]) => catName(c)).join(", ") : "모두 닫힘 — 열리면 바로 알림";
   const ch = S.config.channels, names = {telegram:"텔레그램", ntfy:"ntfy", discord:"디스코드", desktop:"데스크톱", sound:"소리"};
+  const th = (S.notify_health || {}).telegram;
+  const hl = $("sHealth");
+  if (!ch.telegram) { hl.className = "health bad"; hl.textContent = "텔레그램 꺼짐 — 토큰·chat_id 변수를 확인하세요"; }
+  else if (!th) { hl.className = "health"; hl.textContent = "텔레그램: 서버 시작 후 아직 보낸 알림 없음"; }
+  else if (th.ok) { hl.className = "health good"; hl.textContent = `텔레그램 ✓ 마지막 전송 성공 ${ago(th.time)} (성공 ${th.sent} · 실패 ${th.failed})`; }
+  else { hl.className = "health bad"; hl.textContent = `텔레그램 ✗ 전송 실패 ${ago(th.time)}: ${th.error || ""}`; }
   $("sChan").replaceChildren(...Object.entries(names).map(([k, v]) => el("i", {class: ch[k] ? "on" : ""}, (ch[k] ? "● " : "") + v)));
   const sz = S.config.preferred_sizes;
   const pr = (S.config.priority || []).map(r => `⚡ 우선: ${(r.groups || []).map(g => S.group_labels[g] || g).join("·")} ${(r.sizes || []).join("·")}`);
@@ -460,7 +474,8 @@ function card(p, pref, compact) {
   return el("article", {class: "card" + (p.listed ? "" : " gone") + (fresh ? " fresh" : "") + ((p.priority_hits || []).length ? " prio" : "")},
     el("div", {class: "img", style: imgStyle(p.image)},
       fresh ? el("span", {class: "tag new_product badge"}, X(), "NEW") : !p.listed ? el("span", {class: "tag badge"}, "내려감") : null,
-      (p.priority_hits || []).length ? el("span", {class: "tag prio"}, "⚡ " + p.priority_hits.join("·")) : null),
+      (p.priority_hits || []).length ? el("span", {class: "tag prio"}, "⚡ " + p.priority_hits.join("·")) : null,
+      p.hidden && p.listed ? el("span", {class: "tag hid"}, "🔗 히든") : null),
     el("div", {class: "body"},
       el("div", {class: "name"}, p.name),
       el("div", {class: "meta"}, p.category_ko && p.category_ko !== p.category ? `${p.category_ko} · ${p.category}` : p.category),
@@ -498,6 +513,34 @@ function chips(group) {
 }
 const chipsOpen = {};
 
+// one form per store, reused across redraws so typing isn't wiped every 3 s
+const hidBoxes = {};
+function hiddenBox() {
+  let box = hidBoxes[store];
+  if (!box) {
+    const sid = store;
+    box = hidBoxes[sid] = el("form", {class: "hidbox"},
+      el("b", {}, "🔗 히든링크"),
+      el("input", {name: "link", placeholder: `${S.store_url.replace("https://", "")}/products/제품명 또는 제품명`, autocomplete: "off"}),
+      el("button", {class: "btn", type: "submit"}, "추가"),
+      el("small", {}));
+    box.onsubmit = async ev => {
+      ev.preventDefault();
+      const v = box.link.value.trim(); if (!v) return;
+      const r = await fetch("/api/hidden?store=" + sid, {method: "POST", headers: {"X-CH-Dashboard": "1", "Content-Type": "application/json"}, body: JSON.stringify({link: v})});
+      const d = await r.json().catch(() => ({}));
+      box.msg = r.ok ? `추가됨: ${d.handle} — 곧 확인합니다` : (d.error || (r.status === 429 ? "잠시 후 다시 시도하세요" : "실패"));
+      if (r.ok) box.link.value = "";
+      box.querySelector("small").textContent = box.msg;
+      setTimeout(() => { box.msg = ""; load(); }, 4000);
+    };
+  }
+  if (!box.msg) box.querySelector("small").textContent =
+    `지금 열린 히든링크 ${S.hidden.live}개` +
+    ` · 직접 추가 ${S.hidden.user.length}개 — 인스타 등에서 본 링크를 넣으면 매번 확인하고, 열리면 텔레그램으로 알려 드립니다.`;
+  return box;
+}
+
 function renderStore() {
   const q = $("q").value.trim().toLowerCase();
   const match = p => !q || (p.name + " " + p.category + " " + (p.category_ko || "") + " " + p.pid).toLowerCase().includes(q);
@@ -517,6 +560,7 @@ function renderStore() {
   if (tab === "accessory") parts.push(el("div", {class: "note"}, "신발 · 모자 · 아이웨어 · 케이스 · 주얼리는 여기로 따로 모았습니다." + (alertsOff ? " 이 그룹은 알림을 보내지 않습니다." : "")));
   if (tab === "other") parts.push(el("div", {class: "note"}, "Baccarat 글라스, 향, 속옷 · 양말은 여기로 따로 모았습니다." + (alertsOff ? " 이 그룹은 알림을 보내지 않습니다." : "")));
   parts.push(chips(tab));
+  if (S.hidden && tab === "main") parts.push(hiddenBox());
 
   const pool = S.products.filter(p => inTab(p.group, tab) && match(p)).sort(sort);
   if (tab === "main") {

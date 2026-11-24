@@ -36,7 +36,7 @@ from .site import Product
 log = logging.getLogger("chmonitor")
 PAGE = Path(__file__).with_name("dashboard.html")
 ACTION_HEADER = "X-CH-Dashboard"
-ACTION_GAP = {"/api/check": 20, "/api/test-notify": 60}  # seconds between presses, per store
+ACTION_GAP = {"/api/check": 20, "/api/test-notify": 60, "/api/hidden": 3}  # seconds between presses, per store
 
 
 class Limiter:
@@ -53,7 +53,7 @@ class Limiter:
                 return left
             self.last[key] = now
             return 0.0
-VERSION = 8  # the page warns when an older server is still running
+VERSION = 9  # the page warns when an older server is still running
 
 
 def config_summary(cfg: dict) -> dict:
@@ -101,6 +101,10 @@ def build_state(mon: Monitor, monitors: dict[str, Monitor]) -> dict:
     snap["group_order"] = ORDER
     snap["fx"] = fx.info()
     snap["version"] = VERSION
+    snap["notify_health"] = dict(mon.notifier.health)
+    snap["hidden"] = ({"found": list(mon.hidden.state["found"]), "user": list(mon.hidden.state["user"]),
+                       "live": mon.hidden.state.get("live", 0)}
+                      if mon.hidden else None)
     snap["config"] = config_summary(mon.cfg)
     snap["config"]["priority"] = [r for r in mon.rules() if r.get("store", mon.store.id) == mon.store.id]
     snap["stores"] = [store_summary(m) for m in monitors.values()]
@@ -188,6 +192,23 @@ def make_handler(monitors: dict[str, Monitor], public: bool = False, password: s
             if path == "/api/check":
                 mon.request_check()
                 return self._json({"ok": True})
+            if path == "/api/hidden":
+                if not mon.hidden:
+                    return self._json({"error": "이 스토어는 히든링크를 지원하지 않습니다"}, 400)
+                from .hidden import handle_from
+                try:
+                    n = min(int(self.headers.get("Content-Length") or 0), 2000)
+                    body = json.loads(self.rfile.read(n) or b"{}")
+                except ValueError:
+                    return self._json({"error": "bad request"}, 400)
+                handle = handle_from(str(body.get("link", "")))
+                if not handle:
+                    return self._json({"error": "주소나 제품명을 알아볼 수 없습니다"}, 400)
+                with mon.lock:
+                    added = mon.hidden.add_user(handle)
+                    mon.state.save()
+                mon.request_check()
+                return self._json({"ok": True, "handle": handle, "added": added})
             if path == "/api/test-notify":
                 ev = sample_event(mon.store.id)
                 mon.record(ev)

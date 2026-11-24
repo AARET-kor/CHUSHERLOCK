@@ -46,6 +46,8 @@ DEFAULTS: dict = {
     "discord": {"enabled": False, "webhook_url": "", "mention_user_id": ""},
     "usd_krw": None,                 # fix the won rate (e.g. 1450); null = fetch the live rate
     "usd_krw_fallback": 1400,        # used until a live rate arrives
+    "hidden_links": True,            # Shopify stores: also watch products reachable only by direct link
+    "hidden_per_check": 12,          # how many guessed links to try per check (SKYLRK)
     "priority": None,                # None = Chrome Hearts hoodies in M or XL (see priority.py); [] turns it off
     "state_file": "state.json",      # Chrome Hearts; other stores use state-<store>.json next to it
 }
@@ -135,12 +137,14 @@ class State:
         self.categories: dict[str, int] = {}
         self.initialized = False
         self.events: list[dict] = []
+        self.hidden: dict = {}
         if path.exists():
             d = json.loads(path.read_text(encoding="utf-8"))
             self.products = {k: Product.from_dict(v) for k, v in d.get("products", {}).items()}
             self.categories = d.get("categories", {})
             self.initialized = bool(d.get("initialized"))
             self.events = d.get("events", [])
+            self.hidden = d.get("hidden", {})
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -151,6 +155,7 @@ class State:
             "categories": self.categories,
             "products": {k: v.to_dict() for k, v in self.products.items()},
             "events": self.events[-MAX_EVENTS:],
+            "hidden": self.hidden,
         }, ensure_ascii=False, indent=1), encoding="utf-8")
         tmp.replace(self.path)
 
@@ -164,6 +169,10 @@ class Monitor:
         self.client = client or Client()
         self.notifier = notifier or Notifier(self.cfg)
         self.state = State(Path(self.cfg["state_file"]))
+        self.hidden = None
+        if self.store.stock_in_listing and self.cfg.get("hidden_links", True):  # Shopify stores
+            from .hidden import HiddenLinks
+            self.hidden = HiddenLinks(self.store, self.state.hidden, guesses=self.store.id == "skylrk")
         self._cats: list[str] = []
         self._cycle = 0
         self.lock = threading.RLock()
@@ -199,8 +208,11 @@ class Monitor:
     def scan_products(self) -> dict[str, Product]:
         old = self.state.products
         current = {p.pid: p for p in self.store.products(self.client)}  # FetchError propagates
-        if not current and old:
+        if not current and any(p.listed and not p.hidden for p in old.values()):
             raise FetchError(self.store.base, None, "상품 목록이 비어 있음 (점검 중이거나 차단됨)")
+        if self.hidden:
+            for p in self.hidden.scan(self.client, list(current.values()), int(self.cfg.get("hidden_per_check", 12))):
+                current.setdefault(p.pid, p)
         products: dict[str, Product] = {}
         for pid, p in old.items():  # never forget a product; mark it delisted instead
             q = Product.from_dict(p.to_dict())

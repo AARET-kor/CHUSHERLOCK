@@ -59,6 +59,7 @@ class Product:
     first_seen: str = ""  # ISO time the monitor first saw it
     store: str = "chromehearts"
     size_variants: dict[str, str] = field(default_factory=dict)  # size id -> store variant id (Shopify)
+    hidden: bool = False  # reachable only by its direct link, not listed by the store
 
     def to_dict(self) -> dict:
         return asdict(self)
