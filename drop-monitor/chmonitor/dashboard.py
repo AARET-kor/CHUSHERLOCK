@@ -53,7 +53,7 @@ class Limiter:
                 return left
             self.last[key] = now
             return 0.0
-VERSION = 11  # the page warns when an older server is still running
+VERSION = 12  # the page warns when an older server is still running
 
 
 def config_summary(cfg: dict) -> dict:

@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import sys
 import threading
 import time
 import urllib.parse
@@ -84,6 +85,30 @@ def fetch_archive(timeout: float = 60) -> tuple[list[dict], list[str]]:
     return parse_archive(rows), errors
 
 
+COMMONCRAWL_INFO = "https://index.commoncrawl.org/collinfo.json"
+
+
+def fetch_commoncrawl(timeout: float = 90, crawls: int = 8) -> tuple[list[dict], list[str]]:
+    """(candidates, errors) from Common Crawl's URL index: every chromehearts.com page in recent crawls."""
+    ua = {"User-Agent": "chmonitor/1.0 (personal drop monitor)"}
+    errors: list[str] = []
+    with urllib.request.urlopen(urllib.request.Request(COMMONCRAWL_INFO, headers=ua), timeout=timeout) as r:
+        indexes = [c["cdx-api"] for c in json.loads(r.read().decode("utf-8"))][:crawls]
+    rows: list[list[str]] = []
+    for api in indexes:
+        q = urllib.parse.urlencode({"url": "www.chromehearts.com/*", "output": "json", "fl": "url"})
+        try:
+            with urllib.request.urlopen(urllib.request.Request(f"{api}?{q}", headers=ua), timeout=timeout) as r:
+                for line in r.read().decode("utf-8", "replace").splitlines():
+                    if line.strip():
+                        rows.append([json.loads(line).get("url", "")])
+        except Exception as e:  # 404 means that crawl has no chromehearts.com pages
+            if getattr(e, "code", None) != 404:
+                errors.append(f"{api.rsplit('/', 1)[-1]}: {getattr(e, 'code', '')} {getattr(e, 'reason', e)}".strip())
+        time.sleep(1)
+    return parse_archive(rows), errors
+
+
 def product_from(data: dict) -> Product | None:
     """A Product from Product-Variation JSON when the product is online, else None."""
     p = data.get("product") or {}
@@ -113,7 +138,7 @@ class ChromeHeartsHidden:
             self.state.setdefault(k, v)
         self.old_products = old_products  # callable -> the monitor's last product dict
         self._fetching = False
-        if "archive_note" not in self.state:  # state from a version without the note: ask again now
+        if "커먼크롤" not in self.state.get("archive_note", ""):  # from a version without Common Crawl: ask now
             self.state["archive_at"] = 0
 
     def add_user(self, text: str) -> bool:
@@ -133,13 +158,21 @@ class ChromeHeartsHidden:
         self._fetching = True
 
         def work():  # in the background: the archive is slow and must not hold up the checks
-            try:
-                found, errors = fetch_archive()
-            except Exception as e:
-                found, errors = [], [str(e)]
+            notes = []
+            found: list[dict] = []
+            mod = sys.modules[__name__]
+            for name, fetch in (("인터넷 아카이브", mod.fetch_archive), ("커먼크롤", mod.fetch_commoncrawl)):
+                try:
+                    got, errors = fetch()
+                except Exception as e:
+                    got, errors = [], [f"{getattr(e, 'code', '')} {getattr(e, 'reason', e)}".strip()]
+                notes.append(f"{name} {len(got)}개" + (f" (실패 {len(errors)}건: {errors[0]})" if errors else ""))
+                found += [g for g in got if g["pid"] not in {f["pid"] for f in found}]
+                if got:
+                    break  # one good source is enough for today
             if found:
                 self.state["archive"] = found[:400]
-            self.state["archive_note"] = (f"{len(found)}개" + (f", 실패 {len(errors)}건: {errors[0]}" if errors else ""))[:300]
+            self.state["archive_note"] = " · ".join(notes)[:300]
             log.info("[Chrome Hearts] 인터넷 아카이브: 후디·상의 후보 %s", self.state["archive_note"])
             self._fetching = False
 
