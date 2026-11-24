@@ -28,8 +28,8 @@ DEFAULTS: dict = {
     "stores": {                      # per-store switches and overrides of any key below
         "chromehearts": {"enabled": True},
         "skylrk": {"enabled": True},
-        "cpfm": {"enabled": True},
-        "denimtears": {"enabled": True},
+        "cpfm": {"enabled": True, "alerts": False},        # watched, dashboard only
+        "denimtears": {"enabled": True, "alerts": False},  # watched, dashboard only
     },
     "interval_seconds": None,        # None = the store's default (Chrome Hearts 60, SKYLRK/CPFM 45, Denim Tears 75)
     "keywords": [],                  # empty = every product
@@ -302,7 +302,12 @@ class Monitor:
             link = self.notifier.link(ev)
             log.info("🚨 [%s] %s  %s  %s", self.store.name, ev.title, ev.detail, link)
             self.record(ev, link)
-            self.notifier.send(ev)
+            if self.alerts_on():
+                self.notifier.send(ev)
+
+    def alerts_on(self) -> bool:
+        """False: the store is watched and shown on the dashboard, but sends nothing."""
+        return bool(self.cfg.get("alerts", True))
 
     def record(self, ev: Event, link: str = "") -> None:
         with self.lock:
@@ -382,7 +387,8 @@ class Monitor:
                     ev = Event("error", "모니터 접속 실패", store=self.store.id,
                                detail=f"{self.store.name}에 3회 연속 접속하지 못했습니다.")
                     self.record(ev)
-                    self.notifier.send(ev)
+                    if self.alerts_on():
+                        self.notifier.send(ev)
             except Exception:  # keep watching whatever happens
                 log.exception("[%s] 확인 중 예기치 않은 오류", self.store.name)
                 self.status.update(checking=False, state="error", last_error="내부 오류 (로그 확인)")

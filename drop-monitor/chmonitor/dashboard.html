@@ -334,7 +334,7 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 </main>
 
 <script>
-const VERSION = 13;
+const VERSION = 14;
 const $ = id => document.getElementById(id);
 const KIND = {new_product:"신상품", relisted:"재입고", restock:"재입고", category_open:"오픈", price_change:"가격", error:"오류", test:"테스트"};
 const TABS = [["main","메인"],["accessory","신발·액세서리"],["other","기타"],["all","전체"]];
@@ -442,7 +442,9 @@ function render() {
   $("sChan").replaceChildren(...Object.entries(names).map(([k, v]) => el("i", {class: ch[k] ? "on" : ""}, (ch[k] ? "● " : "") + v)));
   const sz = S.config.preferred_sizes;
   const pr = (S.config.priority || []).map(r => `⚡ 우선: ${(r.groups || []).map(g => S.group_labels[g] || g).join("·")} ${(r.sizes || []).join("·")}`);
-  $("sWatch").textContent = [...pr, "알림: " + S.config.alert_groups.map(g => S.group_labels[g] || g).join(", ")].join(" · ");
+  $("sWatch").textContent = S.config.alerts === false
+    ? `🔕 ${NAMES[store]}는 텔레그램 알림을 보내지 않습니다 (대시보드에만 기록)`
+    : [...pr, "알림: " + S.config.alert_groups.map(g => S.group_labels[g] || g).join(", ")].join(" · ");
 
   // feed
   const groupOf = e => (products.find(p => p.pid === e.pid) || {}).group || (e.category ? cg[e.category] : "");

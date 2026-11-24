@@ -53,7 +53,7 @@ class Limiter:
                 return left
             self.last[key] = now
             return 0.0
-VERSION = 13  # the page warns when an older server is still running
+VERSION = 14  # the page warns when an older server is still running
 
 
 def config_summary(cfg: dict) -> dict:
@@ -67,6 +67,7 @@ def config_summary(cfg: dict) -> dict:
         "preferred_sizes": cfg.get("preferred_sizes") or [],
         "alert_groups": cfg.get("alert_groups") or [],
         "auto_open_browser": bool(cfg.get("auto_open_browser")),
+        "alerts": bool(cfg.get("alerts", True)),
         "channels": {n: on(n) for n in ("desktop", "sound", "ntfy", "telegram", "discord")},
     }
 

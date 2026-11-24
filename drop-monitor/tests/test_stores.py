@@ -147,7 +147,7 @@ class ServerModeTests(unittest.TestCase):
         self.assertEqual(self.get("/")[0], 401)
         self.assertEqual(self.get("/api/state", "wrong-password")[0], 401)
         self.assertEqual(self.get("/", "hunter2hunter2", host="monitor.up.railway.app")[0], 200)
-        self.assertEqual(self.get("/healthz"), (200, "ok v13"))
+        self.assertEqual(self.get("/healthz"), (200, "ok v14"))
 
     def test_actions_are_rate_limited(self):
         def post(path):

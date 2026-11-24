@@ -178,3 +178,28 @@ class ColourSplitMigrationTests(unittest.TestCase):
             two["variants"].append({"id": 43, "option1": "FOREST", "option2": "M", "available": True, "price": 14000})
             mon.run_once()  # a genuinely new colour after the upgrade does alert
             self.assertEqual([e.product.name for e in sent], ["REVERSE HOODIE · FOREST"])
+
+
+class QuietStoreTests(unittest.TestCase):
+    def test_cpfm_and_denim_tears_record_but_do_not_send(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg = load_config(None)
+            cfg["state_file"] = str(Path(d) / "s.json")
+            sent = []
+
+            class N(Notifier):
+                def send(self, ev):
+                    sent.append(ev)
+
+            for sid, should_send in (("cpfm", False), ("denimtears", False), ("skylrk", True)):
+                shop = FakeShop()
+                mon = Monitor(cfg, client=shop, notifier=N(cfg), store=sid)
+                mon.run_once()  # baseline
+                shop.listed = [{**js(77, "new-hoodie", "NEW HOODIE", {"M": True}),
+                                "variants": [{"id": 771, "option1": "SMUDGE", "option2": "M", "available": True,
+                                              "price": "160.00"}], "product_type": "HOODIES", "images": []}]
+                sent.clear()
+                evs = mon.run_once()
+                self.assertEqual(len(evs), 1, sid)
+                self.assertEqual(len(mon.state.events), 1, sid)  # still on the dashboard
+                self.assertEqual(bool(sent), should_send, sid)

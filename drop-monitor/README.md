@@ -183,7 +183,7 @@ SKYLRK는 드롭을 상품 목록에 안 올리고 **주소로만 여는** 경�
 
 | 키 | 기본값 | 설명 |
 |---|---|---|
-| `stores` | 넷 다 켬 | `chromehearts`, `skylrk`, `cpfm`, `denimtears`. `{"cpfm": {"enabled": false}}`로 끄기. 스토어별로 아래 키를 덮어쓸 수 있음 |
+| `stores` | 넷 다 감시, **알림은 크롬하츠·SKYLRK만** | `chromehearts`, `skylrk`, `cpfm`, `denimtears`. `{"cpfm": {"enabled": false}}`로 감시 끄기, `{"cpfm": {"alerts": true}}`로 텔레그램 알림 켜기. 알림이 꺼진 스토어도 대시보드에는 그대로 기록됩니다 |
 | `preferred_sizes` | `[]` | 구매 링크에 미리 고를 사이즈 순서. `"L"`, `"LRG"` 둘 다 됨 |
 | `alert_groups` | `["hoodie","top"]` | 알림 보낼 그룹 (후디·집업, 상의) |
 | `keywords` | `[]` | 이 단어가 들어간 상품만 알림. 비우면 그룹 기준 |
