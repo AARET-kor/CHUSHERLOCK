@@ -53,7 +53,7 @@ class Limiter:
                 return left
             self.last[key] = now
             return 0.0
-VERSION = 10  # the page warns when an older server is still running
+VERSION = 11  # the page warns when an older server is still running
 
 
 def config_summary(cfg: dict) -> dict:
@@ -104,6 +104,7 @@ def build_state(mon: Monitor, monitors: dict[str, Monitor]) -> dict:
     snap["notify_health"] = dict(mon.notifier.health)
     snap["hidden"] = ({"found": list(mon.hidden.state["found"]), "user": list(mon.hidden.state["user"]),
                        "live": mon.hidden.state.get("live", 0), "archive": len(mon.hidden.state.get("archive", [])),
+                       "archive_note": mon.hidden.state.get("archive_note", ""),
                        "id_based": mon.store.id == "chromehearts"}
                       if mon.hidden else None)
     snap["config"] = config_summary(mon.cfg)

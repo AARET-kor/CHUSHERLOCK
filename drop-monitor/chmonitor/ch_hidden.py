@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -31,9 +32,12 @@ from .site import Client, FetchError, Product
 log = logging.getLogger("chmonitor")
 
 PID_RE = re.compile(r"(?<![0-9A-Z])([0-9]{6}[0-9A-Z]{9})(?![0-9A-Z])")
-ARCHIVE_URL = ("https://web.archive.org/cdx/search/cdx?url=www.chromehearts.com/*&output=json&fl=original"
-               "&collapse=urlkey&limit=50000&filter=original:.*[0-9]{6}[0-9A-Z]{9}\\.html.*")
+ARCHIVE_CDX = "https://web.archive.org/cdx/search/cdx"
+# category paths Chrome Hearts has used or may use for tops; one small query each
+ARCHIVE_PREFIXES = ["hoodie", "hoodies", "zip-up", "sweatshirt", "sweatshirts", "sweats", "t-shirt", "t-shirts",
+                    "tees", "tops", "long-sleeve", "thermal", "apparel", "mens", "womens", "clothing", "shop", "new"]
 ARCHIVE_EVERY = 24 * 3600
+ARCHIVE_RETRY = 2 * 3600
 MAX_USER = 100
 MAX_FOUND = 80
 
@@ -62,10 +66,22 @@ def parse_archive(rows: list) -> list[dict]:
     return sorted(out.values(), key=lambda d: classify(d["name"], d["category"]) != HOODIE)
 
 
-def fetch_archive(timeout: float = 90) -> list[dict]:
-    req = urllib.request.Request(ARCHIVE_URL, headers={"User-Agent": "chmonitor/1.0 (personal drop monitor)"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return parse_archive(json.loads(r.read().decode("utf-8") or "[]"))
+def fetch_archive(timeout: float = 60) -> tuple[list[dict], list[str]]:
+    """(candidates, errors) from the Internet Archive, one prefix query per category path."""
+    rows: list = []
+    errors: list[str] = []
+    for prefix in ARCHIVE_PREFIXES:
+        q = urllib.parse.urlencode({"url": f"www.chromehearts.com/{prefix}/", "matchType": "prefix",
+                                    "output": "json", "fl": "original", "collapse": "urlkey", "limit": 5000})
+        req = urllib.request.Request(f"{ARCHIVE_CDX}?{q}", headers={"User-Agent": "chmonitor/1.0 (personal drop monitor)"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                data = json.loads(r.read().decode("utf-8") or "[]")
+            rows += data[1:] if data and data[0] == ["original"] else data
+        except Exception as e:
+            errors.append(f"{prefix}: {getattr(e, 'code', '')} {getattr(e, 'reason', e)}".strip())
+        time.sleep(1)  # be gentle with the archive
+    return parse_archive(rows), errors
 
 
 def product_from(data: dict) -> Product | None:
@@ -88,12 +104,17 @@ def product_from(data: dict) -> Product | None:
 
 
 class ChromeHeartsHidden:
+    background = True  # tests set False
+
     def __init__(self, store, state: dict, old_products):
         self.store = store
         self.state = state
         for k, v in (("found", []), ("user", []), ("cursor", 0), ("archive", []), ("archive_at", 0)):
             self.state.setdefault(k, v)
         self.old_products = old_products  # callable -> the monitor's last product dict
+        self._fetching = False
+        if "archive_note" not in self.state:  # state from a version without the note: ask again now
+            self.state["archive_at"] = 0
 
     def add_user(self, text: str) -> bool:
         pid = pid_from(text)
@@ -103,16 +124,29 @@ class ChromeHeartsHidden:
         return True
 
     def refresh_archive(self) -> None:
-        if time.time() - self.state["archive_at"] < ARCHIVE_EVERY:
+        wait = ARCHIVE_EVERY if self.state["archive"] else ARCHIVE_RETRY
+        if time.time() - self.state["archive_at"] < wait:
             return
-        self.state["archive_at"] = time.time()  # once a day, even when it fails
-        try:
-            found = fetch_archive()
-        except Exception as e:  # the archive is slow or unreachable: try again tomorrow
-            log.info("[Chrome Hearts] 인터넷 아카이브 조회 실패 (내일 다시): %s", e)
+        if self._fetching:
             return
-        self.state["archive"] = found[:400]
-        log.info("[Chrome Hearts] 인터넷 아카이브에서 후디·상의 후보 %d개", len(self.state["archive"]))
+        self.state["archive_at"] = time.time()
+        self._fetching = True
+
+        def work():  # in the background: the archive is slow and must not hold up the checks
+            try:
+                found, errors = fetch_archive()
+            except Exception as e:
+                found, errors = [], [str(e)]
+            if found:
+                self.state["archive"] = found[:400]
+            self.state["archive_note"] = (f"{len(found)}개" + (f", 실패 {len(errors)}건: {errors[0]}" if errors else ""))[:300]
+            log.info("[Chrome Hearts] 인터넷 아카이브: 후디·상의 후보 %s", self.state["archive_note"])
+            self._fetching = False
+
+        if self.background:
+            threading.Thread(target=work, name="archive", daemon=True).start()
+        else:
+            work()
 
     def candidates(self, listed_ids: set[str]) -> tuple[list[str], list[str]]:
         """(every check, rotation)"""

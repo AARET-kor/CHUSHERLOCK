@@ -334,7 +334,7 @@ main{max-width:1760px;margin:0 auto;padding:24px}
 </main>
 
 <script>
-const VERSION = 10;
+const VERSION = 11;
 const $ = id => document.getElementById(id);
 const KIND = {new_product:"신상품", relisted:"재입고", restock:"재입고", category_open:"오픈", price_change:"가격", error:"오류", test:"테스트"};
 const TABS = [["main","메인"],["accessory","신발·액세서리"],["other","기타"],["all","전체"]];
@@ -536,7 +536,7 @@ function hiddenBox() {
     };
   }
   if (!box.msg) box.querySelector("small").textContent =
-    `지금 열린 히든링크 ${S.hidden.live}개` + (S.hidden.id_based ? ` · 과거 주소 후보 ${S.hidden.archive}개` : "") +
+    `지금 열린 히든링크 ${S.hidden.live}개` + (S.hidden.id_based ? ` · 과거 주소 후보 ${S.hidden.archive}개` + (S.hidden.archive_note ? ` (아카이브: ${S.hidden.archive_note})` : "") : "") +
     ` · 직접 추가 ${S.hidden.user.length}개 — 인스타 등에서 본 링크를 넣으면 매번 확인하고, 열리면 텔레그램으로 알려 드립니다.`;
   return box;
 }
