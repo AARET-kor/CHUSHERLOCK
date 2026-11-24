@@ -47,13 +47,14 @@ DEFAULTS: dict = {
     "usd_krw": None,                 # fix the won rate (e.g. 1450); null = fetch the live rate
     "usd_krw_fallback": 1400,        # used until a live rate arrives
     "hidden_links": True,            # Shopify stores: also watch products reachable only by direct link
-    "hidden_per_check": 12,          # how many guessed links to try per check (SKYLRK)
+    "hidden_per_check": 14,          # guessed links to try per check (SKYLRK): 2/3 hoodie names, 1/3 colours + others
     "priority": None,                # None = Chrome Hearts hoodies in M or XL (see priority.py); [] turns it off
     "state_file": "state.json",      # Chrome Hearts; other stores use state-<store>.json next to it
 }
 MIN_INTERVAL = 20
 MAX_STOCK_CHECKS_PER_CYCLE = 25
 MAX_EVENTS = 300
+SCHEMA = 2  # 2: Shopify products are one entry per colour
 
 
 def now_iso(offset: float = 0) -> str:
@@ -138,6 +139,7 @@ class State:
         self.initialized = False
         self.events: list[dict] = []
         self.hidden: dict = {}
+        self.schema = SCHEMA
         if path.exists():
             d = json.loads(path.read_text(encoding="utf-8"))
             self.products = {k: Product.from_dict(v) for k, v in d.get("products", {}).items()}
@@ -145,6 +147,7 @@ class State:
             self.initialized = bool(d.get("initialized"))
             self.events = d.get("events", [])
             self.hidden = d.get("hidden", {})
+            self.schema = d.get("schema", 1)
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -156,6 +159,7 @@ class State:
             "products": {k: v.to_dict() for k, v in self.products.items()},
             "events": self.events[-MAX_EVENTS:],
             "hidden": self.hidden,
+            "schema": self.schema,
         }, ensure_ascii=False, indent=1), encoding="utf-8")
         tmp.replace(self.path)
 
@@ -169,6 +173,10 @@ class Monitor:
         self.client = client or Client()
         self.notifier = notifier or Notifier(self.cfg)
         self.state = State(Path(self.cfg["state_file"]))
+        # product ids changed shape (one per colour): take a fresh baseline instead of alerting on every colour
+        self.rebaseline = self.store.stock_in_listing and self.state.initialized and self.state.schema < SCHEMA
+        if self.rebaseline:
+            self.state.products = {}
         self.hidden = None
         if self.cfg.get("hidden_links", True):
             if self.store.stock_in_listing:  # Shopify stores
@@ -215,7 +223,7 @@ class Monitor:
         if not current and any(p.listed and not p.hidden for p in old.values()):
             raise FetchError(self.store.base, None, "상품 목록이 비어 있음 (점검 중이거나 차단됨)")
         if self.hidden:
-            per = int(self.cfg.get("hidden_per_check", 12)) if self.store.stock_in_listing else 8
+            per = int(self.cfg.get("hidden_per_check", 14)) if self.store.stock_in_listing else 8
             for p in self.hidden.scan(self.client, list(current.values()), per):
                 current.setdefault(p.pid, p)
         products: dict[str, Product] = {}
@@ -311,7 +319,7 @@ class Monitor:
     def run_once(self) -> list[Event]:
         if not self.cfg.get("usd_krw") and self.cfg.get("fetch_fx", True):
             fx.refresh()
-        first = not self.state.initialized
+        first = not self.state.initialized or self.rebaseline
         events: list[Event] = []
 
         products = self.scan_products()
@@ -336,6 +344,8 @@ class Monitor:
         with self.lock:
             self.state.categories = counts
             self.state.initialized = True
+            self.state.schema = SCHEMA
+            self.rebaseline = False
             self.state.save()
         self._cycle += 1
         return events

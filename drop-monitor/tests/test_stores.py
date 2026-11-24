@@ -13,7 +13,7 @@ from chmonitor.dashboard import make_handler
 from chmonitor.detect import Event
 from chmonitor.monitor import Monitor, load_config, sample_event
 from chmonitor.notify import Notifier
-from chmonitor.shopify import buy_url, parse_product
+from chmonitor.shopify import buy_url, parse_products
 from chmonitor.stores import STORES
 
 fx.configure(fixed=1400)
@@ -23,22 +23,25 @@ SKY = json.loads((FIX / "shopify_products.json").read_text())["products"]
 
 class ShopifyTests(unittest.TestCase):
     def test_parse_sizes_and_stock(self):
-        p = parse_product("https://skylrk.com", SKY[0], "skylrk")
+        [p] = parse_products("https://skylrk.com", SKY[0], "skylrk")
         self.assertEqual((p.pid, p.name, p.price, p.category, p.store), ("101", "NO ZIP - DOTS", "240.00", "HOODIES", "skylrk"))
         self.assertEqual(p.sizes, {"S": True, "M": True, "L": False})
         self.assertEqual(p.url, "https://skylrk.com/products/reverse-no-zip-dots")
         self.assertIn("width=600", p.image)
 
-    def test_size_in_second_option_any_colour(self):
-        p = parse_product("https://skylrk.com", SKY[1], "skylrk")
-        self.assertEqual(p.sizes, {"M 9 / W 10": True})
-        self.assertEqual(p.size_variants["M 9 / W 10"], "2002")  # the colour that is in stock
+    def test_one_product_per_colour(self):
+        toy, ink = parse_products("https://skylrk.com", SKY[1], "skylrk")
+        self.assertEqual((toy.pid, toy.name), ("102-toy", "MATTERDADDIES - TOY"))  # colour already in the title
+        self.assertEqual((ink.pid, ink.name), ("102-ink", "MATTERDADDIES - TOY · INK"))
+        self.assertEqual((toy.sizes, ink.sizes), ({"M 9 / W 10": False}, {"M 9 / W 10": True}))
+        self.assertEqual(ink.size_variants["M 9 / W 10"], "2002")
+        self.assertEqual(ink.url, "https://skylrk.com/products/matterdaddies-toy?variant=2002")
 
     def test_no_size_option(self):
-        self.assertEqual(parse_product("https://skylrk.com", SKY[2], "skylrk").sizes, {})
+        self.assertEqual(parse_products("https://skylrk.com", SKY[2], "skylrk")[0].sizes, {})
 
     def test_buy_link_goes_to_checkout_only_when_in_stock(self):
-        p = parse_product("https://skylrk.com", SKY[0], "skylrk")
+        [p] = parse_products("https://skylrk.com", SKY[0], "skylrk")
         self.assertEqual(buy_url("https://skylrk.com", p, "M"), "https://skylrk.com/cart/1002:1")
         self.assertEqual(buy_url("https://skylrk.com", p, "L"), p.url)
 
@@ -144,7 +147,7 @@ class ServerModeTests(unittest.TestCase):
         self.assertEqual(self.get("/")[0], 401)
         self.assertEqual(self.get("/api/state", "wrong-password")[0], 401)
         self.assertEqual(self.get("/", "hunter2hunter2", host="monitor.up.railway.app")[0], 200)
-        self.assertEqual(self.get("/healthz"), (200, "ok v12"))
+        self.assertEqual(self.get("/healthz"), (200, "ok v13"))
 
     def test_actions_are_rate_limited(self):
         def post(path):

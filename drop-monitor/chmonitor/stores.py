@@ -71,11 +71,39 @@ class ShopifyStore(Store):
     stock_in_listing = True
     category_word = "컬렉션"
 
-    def __init__(self, id: str, name: str, base: str, default_interval: int = 45):
+    def __init__(self, id: str, name: str, base: str, default_interval: int = 45, home_every: int = 1):
         self.id, self.name, self.base, self.default_interval = id, name, base, default_interval
+        self.home_every = home_every  # read the home page every n-th check (Denim Tears' is 1 MB)
+        self.colors: list[str] = []   # colour names the store uses, for hidden-link guesses
+        self.public_handles: set[str] = set()  # handles the catalogue or the home page show
+        self._home: list[str] = []
+        self._calls = 0
 
     def products(self, client):
-        return shopify.fetch_products(client, self.base, self.id)
+        """The catalogue plus products the home page links that the catalogue leaves out (still public)."""
+        found, raw = shopify.fetch_catalogue(client, self.base, self.id)
+        colors = [c for d in raw for c in shopify.colors_of(d)]
+        handles = {d.get("handle") for d in raw}
+        if self._calls % self.home_every == 0:
+            try:
+                self._home = shopify.home_handles(client, self.base)
+            except shopify.FetchError:
+                pass
+        self._calls += 1
+        for h in self._home:
+            if h in handles:
+                continue
+            try:
+                d = shopify.fetch_js(client, self.base, h)
+            except shopify.FetchError:
+                continue
+            if d:
+                handles.add(h)
+                colors += shopify.colors_of(d)
+                found += shopify.parse_products(self.base, d, self.id, cents=True)
+        self.public_handles = handles
+        self.colors = list(dict.fromkeys(self.colors + colors))
+        return found
 
     def category_counts(self, client, categories):
         return shopify.fetch_collections(client, self.base)
@@ -94,7 +122,7 @@ STORES: dict[str, Store] = {s.id: s for s in (
     ChromeHearts(),
     ShopifyStore("skylrk", "SKYLRK", "https://skylrk.com", 45),             # one small request
     ShopifyStore("cpfm", "CPFM", "https://cactusplantfleamarket.com", 45),  # one small request
-    ShopifyStore("denimtears", "Denim Tears", "https://denimtears.com", 75),  # ~2 MB per check, go easier
+    ShopifyStore("denimtears", "Denim Tears", "https://denimtears.com", 75, home_every=10),  # ~2 MB per check
 )}
 
 

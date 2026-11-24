@@ -33,8 +33,8 @@ HOODIE_BASES = [
     "reverse-zip-up", "full-zip-hoodie", "pullover-hoodie", "thermal-hoodie",
 ]
 OTHER_BASES = ["crewneck", "reverse-crewneck", "sweatshirt", "tee", "long-sleeve", "long-sleeve-tee", "thermal",
-               "sweats", "reverse-sweats", "reverse-sweats-jogger", "jogger"]
-SUFFIXES = ["", "-1", "-2", "-3"]
+               "sweats", "reverse-sweats", "reverse-sweats-jogger", "jogger", "reverse-jogger", "sweatpants"]
+SUFFIXES = ["", "-1", "-2", "-3", "-4", "-5"]
 
 
 def handle_from(text: str) -> str | None:
@@ -68,28 +68,24 @@ class HiddenLinks:
         self.state["user"].append(handle)
         return True
 
-    def guesses(self, listed: list[Product]) -> list[str]:
+    def guesses(self, listed: list[Product]) -> tuple[list[str], list[str]]:
+        """(fast, slow) handles to try, each in a fixed order so the rotation never skips one.
+        fast: hoodie names and -1..-5. slow: hoodie names with every colour the store uses, then
+        other tops and bottoms."""
         if not self.guesses_on:
-            return []
-        colors: list[str] = []
-        for p in listed:  # colours the store already uses, from the end of its handles
-            tail = p.url.rsplit("/", 1)[-1].split("-")[-1]
-            if tail.isalpha() and len(tail) > 2 and tail not in colors:
-                colors.append(tail)
-        out: list[str] = []
-        for base in HOODIE_BASES:  # hoodies first
-            out += [base + s for s in SUFFIXES]
-        for base in HOODIE_BASES[:8]:
-            out += [f"{base}-{c}" for c in colors[:16]]
+            return [], []
+        colors = list(dict.fromkeys(shopify.slug(c) for c in getattr(self.store, "colors", []) if c))
+        fast = [base + s for base in HOODIE_BASES for s in SUFFIXES]
+        slow = [f"{base}-{c}" for base in HOODIE_BASES for c in colors]
         for base in OTHER_BASES:
-            out += [base + s for s in SUFFIXES[:2]]
-        seen: set[str] = set()
-        return [h for h in out if not (h in seen or seen.add(h))]
+            slow += [base + s for s in SUFFIXES] + [f"{base}-{c}" for c in colors]
+        fast = list(dict.fromkeys(fast))
+        return fast, [h for h in dict.fromkeys(slow) if h not in fast]
 
     # -- one pass
 
     def scan(self, client: Client, listed: list[Product], per_check: int = 12) -> list[Product]:
-        listed_handles = {p.url.rsplit("/", 1)[-1] for p in listed}
+        listed_handles = {shopify.handle_of(p) for p in listed} | set(getattr(self.store, "public_handles", set()))
         if not self.sitemap or self.cycle % 20 == 0:
             try:
                 self.sitemap = shopify.sitemap_handles(client, self.store.base)
@@ -97,33 +93,44 @@ class HiddenLinks:
                 log.debug("[%s] 사이트맵 실패: %s", self.store.name, e)
         self.cycle += 1
 
+        self.state["found"] = [h for h in self.state["found"] if h not in listed_handles]
         every = []
         for h in self.state["found"] + self.state["user"] + self.sitemap:
             if h not in listed_handles and h not in every:
                 every.append(h)
-        # rotate through the full, fixed guess list so finding a link never makes us skip one
-        guesses = self.guesses(listed)
-        start = self.state["cursor"] % len(guesses) if guesses else 0
-        window = (guesses[start:] + guesses[:start])[:per_check]
-        self.state["cursor"] = start + len(window)
+        # rotate through each fixed guess list so finding a link never makes us skip one
+        fast, slow = self.guesses(listed)
+        n_fast = max(1, per_check * 2 // 3)
+        window = []
+        for key, items, n in (("cursor", fast, n_fast), ("cursor_slow", slow, max(1, per_check - n_fast))):
+            if not items:
+                continue
+            start = self.state.get(key, 0) % len(items)
+            take = (items[start:] + items[:start])[:n]
+            self.state[key] = start + len(take)
+            window += take
         batch = [h for h in window if h not in listed_handles and h not in every]
 
         out: list[Product] = []
+        live = 0
         for h in every + batch:
             try:
-                p = shopify.fetch_product_js(client, self.store.base, h, self.store.id)
+                d = shopify.fetch_js(client, self.store.base, h)
             except FetchError as e:
                 if e.status == 429:  # the store wants us to slow down: stop for this check
                     log.warning("[%s] 히든링크 확인 중 429, 이번 회차 중단", self.store.name)
                     break
                 continue
-            if not p:
+            if not d:
                 continue
-            p.hidden = True
-            out.append(p)
+            live += 1
+            self.store.colors = list(dict.fromkeys(getattr(self.store, "colors", []) + shopify.colors_of(d)))
+            for p in shopify.parse_products(self.store.base, d, self.store.id, cents=True):
+                p.hidden = True
+                out.append(p)
             if h not in self.state["found"]:
                 self.state["found"].append(h)
                 del self.state["found"][:-MAX_FOUND]
                 log.info("[%s] 🔗 히든링크 발견: %s/products/%s", self.store.name, self.store.base, h)
-        self.state["live"] = len(out)
+        self.state["live"] = live  # links, not colours
         return out
