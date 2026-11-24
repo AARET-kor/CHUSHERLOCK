@@ -53,7 +53,7 @@ class Limiter:
                 return left
             self.last[key] = now
             return 0.0
-VERSION = 9  # the page warns when an older server is still running
+VERSION = 10  # the page warns when an older server is still running
 
 
 def config_summary(cfg: dict) -> dict:
@@ -103,7 +103,8 @@ def build_state(mon: Monitor, monitors: dict[str, Monitor]) -> dict:
     snap["version"] = VERSION
     snap["notify_health"] = dict(mon.notifier.health)
     snap["hidden"] = ({"found": list(mon.hidden.state["found"]), "user": list(mon.hidden.state["user"]),
-                       "live": mon.hidden.state.get("live", 0)}
+                       "live": mon.hidden.state.get("live", 0), "archive": len(mon.hidden.state.get("archive", [])),
+                       "id_based": mon.store.id == "chromehearts"}
                       if mon.hidden else None)
     snap["config"] = config_summary(mon.cfg)
     snap["config"]["priority"] = [r for r in mon.rules() if r.get("store", mon.store.id) == mon.store.id]
@@ -195,13 +196,15 @@ def make_handler(monitors: dict[str, Monitor], public: bool = False, password: s
             if path == "/api/hidden":
                 if not mon.hidden:
                     return self._json({"error": "이 스토어는 히든링크를 지원하지 않습니다"}, 400)
+                from .ch_hidden import pid_from
                 from .hidden import handle_from
                 try:
                     n = min(int(self.headers.get("Content-Length") or 0), 2000)
                     body = json.loads(self.rfile.read(n) or b"{}")
                 except ValueError:
                     return self._json({"error": "bad request"}, 400)
-                handle = handle_from(str(body.get("link", "")))
+                raw = str(body.get("link", ""))
+                handle = pid_from(raw) if mon.store.id == "chromehearts" else handle_from(raw)
                 if not handle:
                     return self._json({"error": "주소나 제품명을 알아볼 수 없습니다"}, 400)
                 with mon.lock:

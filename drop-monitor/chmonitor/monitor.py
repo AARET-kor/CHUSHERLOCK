@@ -170,9 +170,13 @@ class Monitor:
         self.notifier = notifier or Notifier(self.cfg)
         self.state = State(Path(self.cfg["state_file"]))
         self.hidden = None
-        if self.store.stock_in_listing and self.cfg.get("hidden_links", True):  # Shopify stores
-            from .hidden import HiddenLinks
-            self.hidden = HiddenLinks(self.store, self.state.hidden, guesses=self.store.id == "skylrk")
+        if self.cfg.get("hidden_links", True):
+            if self.store.stock_in_listing:  # Shopify stores
+                from .hidden import HiddenLinks
+                self.hidden = HiddenLinks(self.store, self.state.hidden, guesses=self.store.id == "skylrk")
+            elif self.store.id == "chromehearts":
+                from .ch_hidden import ChromeHeartsHidden
+                self.hidden = ChromeHeartsHidden(self.store, self.state.hidden, lambda: self.state.products)
         self._cats: list[str] = []
         self._cycle = 0
         self.lock = threading.RLock()
@@ -211,7 +215,8 @@ class Monitor:
         if not current and any(p.listed and not p.hidden for p in old.values()):
             raise FetchError(self.store.base, None, "상품 목록이 비어 있음 (점검 중이거나 차단됨)")
         if self.hidden:
-            for p in self.hidden.scan(self.client, list(current.values()), int(self.cfg.get("hidden_per_check", 12))):
+            per = int(self.cfg.get("hidden_per_check", 12)) if self.store.stock_in_listing else 8
+            for p in self.hidden.scan(self.client, list(current.values()), per):
                 current.setdefault(p.pid, p)
         products: dict[str, Product] = {}
         for pid, p in old.items():  # never forget a product; mark it delisted instead

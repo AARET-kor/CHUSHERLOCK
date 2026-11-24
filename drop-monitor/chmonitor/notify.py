@@ -154,11 +154,11 @@ class Notifier:
         icon = {"restock": "📦", "price_change": "💲", "test": "🧪", "error": "⚠️"}.get(
             ev.kind, "🔥" if group == HOODIE else "🚨")
         headline = f"{icon} [{store.name}] " + (f"{what} {kind}" if what and p else kind)
-        if p and p.hidden:
-            headline = headline.replace(f"[{store.name}] ", f"[{store.name}] 🔗 히든링크 ", 1)
         if ev.info.get("priority"):
             sizes = "·".join(ev.info.get("hits") or [])
             headline = f"🔥🔥 [{store.name}] {what or '우선'} {sizes} 재고 — 지금 구매"
+        if p and p.hidden:
+            headline = headline.replace(f"[{store.name}] ", f"[{store.name}] 🔗 히든링크 ", 1)
 
         if not p:
             name = store.category_title(ev.category) if ev.category else ev.title
